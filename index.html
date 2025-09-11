@@ -890,14 +890,9 @@
 
                     const cx = targetRect.left + targetRect.width / 2;
                     const cy = targetRect.top + targetRect.height / 2;
-                    const winW = window.innerWidth;
-                    const winH = window.innerHeight;
-                    const maxRadius = Math.ceil(Math.max(
-                        Math.hypot(cx, cy),
-                        Math.hypot(winW - cx, cy),
-                        Math.hypot(cx, winH - cy),
-                        Math.hypot(winW - cx, winH - cy)
-                    ));
+                    
+                    // 2024/09/15 修改: 重新計算特效半徑，使其只在物件周圍擴散而非全螢幕
+                    const maxRadius = Math.ceil(Math.max(targetRect.width, targetRect.height) * 1.2);
 
                     const keyframes = `
                         @keyframes teleport-circle-effect-dynamic {
@@ -1009,31 +1004,67 @@
                 
                 buildInitialHTML(text) {
                     const settings = settingsState.marquees[this.index];
+                    const isVertical = settings.vertical;
                     const defaultColor = (settings.colors && settings.colors.default) ? settings.colors.default : '#FFFFFF';
                     const replacements = this.getReplacements();
                     const allParamKeys = Object.keys(replacements);
                     const regex = new RegExp(`(${allParamKeys.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g');
 
-                    const parts = text.split(regex).filter(Boolean);
-                    let html = '';
-
-                    parts.forEach(part => {
-                        const sanitizedPart = part.replace(/ /g, '\u00A0');
-                        if (allParamKeys.includes(part)) {
-                            const cssVar = marqueeParamColorMap[part];
-                            const color = cssVar ? getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() : defaultColor;
-                            const content = replacements[part];
-                            if (part === '%MOON_ICON%') {
-                                html += `<span data-time-key="${part}" style="display: inline-flex; align-items: center; justify-content: center;">${content}</span>`;
+                    // 輔助函式，將單一行文字轉換為帶有樣式和資料的 HTML
+                    const processStringToHtml = (str) => {
+                        const parts = str.split(regex).filter(Boolean);
+                        let html = '';
+                        parts.forEach(part => {
+                            const sanitizedPart = part.replace(/ /g, '\u00A0');
+                            if (allParamKeys.includes(part)) {
+                                const cssVar = marqueeParamColorMap[part];
+                                const color = cssVar ? getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() : defaultColor;
+                                const content = replacements[part];
+                                if (part === '%MOON_ICON%') {
+                                    html += `<span data-time-key="${part}" style="display: inline-flex; align-items: center; justify-content: center;">${content}</span>`;
+                                } else {
+                                    html += `<span data-time-key="${part}" style="color:${color}">${content}</span>`;
+                                }
                             } else {
-                                html += `<span data-time-key="${part}" style="color:${color}">${content}</span>`;
+                                html += `<span style="color:${defaultColor}">${sanitizedPart}</span>`;
                             }
-                        } else {
-                            html += `<span style="color:${defaultColor}">${sanitizedPart}</span>`;
-                        }
+                        });
+                        return html;
+                    };
+
+                    if (!isVertical) {
+                        // 水平捲動模式維持原樣
+                        return processStringToHtml(text);
+                    }
+
+                    // --- 直向捲動模式的換行邏輯 ---
+                    // 定義哪些參數或文字前面應該要換行
+                    const breakMarkers = ['農曆', '%MOON_ICON%', '%WEATHER_LOC%', '日出'];
+                    const lineBreakToken = '||LINE_BREAK||';
+                    
+                    let processedText = text;
+                    breakMarkers.forEach(marker => {
+                        const escapedMarker = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        // 在標記前插入換行符號，同時處理標記前可能存在的空白字元
+                        processedText = processedText.replace(new RegExp(`\\s*(${escapedMarker})`, 'g'), `${lineBreakToken}$1`);
                     });
 
-                    return html;
+                    // 如果文本處理後是由換行符號開頭，將其移除
+                    if (processedText.startsWith(lineBreakToken)) {
+                        processedText = processedText.substring(lineBreakToken.length);
+                    }
+                    
+                    const lines = processedText.split(lineBreakToken);
+
+                    let finalHtml = '';
+                    lines.forEach(lineText => {
+                        if (!lineText.trim()) return;
+                        const lineHtml = processStringToHtml(lineText);
+                        // 每個邏輯行都用一個 div 包起來，以實現視覺上的換行
+                        finalHtml += `<div>${lineHtml}</div>`;
+                    });
+
+                    return finalHtml;
                 }
 
                 updateContent() {
@@ -1176,13 +1207,12 @@
             const promptModal=document.getElementById('modal-backdrop-prompt'),promptTitle=document.getElementById('prompt-title'),promptMessage=document.getElementById('prompt-message'),promptInput=document.getElementById('prompt-input'),promptOkBtn=document.getElementById('prompt-ok-btn'),promptCancelBtn=document.getElementById('prompt-cancel-btn');
             let promptCallback=null;
 
-            // 修正 #2: 確保 showAlert 和 showPrompt 能正確顯示/隱藏輸入框
             function showAlert(title, message) {
                 promptTitle.textContent = title;
                 promptMessage.textContent = message;
                 promptMessage.style.display = 'block';
-                promptInput.style.display = 'none'; // 直接用 style 隱藏
-                promptCancelBtn.style.display = 'none'; // 直接用 style 隱藏
+                promptInput.style.display = 'none';
+                promptCancelBtn.style.display = 'none';
                 promptCallback = null;
                 showModal('modal-backdrop-prompt');
             }
@@ -1190,8 +1220,8 @@
                 promptTitle.textContent = title;
                 promptMessage.textContent = message;
                 promptMessage.style.display = message ? 'block' : 'none';
-                promptInput.style.display = 'block'; // 直接用 style 顯示
-                promptCancelBtn.style.display = 'inline-block'; // 直接用 style 顯示
+                promptInput.style.display = 'block';
+                promptCancelBtn.style.display = 'inline-block';
                 promptInput.value = defaultValue;
                 promptCallback = callback;
                 showModal('modal-backdrop-prompt');
@@ -1486,10 +1516,55 @@
                 }
                 applyAllSettings();
             };
-            const toolbarTitle=document.getElementById('toolbar-title');let toolbarMoving=false,toolbarOffsetX,toolbarOffsetY;toolbarTitle.addEventListener('mousedown',e=>{toolbarMoving=true;const rect=editToolbar.getBoundingClientRect();toolbarOffsetX=e.clientX-rect.left;toolbarOffsetY=e.clientY-rect.top;editToolbar.style.transition='none'});document.addEventListener('mousemove',e=>{if(!toolbarMoving)return;let x=e.clientX-toolbarOffsetX,y=e.clientY-toolbarOffsetY;const rect=editToolbar.getBoundingClientRect();x=Math.max(0,Math.min(x,window.innerWidth-rect.width));y=Math.max(0,Math.min(y,window.innerHeight-rect.height));editToolbar.style.left=`${x}px`;editToolbar.style.top=`${y}px`;editToolbar.style.bottom='auto';editToolbar.style.transform='none'});document.addEventListener('mouseup',()=>{if(toolbarMoving){toolbarMoving=false;editToolbar.style.transition='bottom 0.3s ease-in-out'}});
+
+            // 2024/09/15 修改: 重構工具列拖曳邏輯，增加觸控事件支援
+            const toolbarTitle = document.getElementById('toolbar-title');
+            let toolbarMoving = false, toolbarOffsetX, toolbarOffsetY;
+
+            const handleToolbarDragStart = (e) => {
+                e.preventDefault(); 
+                toolbarMoving = true;
+                const rect = editToolbar.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                toolbarOffsetX = clientX - rect.left;
+                toolbarOffsetY = clientY - rect.top;
+                editToolbar.style.transition = 'none';
+            };
+
+            const handleToolbarDragMove = (e) => {
+                if (!toolbarMoving) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                let x = clientX - toolbarOffsetX;
+                let y = clientY - toolbarOffsetY;
+                const rect = editToolbar.getBoundingClientRect();
+                x = Math.max(0, Math.min(x, window.innerWidth - rect.width));
+                y = Math.max(0, Math.min(y, window.innerHeight - rect.height));
+                editToolbar.style.left = `${x}px`;
+                editToolbar.style.top = `${y}px`;
+                editToolbar.style.bottom = 'auto';
+                editToolbar.style.transform = 'none';
+            };
+
+            const handleToolbarDragEnd = () => {
+                if (toolbarMoving) {
+                    toolbarMoving = false;
+                    editToolbar.style.transition = 'bottom 0.3s ease-in-out';
+                }
+            };
+            
+            toolbarTitle.addEventListener('mousedown', handleToolbarDragStart);
+            toolbarTitle.addEventListener('touchstart', handleToolbarDragStart, { passive: false });
+
+            document.addEventListener('mousemove', handleToolbarDragMove);
+            document.addEventListener('touchmove', handleToolbarDragMove, { passive: false });
+
+            document.addEventListener('mouseup', handleToolbarDragEnd);
+            document.addEventListener('touchend', handleToolbarDragEnd);
+            
             const layoutSelector=document.getElementById('layout-selector');
             function updateLayoutSelector(){layoutSelector.innerHTML='';for(let i=0;i<10;i++){const saved=localStorage.getItem(`widgets_layout_${i}`);const option=document.createElement('option');option.value=i;let text=`${i+1}. (空)`;if(saved){const data=JSON.parse(saved);
-            // 修正 #2: 確保備註 (data.name) 正確顯示在存檔編號後
             text=`${i+1}. ${data.name||'未命名'}`}option.textContent=text;layoutSelector.appendChild(option)}}
             document.getElementById('save-layout-btn').addEventListener('click',()=>{const index=layoutSelector.value;const saved=localStorage.getItem(`widgets_layout_${index}`);const currentName=saved?JSON.parse(saved).name:'';showPrompt("儲存設定","請輸入備註 (可選):",currentName,(remark)=>{if(remark===null)return;const layout=getCurrentLayout();layout.name=remark.trim()||new Date().toLocaleString('sv').replace(' ','_');localStorage.setItem(`widgets_layout_${index}`,JSON.stringify(layout));const currentIndex=layoutSelector.value;updateLayoutSelector();layoutSelector.value=currentIndex;showAlert("成功",`設定已儲存至欄位 ${parseInt(index)+1}`)})});
             document.getElementById('load-layout-btn').addEventListener('click',()=>{const savedLayout=localStorage.getItem(`widgets_layout_${layoutSelector.value}`);if(savedLayout){applyLayout(JSON.parse(savedLayout));saveCurrentSettings()}else{showAlert('提示','此欄位沒有儲存設定。')}});
