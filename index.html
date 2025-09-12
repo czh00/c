@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>月曆</title>
+    <title>多功能桌面小工具</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -17,7 +17,7 @@
         body {
             font-family: 'Noto Sans TC', 'Inter', sans-serif;
             font-weight: bold;
-            background-color: var(--bg-primary, #000000);
+            background-color: var(--bg-primary, #000000); /* 改為純黑背景 */
             color: var(--text-primary, #F3F4F6);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
@@ -220,29 +220,7 @@
         #edit-mode-grid::before { top: 0; left: 50%; width: 1px; height: 100%; transform: translateX(-50%); }
         #edit-mode-grid::after { top: 50%; left: 0; width: 100%; height: 1px; transform: translateY(-50%); }
         body.edit-mode #edit-mode-grid { display: block; }
-
-        /* --- 圓形傳送特效 --- */
-        #teleport-effect-container {
-            position: fixed; 
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            pointer-events: none; 
-            z-index: 1049; /* 低於 modal 的 1050 */
-            opacity: 0;
-        }
-        #teleport-effect-container.active {
-            opacity: 1;
-        }
-        .teleport-circle {
-            position: absolute;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            /* animation name is set by JS */
-            animation-duration: 1.8s;
-            animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
-            animation-fill-mode: forwards;
-        }
-
+        
         /* --- 由 Tailwind 轉換的語意化 CSS --- */
         .display-flex { display: flex; }
         .align-items-center { align-items: center; }
@@ -270,7 +248,7 @@
         .padding-bottom-1 { padding-bottom: 0.25rem; }
         .padding-bottom-2 { padding-bottom: 0.5rem; }
         .padding-bottom-4 { padding-bottom: 1rem; }
-        .padding-right-2 { padding-right: 0.5rem; }
+        .padding-right-2 { padding-right: 0.25rem; }
         .padding-horizontal-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
         .padding-horizontal-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
         .padding-vertical-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
@@ -409,8 +387,6 @@
             padding: 0; 
             margin: 0;
         }
-        /* --- 結束修正 --- */
-
 
         @media (min-width: 768px) {
             .md-grid-columns-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -427,7 +403,6 @@
 <body class="antialiased">
     
     <div id="edit-mode-grid"></div>
-    <div id="teleport-effect-container"></div>
 
     <!-- 月曆 Widget -->
     <div id="calendar-container" class="widget-container">
@@ -598,7 +573,6 @@
     </div>
 </div>
 </div></div></div>
-    <!-- 2024/09/16 移除: 移除獨立的月相彈窗 -->
     <div id="modal-backdrop-picker" class="modal-backdrop"><div id="month-year-picker" class="modal-content"><div class="padding-5"><div class="year-nav margin-bottom-4"><button id="picker-prev-year" class="calendar-nav-arrow">&lt;</button><span id="picker-year" class="font-size-xl font-weight-bold">2024</span><button id="picker-next-year" class="calendar-nav-arrow">&gt;</button></div><div id="picker-month-grid" class="month-grid"></div></div></div></div>
     
     <div id="modal-backdrop-settings" class="modal-backdrop">
@@ -732,28 +706,6 @@
                        </div>
                     </div>
                 </div>
-                <!-- 特效設定 -->
-                <div class="margin-top-6 padding-top-6 border-top-1px border-color-gray-700 flex-shrink-0">
-                    <div class="display-flex align-items-center gap-4 flex-wrap">
-                        <label class="display-flex align-items-center space-x-2 cursor-pointer">
-                            <div class="font-size-lg font-weight-semibold">螢幕保護特效</div>
-                            <input type="checkbox" id="effect-enabled" class="form-checkbox">
-                            <span>啟用</span>
-                        </label>
-                        <select id="effect-trigger" class="bg-gray-700 border-1px border-color-gray-600 border-radius-sm">
-                            <option value="10s" selected>10秒</option><option value="30s">30秒</option><option value="minute">整分</option>
-                            <option value="10m">10分</option><option value="30m">30分</option><option value="hour">整點</option>
-                        </select>
-                        <label class="display-flex align-items-center space-x-2">
-                            <span>顏色</span>
-                            <input type="color" id="effect-color-input" class="color-picker">
-                        </label>
-                        <label class="display-flex align-items-center space-x-2 cursor-pointer">
-                            <input type="checkbox" id="effect-random-color" class="form-checkbox">
-                            <span>隨機</span>
-                        </label>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -769,6 +721,11 @@
                     <button data-close-modal="modal-backdrop-marquee-params" class="color-gray-400 hover-color-white font-size-3xl line-height-none">&times;</button>
                 </div>
                 <ul class="param-list max-height-80 overflow-y-auto padding-right-2">
+                    <li class="param-group-title">特殊功能</li>
+                    <li class="param-item"><strong>%C(#RRGGBB, 文字)%</strong>: 自訂文字顏色。例如: %C(#FFD700, 黃色文字)%</li>
+                    <li class="param-item"><strong>%br%</strong>: (僅直向)手動換行</li>
+                    <li class="param-item"><strong>提示:</strong> %C(...)% 參數中的文字部分不能再包含其他參數。系統會自動為時間、天氣等參數套用主題色彩。</li>
+
                     <li class="param-group-title">西元日期與時間</li>
                     <li class="param-item"><strong>%YYYY%</strong>: 四位數西元年 (例如: 2024)</li>
                     <li class="param-item"><strong>%YY%</strong>: 兩位數西元年 (例如: 24)</li>
@@ -792,13 +749,17 @@
                     <li class="param-item"><strong>%ap_c%</strong>: 中文時段 (例如: 上午, 下午)</li>
                     <li class="param-item"><strong>%AP%</strong>: 英文時段，大寫 (AM/PM)</li>
                     <li class="param-item"><strong>%ap%</strong>: 英文時段，小寫 (am/pm)</li>
-                    <li class="param-item"><strong>%br%</strong>: (僅直向)手動換行</li>
-
+                    
                     <li class="param-group-title">農曆與生肖</li>
                     <li class="param-item"><strong>%L_GZ%</strong>: 農曆年干支 (例如: 甲辰)</li>
                     <li class="param-item"><strong>%L_SX%</strong>: 生肖 (例如: 龍)</li>
                     <li class="param-item"><strong>%LM_C%</strong>: 農曆中文月份 (例如: 八月)</li>
                     <li class="param-item"><strong>%LD_C%</strong>: 農曆中文日期 (例如: 初三)</li>
+                    
+                    <li class="param-group-title">時辰</li>
+                    <li class="param-item"><strong>%SHICHEN_GZ%</strong>: 時辰干支 (例如: 甲子)</li>
+                    <li class="param-item"><strong>%SHICHEN_NAME%</strong>: 時辰全名 (例如: 子時)</li>
+                    <li class="param-item"><strong>%SHICHEN_CHAR%</strong>: 時辰地支 (例如: 子)</li>
 
                     <li class="param-group-title">月相</li>
                     <li class="param-item"><strong>%MOON_PHASE%</strong>: 當日月相名稱 (例: 望月(滿月))</li>
@@ -860,6 +821,38 @@
             function getHoliday(date){const year=date.getFullYear();const gKey=`${date.getMonth()+1}-${date.getDate()}`;if(gregorianHolidays[gKey])return gregorianHolidays[gKey];if(date.getMonth()===4&&date.getDay()===0&&date.getDate()>7&&date.getDate()<=14)return"母親節";const l=getLunarDate(date);if(l.day>0){const lKey=(l.month===12&&l.day===29&&getLunarMonthDays(l.year,12)===29)?"12-29":`${l.month}-${l.day}`;if(lKey==="12-29")return"除夕";if(lunarHolidays[lKey])return lunarHolidays[lKey]}return null}
             const yiJiMap={};
             function getYiJiForDate(year,month,day){const key=`${year}-${month}-${day}`;if(yiJiMap[key])return yiJiMap[key];const allGood=["嫁娶","祈福","求嗣","出行","入宅","開市","安床","祭祀","納采","修造"];const allBad=["動土","安葬","作灶","伐木","行喪","破土","詞訟","赴任"];const seed=year*10000+month*100+day;const randomGood=[...allGood].sort(()=>0.5-(seed%1000/1000)).slice(0,5);const randomBad=[...allBad].sort(()=>0.5-(seed%888/888)).slice(0,3);return{good:randomGood,bad:randomBad}}
+            
+            // --- 時辰計算輔助 ---
+            function getDailyGanzhi(date) {
+                const cleanDate = new Date(date);
+                cleanDate.setHours(0, 0, 0, 0);
+                // 基準日: 1900年1月31日是庚辰日。庚(6), 辰(4)。
+                const baseDate = new Date(1900, 0, 31);
+                const offset = Math.floor((cleanDate - baseDate) / 86400000);
+                const positiveOffset = offset + 60000; // 確保正數
+                const dayStemIndex = (6 + positiveOffset) % 10;
+                return { stemIndex: dayStemIndex };
+            }
+            const ShichenHelper = {
+                // 根據日干查詢時辰的起始天干 (甲己日起甲子時, 乙庚日起丙子時...)
+                hourStemStart: [0, 2, 4, 6, 8, 0, 2, 4, 6, 8], 
+                getData(date) {
+                    const h = date.getHours();
+                    // 子時(23-01)的地支序數為0
+                    const branchIndex = Math.floor(((h + 1) % 24) / 2);
+                    const branchChar = dizhi[branchIndex];
+                    const dailyGanzhi = getDailyGanzhi(date);
+                    const dayStemIndex = dailyGanzhi.stemIndex;
+                    const hourStemIndex = (this.hourStemStart[dayStemIndex] + branchIndex) % 10;
+                    const hourStemChar = tiangan[hourStemIndex];
+
+                    return {
+                        name: `${branchChar}時`,
+                        char: branchChar,
+                        gz: `${hourStemChar}${branchChar}`
+                    };
+                }
+            };
 
             const TimeHelper = {
                 timeRanges: [{h:23,p:'深夜'},{h:19,p:'夜晚'},{h:17,p:'傍晚'},{h:13,p:'下午'},{h:12,p:'中午'},{h:9,p:'上午'},{h:5,p:'清晨'},{h:0,p:'凌晨'}],
@@ -876,8 +869,6 @@
             let activityTimeout;
             let transformStates = {};
             let settingsState = {}; 
-            let lastTriggerSecond = -1;
-            let wasEffectEnabledBeforeEdit = false; // 用於儲存進入編輯模式前的特效狀態
 
             // --- 跑馬燈參數與顏色變數的映射表 ---
             const marqueeParamColorMap = {
@@ -887,7 +878,8 @@
                 '%L_SX%': '--lunar-color', '%LM_C%': '--lunar-color', '%LD_C%': '--lunar-color', '%WEATHER_LOC%': '--holiday-color',
                 '%WEATHER_DESC%': '--holiday-color', '%TEMP%': '--holiday-color', '%SUNRISE%': '--solarterm-color',
                 '%SUNSET%': '--solarterm-color', '%MOON_PHASE%': '--moon-header-color', '%MOON_ICON%': '--moon-header-color',
-                '%MOON_DAY%': '--moon-header-color'
+                '%MOON_DAY%': '--moon-header-color',
+                '%SHICHEN_GZ%': '--lunar-color', '%SHICHEN_NAME%': '--lunar-color', '%SHICHEN_CHAR%': '--lunar-color'
             };
 
             // --- 預設設定 ---
@@ -910,30 +902,12 @@
                     "analogClock": { "visible": true, "colors": { "--analog-face-color": "transparent", "--analog-hand-color": "#ffffff", "--analog-second-hand-color": "#ff3333", "--analog-tick-color": "#cccccc", "--analog-number-color": "#ffffff" } },
                     "moonPhase": { "visible": true, "colors": { "--moon-light-color": "#f0e68c", "--moon-dark-color": "#222222", "--moon-header-color": "#a78bfa", "--moon-desc-color": "#d1d5db", "--moon-highlight-color": "#fcd34d" } },
                     "marquees": [
-                        { "text": "%YYYY%/%ROC_YY%年%MM%月%DD%日%W_SHORT%%ap_c%%hh%:%mm%農%LM_C%%LD_C%%MOON_ICON%%WEATHER_LOC%%WEATHER_DESC%%TEMP%°C日出%SUNRISE%日落%SUNSET%", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} },
+                        { "text": "%YYYY%/%ROC_YY%年%MM%月%DD%日%W_SHORT%%ap_c%%hh%%C(#00FF00, :)%%mm%%C(#FFFF00, 農曆)%%LM_C%%LD_C%%L_GZ%%MOON_ICON%%WEATHER_LOC%%WEATHER_DESC%%TEMP%°C日出%SUNRISE%日落%SUNSET%", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} },
                         { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }, { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} },
                         { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }, { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} },
                         { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }
                     ],
-                    "location": "taiwan",
-                    "effect": { "enabled": true, "trigger": "10s", "color": "#A0A0FF", "random": true }
-                }
-            };
-            
-            // ===================================================================
-            // 特效模組
-            // ===================================================================
-            const Effect = {
-                container: document.getElementById('teleport-effect-container'), styleTag: null,
-                init() { this.styleTag = document.createElement('style'); document.head.appendChild(this.styleTag); },
-                getRandomHexColor() { return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'); },
-                adjustColor(color, amount) { return '#' + color.replace(/^#/, '').replace(/../g, c => ('0' + Math.min(255, Math.max(0, parseInt(c, 16) + amount)).toString(16)).substr(-2)); },
-                trigger(targetElement) {
-                    if (!targetElement || this.container.classList.contains('active')) return;
-                    const targetRect = targetElement.getBoundingClientRect(); if(targetRect.width === 0 || targetRect.height === 0) return;
-                    this.container.innerHTML = ''; const { color: baseColor, random } = settingsState.effect; const c1 = random ? this.getRandomHexColor() : baseColor; const c2 = this.adjustColor(c1, -80); const c3 = this.adjustColor(c1, -160); const cx = targetRect.left + targetRect.width / 2; const cy = targetRect.top + targetRect.height / 2; const maxRadius = Math.ceil(Math.max(targetRect.width, targetRect.height) * 1.2);
-                    this.styleTag.innerHTML = `@keyframes teleport-circle-effect-dynamic { 0%{box-shadow:inset 0 0 0 ${maxRadius}px transparent;opacity:0} 5%{box-shadow:inset 0 0 0 ${maxRadius}px ${c1};opacity:1} 15%{box-shadow:inset 0 0 0 ${maxRadius*.8}px ${c2}} 25%{box-shadow:inset 0 0 0 ${maxRadius*.5}px ${c3}} 40%{box-shadow:inset 0 0 0 ${maxRadius*.1}px #000} 50%{box-shadow:inset 0 0 0 0 #000} 60%{box-shadow:inset 0 0 0 0 #000;opacity:1} 70%{box-shadow:inset 0 0 0 ${maxRadius*.1}px transparent} 80%{box-shadow:inset 0 0 0 ${maxRadius*.5}px transparent} 90%{box-shadow:inset 0 0 0 ${maxRadius*.8}px transparent} 100%{box-shadow:inset 0 0 0 ${maxRadius}px transparent;opacity:0} }`;
-                    const effectCircle = document.createElement('div'); effectCircle.className = 'teleport-circle'; effectCircle.style.animationName = 'teleport-circle-effect-dynamic'; effectCircle.style.left = `${cx}px`; effectCircle.style.top = `${cy}px`; effectCircle.style.width = `${maxRadius}px`; effectCircle.style.height = `${maxRadius}px`; this.container.appendChild(effectCircle); this.container.classList.add('active'); setTimeout(() => { this.container.classList.remove('active'); this.container.innerHTML = ''; }, 1800);
+                    "location": "taiwan"
                 }
             };
             
@@ -956,22 +930,7 @@
                 updateDigit(digitElement, number) { const pattern = this.segmentMap[number]; digitElement.querySelectorAll('.segment').forEach((segment, i) => { segment.style.opacity = pattern[i] ? '1' : '0.1'; }); },
                 update() {
                     const now = new Date(); let h = now.getHours(); const m = now.getMinutes(); const s = now.getSeconds();
-                    if (settingsState.effect.enabled && !isEditMode && s !== lastTriggerSecond) {
-                        const trigger = settingsState.effect.trigger; let shouldTrigger = false;
-                        switch(trigger) {
-                            case '10s': if (s % 10 === 0) shouldTrigger = true; break; case '30s': if (s === 0 || s === 30) shouldTrigger = true; break;
-                            case 'minute': if (s === 0) shouldTrigger = true; break; case '10m': if (s === 0 && m % 10 === 0) shouldTrigger = true; break;
-                            case '30m': if (s === 0 && (m === 0 || m === 30)) shouldTrigger = true; break; case 'hour': if (s === 0 && m === 0) shouldTrigger = true; break;
-                        }
-                        if (shouldTrigger) {
-                            const visibleWidgets = Array.from(allWidgetContainers()).filter(w => w.style.display !== 'none' && w.offsetWidth > 0 && w.offsetHeight > 0);
-                            if (visibleWidgets.length > 0) {
-                                const randomWidget = visibleWidgets[Math.floor(Math.random() * visibleWidgets.length)];
-                                Effect.trigger(randomWidget);
-                            }
-                            lastTriggerSecond = s;
-                        }
-                    } else if (!settingsState.effect.enabled) { lastTriggerSecond = -1; }
+                    
                     if (this.periodTextElement) { this.periodTextElement.textContent = TimeHelper.getPeriodText(h); }
                     let h12 = h % 12; if (h12 === 0) h12 = 12; const hStr = String(h12).padStart(2, '0'); const mStr = String(m).padStart(2, '0'); const sStr = String(s).padStart(2, '0');
                     this.updateDigit(this.digits.h1, parseInt(hStr[0])); this.updateDigit(this.digits.h2, parseInt(hStr[1])); this.updateDigit(this.digits.m1, parseInt(mStr[0])); this.updateDigit(this.digits.m2, parseInt(mStr[1])); this.updateDigit(this.digits.s1, parseInt(sStr[0])); this.updateDigit(this.digits.s2, parseInt(sStr[1]));
@@ -1005,9 +964,10 @@
 
                 getReplacements() {
                     const now = new Date(); const year = now.getFullYear(); const month = now.getMonth() + 1; const day = now.getDate(); const hours = now.getHours(); const minutes = now.getMinutes(); const seconds = now.getSeconds(); const dayOfWeek = now.getDay(); const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']; const dayOfWeekChars = ['日', '一', '二', '三', '四', '五', '六']; const amPm = hours >= 12 ? 'PM' : 'AM'; const h12 = hours % 12 || 12; const lunar = getLunarDate(now); const moonDetails = lunar ? (moonPhaseData[lunar.day] || { n: '未知', a: '' }) : { n: '', a: '' }; const moonName = moonDetails.a ? `${moonDetails.n}(${moonDetails.a})` : moonDetails.n; const yearGZ = tiangan.charAt((lunar.year - 4) % 10) + dizhi.charAt((lunar.year - 4) % 12); const yearSX = shengxiao.charAt((lunar.year - 4) % 12); const pad = (num) => String(num).padStart(2, '0'); const periodText = TimeHelper.getPeriodText(hours);
+                    const shichen = ShichenHelper.getData(now);
                     let weatherReplacements = { '%WEATHER_LOC%': Weather.getChineseLocationName(settingsState.location), '%WEATHER_DESC%': '讀取中', '%TEMP%': '...', '%SUNRISE%': '...', '%SUNSET%': '...' };
                     if (Weather.data) { const formatTime = (dateStr) => dateStr ? new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'N/A'; weatherReplacements = { '%WEATHER_LOC%': Weather.getChineseLocationName(settingsState.location), '%WEATHER_DESC%': Weather.getWeatherDescription(Weather.data.current.weather_code), '%TEMP%': Math.round(Weather.data.current.temperature_2m), '%SUNRISE%': formatTime(Weather.data.daily.sunrise[0]), '%SUNSET%': formatTime(Weather.data.daily.sunset[0]), }; }
-                    return { '%YYYY%': year, '%ROC_YY%': year - 1911, '%YY%': String(year).slice(-2), '%MM%': pad(month), '%M%': month, '%DD%': pad(day), '%D%': day, '%WEEKDAY%': weekdays[dayOfWeek], '%W_NUM%': dayOfWeek, '%W_SHORT%': `週${dayOfWeekChars[dayOfWeek]}`, '%W_CHAR%': dayOfWeekChars[dayOfWeek], '%L_GZ%': yearGZ, '%L_SX%': yearSX, '%LM_C%': lunar ? lunar.toString.split(/月/)[0] + '月' : '', '%LD_C%': lunar ? lunar.dayString : '', '%HH%': pad(hours), '%H%': hours, '%hh%': pad(h12), '%h%': h12, '%mm%': pad(minutes), '%m%': minutes, '%ss%': pad(seconds), '%s%': seconds, '%AP%': amPm, '%ap%': amPm.toLowerCase(), '%ap_c%': periodText, ...weatherReplacements, '%MOON_PHASE%': moonName, '%MOON_ICON%': lunar ? MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '1em', `marquee-${this.index}`) : '', '%MOON_DAY%': lunar ? lunar.day : '' };
+                    return { '%YYYY%': year, '%ROC_YY%': year - 1911, '%YY%': String(year).slice(-2), '%MM%': pad(month), '%M%': month, '%DD%': pad(day), '%D%': day, '%WEEKDAY%': weekdays[dayOfWeek], '%W_NUM%': dayOfWeek, '%W_SHORT%': `週${dayOfWeekChars[dayOfWeek]}`, '%W_CHAR%': dayOfWeekChars[dayOfWeek], '%L_GZ%': yearGZ, '%L_SX%': yearSX, '%LM_C%': lunar ? lunar.toString.split(/月/)[0] + '月' : '', '%LD_C%': lunar ? lunar.dayString : '', '%HH%': pad(hours), '%H%': hours, '%hh%': pad(h12), '%h%': h12, '%mm%': pad(minutes), '%m%': minutes, '%ss%': pad(seconds), '%s%': seconds, '%AP%': amPm, '%ap%': amPm.toLowerCase(), '%ap_c%': periodText, ...weatherReplacements, '%MOON_PHASE%': moonName, '%MOON_ICON%': lunar ? MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '1em', `marquee-${this.index}`) : '', '%MOON_DAY%': lunar ? lunar.day : '', '%SHICHEN_GZ%': shichen.gz, '%SHICHEN_NAME%': shichen.name, '%SHICHEN_CHAR%': shichen.char };
                 }
                 
                 buildInitialHTML(text) {
@@ -1015,63 +975,55 @@
                     const isVertical = settings.vertical;
                     const defaultColor = (settings.colors && settings.colors.default) ? settings.colors.default : '#FFFFFF';
                     const replacements = this.getReplacements();
-                    const allParamKeys = Object.keys(replacements);
                     
-                    const regex = new RegExp(`(%br%|${allParamKeys.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g');
-                
-                    const processStringToHtml = (str) => {
-                        const cleanStr = isVertical ? str : str.replace(/%br%/g, '');
-                        const parts = cleanStr.split(regex).filter(Boolean);
-                        let html = '';
-                        parts.forEach(part => {
-                            if (part === '%br%') {
-                                return;
+                    // 建立一個包含所有參數（標準、顏色、換行）的正規表示式
+                    const paramRegex = new RegExp(`%C\\(#([0-9a-fA-F]{6}),\\s*([^%)]+)\\)%|${Object.keys(replacements).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')}|%br%`, 'g');
+                    
+                    let resultHTML = '';
+                    let lastIndex = 0;
+                    let match;
+
+                    while ((match = paramRegex.exec(text)) !== null) {
+                        // 加入匹配項之前的純文字
+                        if (match.index > lastIndex) {
+                            const plainText = text.substring(lastIndex, match.index);
+                            resultHTML += `<span style="color:${defaultColor}">${plainText.replace(/ /g, '\u00A0')}</span>`;
+                        }
+
+                        const param = match[0];
+                        const colorHex = match[1];
+                        const colorText = match[2];
+
+                        if (colorHex && colorText) {
+                            // 處理新的顏色參數 %C(...)%
+                            resultHTML += `<span style="color:#${colorHex}">${colorText.replace(/ /g, '\u00A0')}</span>`;
+                        } else if (param === '%br%') {
+                            // 處理換行
+                            if (isVertical) {
+                                resultHTML += '</div><div>';
                             }
+                        } else {
+                            // 處理標準參數
+                            const cssVar = marqueeParamColorMap[param];
+                            const color = cssVar ? getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() : defaultColor;
+                            const replacementContent = replacements[param];
                             
-                            const sanitizedPart = part.replace(/ /g, '\u00A0');
-                            if (allParamKeys.includes(part)) {
-                                const cssVar = marqueeParamColorMap[part];
-                                const color = cssVar ? getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() : defaultColor;
-                                const content = replacements[part];
-                                if (part === '%MOON_ICON%') {
-                                    html += `<span data-time-key="${part}" style="display: inline-flex; align-items: center; justify-content: center;">${content}</span>`;
-                                } else {
-                                    html += `<span data-time-key="${part}" style="color:${color}">${content}</span>`;
-                                }
+                            if (param === '%MOON_ICON%') {
+                                resultHTML += `<span data-time-key="${param}" style="display: inline-flex; align-items: center; justify-content: center;">${replacementContent}</span>`;
                             } else {
-                                html += `<span style="color:${defaultColor}">${sanitizedPart}</span>`;
+                                resultHTML += `<span data-time-key="${param}" style="color:${color}">${replacementContent}</span>`;
                             }
-                        });
-                        return html;
-                    };
-                
-                    if (!isVertical) {
-                        return processStringToHtml(text);
+                        }
+                        lastIndex = paramRegex.lastIndex;
                     }
-                
-                    const lineBreakToken = '||LINE_BREAK||';
-                    let processedText = text.replace(/%br%/g, lineBreakToken);
+
+                    // 加入最後一個匹配項之後的任何剩餘純文字
+                    if (lastIndex < text.length) {
+                        const remainingText = text.substring(lastIndex);
+                        resultHTML += `<span style="color:${defaultColor}">${remainingText.replace(/ /g, '\u00A0')}</span>`;
+                    }
                     
-                    const autoBreakMarkers = ['農曆', '%MOON_ICON%', '%WEATHER_LOC%', '日出'];
-                    autoBreakMarkers.forEach(marker => {
-                        const escapedMarker = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                        const replaceRegex = new RegExp(`(?!^${escapedMarker}|${lineBreakToken.replace('|','\\|')}${escapedMarker})\\s*(${escapedMarker})`, 'g');
-                        processedText = processedText.replace(replaceRegex, `${lineBreakToken}$1`);
-                    });
-
-                    if (processedText.startsWith(lineBreakToken)) {
-                        processedText = processedText.substring(lineBreakToken.length);
-                    }
-
-                    const lines = processedText.split(lineBreakToken);
-                
-                    let finalHtml = '';
-                    lines.forEach(lineText => {
-                        if (!lineText.trim()) return;
-                        finalHtml += `<div>${processStringToHtml(lineText)}</div>`;
-                    });
-                
-                    return finalHtml;
+                    return isVertical ? `<div>${resultHTML}</div>` : resultHTML;
                 }
 
                 updateContent() {
@@ -1112,6 +1064,8 @@
                         instance1.innerHTML = this.buildInitialHTML(text);
                         this.innerDiv.appendChild(instance1);
                         
+                        instance1.getBoundingClientRect();
+
                         const contentMeasure = isVertical ? instance1.offsetHeight : instance1.offsetWidth;
                         const containerMeasure = isVertical ? this.mainContainer.offsetHeight : this.mainContainer.offsetWidth;
                         
@@ -1127,23 +1081,10 @@
                         
                         let fromTransform, toTransform;
                         switch(direction) {
-                            case 'right':
-                                fromTransform = `translateX(-${travelDistance}px)`;
-                                toTransform = `translateX(0px)`;
-                                break;
-                            case 'up':
-                                fromTransform = `translateY(0px)`;
-                                toTransform = `translateY(-${travelDistance}px)`;
-                                break;
-                            case 'down':
-                                fromTransform = `translateY(-${travelDistance}px)`;
-                                toTransform = `translateY(0px)`;
-                                break;
-                            case 'left':
-                            default:
-                                fromTransform = `translateX(0px)`;
-                                toTransform = `translateX(-${travelDistance}px)`;
-                                break;
+                            case 'right': fromTransform = `translateX(-${travelDistance}px)`; toTransform = `translateX(0px)`; break;
+                            case 'up': fromTransform = `translateY(0px)`; toTransform = `translateY(-${travelDistance}px)`; break;
+                            case 'down': fromTransform = `translateY(-${travelDistance}px)`; toTransform = `translateY(0px)`; break;
+                            default: fromTransform = `translateX(0px)`; toTransform = `translateX(-${travelDistance}px)`; break;
                         }
 
                         this.animationStyleTag.innerHTML = `@keyframes ${animName} { from { transform: ${fromTransform} translateZ(0); } to { transform: ${toTransform} translateZ(0); }}`;
@@ -1377,10 +1318,6 @@
                     const id = toggle.dataset.widgetToggle;
                     toggle.checked = transformStates[id]?.visible ?? false;
                 });
-                document.getElementById('effect-enabled').checked = settingsState.effect.enabled;
-                document.getElementById('effect-trigger').value = settingsState.effect.trigger;
-                document.getElementById('effect-color-input').value = settingsState.effect.color;
-                document.getElementById('effect-random-color').checked = settingsState.effect.random;
                 updateLocationSelectors();
                 loadMarqueeSettingsToUI(document.getElementById('marquee-selector').value);
             }
@@ -1444,7 +1381,6 @@
             marqueeVerticalToggle.addEventListener('change', e => {
                 const isVertical = e.target.checked;
                 updateDirectionOptions(isVertical);
-                // 自動設定預設方向並更新
                 marqueeDirectionSelect.value = isVertical ? 'up' : 'left';
                 updateMarqueeSettingFromUI();
             });
@@ -1487,10 +1423,6 @@
                     MarqueeManager.rebuildAllAnimations();
                     saveCurrentSettings();
                 }
-                if (e.target.id === 'effect-color-input') {
-                    settingsState.effect.color = e.target.value;
-                    saveCurrentSettings();
-                }
             });
 
             document.querySelector('#modal-backdrop-settings').addEventListener('change', e => {
@@ -1510,12 +1442,6 @@
                         saveCurrentSettings();
                     }
                 }
-                const effectEnabled = e.target.closest('#effect-enabled');
-                const effectTrigger = e.target.closest('#effect-trigger');
-                const effectRandom = e.target.closest('#effect-random-color');
-                if (effectEnabled) { settingsState.effect.enabled = effectEnabled.checked; saveCurrentSettings(); }
-                if (effectTrigger) { settingsState.effect.trigger = effectTrigger.value; saveCurrentSettings(); }
-                if (effectRandom) { settingsState.effect.random = effectRandom.checked; saveCurrentSettings(); }
             });
 
             function getRandomHexColor() { return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'); }
@@ -1535,18 +1461,17 @@
             // ===================================================================
             document.getElementById('edit-layout-btn').addEventListener('click', () => {
                 isEditMode = !isEditMode;
-
                 if (isEditMode) {
-                    wasEffectEnabledBeforeEdit = settingsState.effect.enabled;
-                    MarqueeManager.setPlayState(false); // 暫停跑馬燈
+                    MarqueeManager.setPlayState(false);
                 } else {
-                    settingsState.effect.enabled = wasEffectEnabledBeforeEdit;
-                    document.getElementById('effect-enabled').checked = wasEffectEnabledBeforeEdit;
-                    MarqueeManager.setPlayState(true); // 恢復跑馬燈
+                    MarqueeManager.setPlayState(true);
                     saveCurrentSettings(); 
+                    editToolbar.style.left = '50%';
+                    editToolbar.style.top = 'auto';
+                    editToolbar.style.bottom = '';
+                    editToolbar.style.transform = 'translateX(-50%)';
                 }
                 
-                document.getElementById('effect-enabled').disabled = isEditMode;
                 document.body.classList.toggle('edit-mode', isEditMode);
                 allWidgetContainers().forEach(c => c.classList.toggle('edit-mode', isEditMode));
                 document.getElementById('edit-icon').classList.toggle('display-none', isEditMode);
@@ -1584,43 +1509,28 @@
                 }); 
                 
                 const indicator = widgetEl.querySelector('.marquee-edit-indicator');
-                if (indicator) {
-                    indicator.style.transform = `scale(${inverseScale})`;
-                }
-
+                if (indicator) indicator.style.transform = `scale(${inverseScale})`;
                 widgetEl.style.borderWidth = `${2 * inverseScale}px`; 
             };
             const applyAllTransforms = () => { Object.keys(transformStates).forEach(id => applyTransform(document.getElementById(id), transformStates[id])); };
             
-            // --- [MODIFIED] 這是我修改的重點區域 ---
             function checkAndClampWidgetBounds(state) {
                 if (!state || !state.visible) return;
                 const winW = window.innerWidth;
                 const winH = window.innerHeight;
                 const renderedWidth = state.width * state.scale;
                 const renderedHeight = state.height * state.scale;
-            
-                // 允許跑出去的邊界百分比 (5%)
                 const overflowPercentage = 0.05; 
                 const marginW = renderedWidth * overflowPercentage;
                 const marginH = renderedHeight * overflowPercentage;
-            
                 const clamp = (val, min, max) => Math.max(min, Math.min(val, max));
-            
-                // 新的邊界限制
-                // 允許左邊界超出 marginW
                 const minLeft = -marginW; 
-                // 允許右邊界超出 marginW (物件左上角 + 物件寬度 = 物件右側位置)
                 const maxLeft = winW - renderedWidth + marginW; 
-                // 允許上邊界超出 marginH
                 const minTop = -marginH; 
-                 // 允許下邊界超出 marginH (物件左上角 + 物件高度 = 物件底部位置)
                 const maxTop = winH - renderedHeight + marginH;
-            
                 state.left = clamp(state.left, minLeft, maxLeft);
                 state.top = clamp(state.top, minTop, maxTop);
             }
-            // --- [MODIFIED] 修改結束 ---
 
             const ensureWidgetsInBounds = () => { Object.values(transformStates).forEach(checkAndClampWidgetBounds); applyAllTransforms(); };
             
@@ -1628,35 +1538,26 @@
                 if (!isEditMode) return;
                 const targetWidget = e.target.closest('.widget-container');
                 if (!targetWidget) return;
-            
                 allWidgetContainers().forEach(w => w.style.zIndex = '10');
                 targetWidget.style.zIndex = '100';
-            
-                e.preventDefault();
-                e.stopPropagation();
+                e.preventDefault(); e.stopPropagation();
                 activeWidget = { el: targetWidget, state: transformStates[targetWidget.id] };
-            
                 const handle = e.target.closest('.control-handle');
                 if (handle) {
                     if (handle.classList.contains('move-handle')) activeHandle = 'move';
                     else if (handle.classList.contains('resize-handle-w')) activeHandle = 'resize-w';
                     else if (handle.classList.contains('resize-handle-h')) activeHandle = 'resize-h';
-                } else {
-                    activeHandle = 'scale';
-                }
-            
+                } else { activeHandle = 'scale'; }
                 document.body.style.userSelect = 'none';
                 startX = (e.touches ? e.touches[0] : e).clientX;
                 startY = (e.touches ? e.touches[0] : e).clientY;
                 initialTransformState = { ...activeWidget.state };
-            
                 if (activeHandle === 'scale') {
                     const rect = activeWidget.el.getBoundingClientRect();
                     scaleCenterX = rect.left + rect.width / 2;
                     scaleCenterY = rect.top + rect.height / 2;
                     initialDist = Math.hypot(startX - scaleCenterX, startY - scaleCenterY);
                 }
-            
                 window.addEventListener('mousemove', onDragMove);
                 window.addEventListener('touchmove', onDragMove, { passive: false });
                 window.addEventListener('mouseup', onDragEnd);
@@ -1772,9 +1673,7 @@
             // 應用程式初始化
             // ===================================================================
             (function initializeApp() {
-                Effect.init();
-                MarqueeManager.init(); // 初始化跑馬燈管理器
-
+                MarqueeManager.init();
                 const autoSavedLayout = localStorage.getItem('widgets_autosave');
                 if (autoSavedLayout) {
                     const parsed = JSON.parse(autoSavedLayout);
