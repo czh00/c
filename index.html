@@ -959,29 +959,50 @@
                 update() {
                     const now = new Date(); let h = now.getHours(); const m = now.getMinutes(); const s = now.getSeconds();
                     
-                    // 定時特效觸發邏輯
+                    // --- 定時特效觸發邏輯 ---
                     const effectSettings = settingsState.timedEffect;
                     if (effectSettings && effectSettings.enabled && s > 0 && s % effectSettings.intervalSeconds === 0) {
                         // 避免重複觸發
                         if (Object.values(isWidgetAnimating).some(v => v)) return;
 
-                        const targets = ['calendar-container', 'moon-phase-container', 'led-clock-container', 'analog-clock-container'];
-                        const directions = ['up', 'down', 'left', 'right'];
-                        const direction = directions[Math.floor(Math.random() * directions.length)];
+                        // 收集所有可見的非跑馬燈元件，以及可見且「未捲動」的跑馬燈元件
+                        let targets = [];
+                        const nonMarqueeTargets = ['calendar-container', 'moon-phase-container', 'led-clock-container', 'analog-clock-container'];
 
+                        nonMarqueeTargets.forEach(id => {
+                            const state = transformStates[id];
+                            if (state && state.visible) {
+                                targets.push(id);
+                            }
+                        });
+                        
+                        MarqueeManager.instances.forEach(instance => {
+                            const state = transformStates[instance.container.id];
+                            // 只有當元件可見且內容未達捲動標準時，才加入特效目標
+                            if (state && state.visible && !instance.isScrolling) {
+                                targets.push(instance.container.id);
+                            }
+                        });
+
+                        // 如果沒有目標，則不執行
+                        if (targets.length === 0) return;
+
+                        const directions = ['up', 'down', 'left', 'right'];
                         const move = {
                             up: 'translateY(-100vh)',
                             down: 'translateY(100vh)',
                             left: 'translateX(-100vw)',
                             right: 'translateX(100vw)'
                         };
-
-                        const duration = 700; // ms, for a quick scroll
+                        const duration = 700;
 
                         targets.forEach(id => {
                             const el = document.getElementById(id);
-                            const state = transformStates[id];
-                            if (!el || !state || !state.visible || isWidgetAnimating[id]) return;
+                            // 再次確認 el 存在且沒有在動畫中
+                            if (!el || isWidgetAnimating[id]) return;
+
+                            // 為每個元件隨機選擇一個不同的方向
+                            const direction = directions[Math.floor(Math.random() * directions.length)];
 
                             isWidgetAnimating[id] = true;
 
@@ -999,14 +1020,14 @@
                                 el.style.transform = originalTransform;
 
                                 // 透過另一個短計時器恢復原始的 transition 屬性
-                                // 這是為了防止還原的動作產生動畫
                                 setTimeout(() => {
                                     el.style.transition = originalTransition;
                                     isWidgetAnimating[id] = false;
-                                }, 50); 
+                                }, 50);
                             }, duration);
                         });
                     }
+
 
                     if (this.periodTextElement) { this.periodTextElement.textContent = TimeHelper.getPeriodText(h); }
                     let h12 = h % 12; if (h12 === 0) h12 = 12; const hStr = String(h12).padStart(2, '0'); const mStr = String(m).padStart(2, '0'); const sStr = String(s).padStart(2, '0');
@@ -1037,6 +1058,7 @@
                     this.animationStyleTag = document.createElement('style');
                     document.head.appendChild(this.animationStyleTag);
                     this.rebuildTimeout = null;
+                    this.isScrolling = false; // 用於追蹤跑馬燈是否正在滾動
                 }
 
                 getReplacements() {
@@ -1120,6 +1142,7 @@
                 rebuildAnimation() {
                     clearTimeout(this.rebuildTimeout);
                     this.innerDiv.style.animation = '';
+                    this.isScrolling = false; // 預設為不滾動
                     
                     this.rebuildTimeout = setTimeout(() => {
                         this.animationStyleTag.innerHTML = '';
@@ -1148,6 +1171,7 @@
                         
                         if (contentMeasure <= containerMeasure) return;
                         
+                        this.isScrolling = true; // 內容超出容器，設定為滾動狀態
                         this.innerDiv.appendChild(instance1.cloneNode(true));
 
                         const travelDistance = contentMeasure;
