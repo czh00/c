@@ -22,11 +22,12 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
+
         /* --- 通用 Widget 容器樣式 --- */
         .widget-container {
             position: absolute;
             border: 2px dashed transparent;
-            transition: border-color 0.3s;
+            transition: border-color 0.3s, top 0.1s linear, left 0.1s linear;
             box-sizing: border-box; user-select: none;
             display: flex; flex-direction: column;
             background-color: transparent; z-index: 10;
@@ -104,6 +105,7 @@
         #calendar-body, #moon-calendar-body { flex-grow: 1; display: grid; grid-template-rows: repeat(6, 1fr); min-height: 0; }
         #calendar-container main, #moon-phase-container main { overflow: hidden; }
         .background-month { position: absolute; top: 58%; left: 50%; transform: translate(-50%, -50%); font-weight: 900; color: var(--month-color); z-index: 1; user-select: none; opacity: 0.8; line-height: 0.8; pointer-events: none; }
+        .calendar-moon-icon { position: absolute; top: 4px; right: 4px; line-height: 0; opacity: 0.7; z-index: 10; }
         
 
         /* --- LED 時鐘 spezifische樣式 --- */
@@ -236,6 +238,7 @@
         .grid-columns-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
         .grid-columns-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .grid-column-span-2 { grid-column: span 2 / span 2; }
+        .grid-column-span-4 { grid-column: span 4 / span 4; } /* 新增 */
 
         .p0 { padding: 0; margin: 0; }
         .padding-1 { padding: 0.25rem; }
@@ -391,6 +394,7 @@
         @media (min-width: 768px) {
             .md-grid-columns-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .md-grid-columns-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .md-grid-column-span-2 { grid-column: span 2 / span 2; } /* 新增 */
             .md-grid-column-span-12 { grid-column: span 12 / span 12; }
         }
         @media (min-width: 1024px) {
@@ -600,13 +604,31 @@
                             </h4>
                             <div class="space-y-3">
                                 <div class="display-flex justify-content-space-between align-items-center"><label>背景</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--bg-primary"></div>
-                                <div class="display-flex justify-content-space-between align-items-center"><label>年份</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--year-color"></div>
-                                <div class="display-flex justify-content-space-between align-items-center"><label>月份(大字)</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--month-color"></div>
+                                <div class="display-flex justify-content-space-between align-items-center"><label>年</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--year-color"></div>
+                                <div class="display-flex justify-content-space-between align-items-center"><label>月</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--month-color"></div>
+                                <div class="display-flex justify-content-space-between align-items-center"><label>日</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--day-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>星期</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--week-color"></div>
-                                <div class="display-flex justify-content-space-between align-items-center"><label>日期</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--day-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>農曆</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--lunar-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>節日</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--holiday-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>節氣</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--solarterm-color"></div>
+                                <div class="display-flex justify-content-space-between align-items-center">
+                                    <label for="calendar-show-moon-icon-toggle" class="cursor-pointer">顯示月相</label>
+                                    <input type="checkbox" id="calendar-show-moon-icon-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="calendar" data-key="showMoonIcon">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 月相設定 -->
+                        <div>
+                            <h4 class="font-size-lg font-weight-semibold color-gray-400 margin-bottom-2 border-bottom-1px border-color-gray-600 padding-bottom-1 display-flex align-items-center gap-2">
+                                <input type="checkbox" data-widget-toggle="moon-phase-container" class="form-checkbox">
+                                <span>月相</span>
+                            </h4>
+                            <div class="space-y-3">
+                                <div class="display-flex justify-content-space-between align-items-center"><label>亮部</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-light-color"></div>
+                                <div class="display-flex justify-content-space-between align-items-center"><label>暗部</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-dark-color"></div>
+                                <div class="display-flex justify-content-space-between align-items-center"><label>標題</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-header-color"></div>
+                                <div class="display-flex justify-content-space-between align-items-center"><label>描述</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-desc-color"></div>
+                                <div class="display-flex justify-content-space-between align-items-center"><label>高亮</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-highlight-color"></div>
                             </div>
                         </div>
                         <!-- LED 時鐘設定 -->
@@ -636,18 +658,19 @@
                                 <div class="display-flex justify-content-space-between align-items-center"><label>數字</label><input type="color" class="color-picker" data-setting-type="color" data-widget="analogClock" data-var="--analog-number-color"></div>
                             </div>
                         </div>
-                        <!-- 月相設定 -->
-                        <div>
-                            <h4 class="font-size-lg font-weight-semibold color-gray-400 margin-bottom-2 border-bottom-1px border-color-gray-600 padding-bottom-1 display-flex align-items-center gap-2">
-                                <input type="checkbox" data-widget-toggle="moon-phase-container" class="form-checkbox">
-                                <span>月相</span>
-                            </h4>
-                            <div class="space-y-3">
-                                <div class="display-flex justify-content-space-between align-items-center"><label>亮部</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-light-color"></div>
-                                <div class="display-flex justify-content-space-between align-items-center"><label>暗部</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-dark-color"></div>
-                                <div class="display-flex justify-content-space-between align-items-center"><label>標題</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-header-color"></div>
-                                <div class="display-flex justify-content-space-between align-items-center"><label>描述</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-desc-color"></div>
-                                <div class="display-flex justify-content-space-between align-items-center"><label>高亮</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-highlight-color"></div>
+                        
+                        <!-- 定時特效設定 -->
+                        <div class="grid-column-span-2 md-grid-column-span-4">
+                            <div class="display-flex align-items-center justify-content-space-between width-full padding-vertical-2 border-top-1px border-color-gray-700 margin-top-4">
+                                <div class="display-flex align-items-center gap-2">
+                                    <input type="checkbox" id="timed-effect-enabled-toggle" class="form-checkbox">
+                                    <label for="timed-effect-enabled-toggle" class="font-size-lg font-weight-semibold color-gray-400">定時特效</label>
+                                </div>
+                                <div class="display-flex align-items-center gap-2">
+                                    <label>觸發間隔</label>
+                                    <select id="timed-effect-interval-seconds"></select>
+                                    <span>秒</span>
+                                </div>
                             </div>
                         </div>
                      </div>
@@ -868,7 +891,8 @@
             let isEditMode = false;
             let activityTimeout;
             let transformStates = {};
-            let settingsState = {}; 
+            let settingsState = {};
+            let isWidgetAnimating = {};
 
             // --- 跑馬燈參數與顏色變數的映射表 ---
             const marqueeParamColorMap = {
@@ -886,7 +910,7 @@
             const userDefaultLayout = {
                 "transforms": {
                     "calendar-container": { "visible": true, "width": 520, "height": 650, "left": 550, "top": 320, "scale": 1 },
-                    "moon-phase-container": { "visible": true, "width": 520, "height": 650, "left": 10, "top": 320, "scale": 1 },
+                    "moon-phase-container": { "visible": false, "width": 520, "height": 650, "left": 10, "top": 320, "scale": 1 },
                     "led-clock-container": { "visible": true, "width": 700, "height": 320, "left": 10, "top": 10, "scale": 1 },
                     "analog-clock-container": { "visible": true, "width": 300, "height": 300, "left": 760, "top": 10, "scale": 1 },
                     "marquee-container-0": { "visible": true, "width": 1060, "height": 50, "left": 10, "top": 1000, "scale": 1 },
@@ -897,17 +921,21 @@
                     "marquee-container-5": { "visible": false, "width": 400, "height": 50, "left": 100, "top": 440, "scale": 1 }
                 },
                 "settings": {
-                    "calendar": { "visible": true, "colors": { "--bg-primary": "#000000", "--year-color": "#FF3333", "--month-color": "#555555", "--week-color": "#cccccc", "--day-color": "#ffffff", "--lunar-color": "#9CA3AF", "--bg-secondary": "transparent", "--bg-hover": "rgba(55, 65, 81, 0.5)", "--border-color": "#374151", "--text-primary": "#F3F4F6", "--text-secondary": "#9CA3AF", "--text-muted": "#6B7280", "--today-bg": "transparent", "--today-border": "#6366f1", "--holiday-color": "#6ee7b7", "--solarterm-color": "#fcd34d", "--yi-color": "#34D399", "--ji-color": "#F87171" } },
+                    "calendar": { "visible": true, "showMoonIcon": true, "colors": { "--bg-primary": "#000000", "--year-color": "#FF3333", "--month-color": "#555555", "--week-color": "#cccccc", "--day-color": "#ffffff", "--lunar-color": "#9CA3AF", "--bg-secondary": "transparent", "--bg-hover": "rgba(55, 65, 81, 0.5)", "--border-color": "#374151", "--text-primary": "#F3F4F6", "--text-secondary": "#9CA3AF", "--text-muted": "#6B7280", "--today-bg": "transparent", "--today-border": "#6366f1", "--holiday-color": "#6ee7b7", "--solarterm-color": "#fcd34d", "--yi-color": "#34D399", "--ji-color": "#F87171" } },
                     "ledClock": { "visible": true, "colors": { "--led-hour-color": "#00ff00", "--led-minute-color": "#00ff00", "--led-second-color": "#00ff00", "--led-colon-color": "#00ff00", "--led-period-color": "#00ff00" } },
                     "analogClock": { "visible": true, "colors": { "--analog-face-color": "transparent", "--analog-hand-color": "#ffffff", "--analog-second-hand-color": "#ff3333", "--analog-tick-color": "#cccccc", "--analog-number-color": "#ffffff" } },
-                    "moonPhase": { "visible": true, "colors": { "--moon-light-color": "#f0e68c", "--moon-dark-color": "#222222", "--moon-header-color": "#a78bfa", "--moon-desc-color": "#d1d5db", "--moon-highlight-color": "#fcd34d" } },
+                    "moonPhase": { "visible": false, "colors": { "--moon-light-color": "#f0e68c", "--moon-dark-color": "#222222", "--moon-header-color": "#a78bfa", "--moon-desc-color": "#d1d5db", "--moon-highlight-color": "#fcd34d" } },
                     "marquees": [
                         { "text": "%YYYY%/%ROC_YY%年%MM%月%DD%日%br%%W_SHORT%%ap_c%%hh%%C(#00FF00, :)%%mm%%br%%C(#FFFF00, 農曆)%%LM_C%%LD_C%%L_GZ%%MOON_ICON%%br%%WEATHER_LOC%%WEATHER_DESC%%TEMP%°C%br%日出%SUNRISE%%br%日落%SUNSET%", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} },
                         { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }, { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} },
                         { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }, { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} },
                         { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }
                     ],
-                    "location": "taiwan"
+                    "location": "taiwan",
+                    "timedEffect": {
+                        "enabled": true,
+                        "intervalSeconds": 30
+                    }
                 }
             };
             
@@ -931,6 +959,55 @@
                 update() {
                     const now = new Date(); let h = now.getHours(); const m = now.getMinutes(); const s = now.getSeconds();
                     
+                    // 定時特效觸發邏輯
+                    const effectSettings = settingsState.timedEffect;
+                    if (effectSettings && effectSettings.enabled && s > 0 && s % effectSettings.intervalSeconds === 0) {
+                        // 避免重複觸發
+                        if (Object.values(isWidgetAnimating).some(v => v)) return;
+
+                        const targets = ['calendar-container', 'moon-phase-container', 'led-clock-container', 'analog-clock-container'];
+                        const directions = ['up', 'down', 'left', 'right'];
+                        const direction = directions[Math.floor(Math.random() * directions.length)];
+
+                        const move = {
+                            up: 'translateY(-100vh)',
+                            down: 'translateY(100vh)',
+                            left: 'translateX(-100vw)',
+                            right: 'translateX(100vw)'
+                        };
+
+                        const duration = 700; // ms, for a quick scroll
+
+                        targets.forEach(id => {
+                            const el = document.getElementById(id);
+                            const state = transformStates[id];
+                            if (!el || !state || !state.visible || isWidgetAnimating[id]) return;
+
+                            isWidgetAnimating[id] = true;
+
+                            const originalTransform = el.style.transform;
+                            const originalTransition = el.style.transition;
+
+                            // 套用 transition 並移動
+                            el.style.transition = `transform ${duration}ms ease-in-out`;
+                            el.style.transform = `${originalTransform} ${move[direction]}`;
+
+                            // 設定計時器以還原樣式
+                            setTimeout(() => {
+                                // 無 transition 狀態下還原
+                                el.style.transition = 'none';
+                                el.style.transform = originalTransform;
+
+                                // 透過另一個短計時器恢復原始的 transition 屬性
+                                // 這是為了防止還原的動作產生動畫
+                                setTimeout(() => {
+                                    el.style.transition = originalTransition;
+                                    isWidgetAnimating[id] = false;
+                                }, 50); 
+                            }, duration);
+                        });
+                    }
+
                     if (this.periodTextElement) { this.periodTextElement.textContent = TimeHelper.getPeriodText(h); }
                     let h12 = h % 12; if (h12 === 0) h12 = 12; const hStr = String(h12).padStart(2, '0'); const mStr = String(m).padStart(2, '0'); const sStr = String(s).padStart(2, '0');
                     this.updateDigit(this.digits.h1, parseInt(hStr[0])); this.updateDigit(this.digits.h2, parseInt(hStr[1])); this.updateDigit(this.digits.m1, parseInt(mStr[0])); this.updateDigit(this.digits.m2, parseInt(mStr[1])); this.updateDigit(this.digits.s1, parseInt(sStr[0])); this.updateDigit(this.digits.s2, parseInt(sStr[1]));
@@ -941,7 +1018,7 @@
             // ===================================================================
             // 月曆模組
             // ===================================================================
-            const Calendar = { body: document.getElementById('calendar-body'), yearHeader: document.getElementById('year-header'), backgroundMonth: document.getElementById('background-month'), currentDate: new Date(), init() { this.render(); document.getElementById('prev-month').addEventListener('click', () => { if(!isEditMode) { this.currentDate.setMonth(this.currentDate.getMonth() - 1); this.render(); } }); document.getElementById('next-month').addEventListener('click', () => { if(!isEditMode) { this.currentDate.setMonth(this.currentDate.getMonth() + 1); this.render(); } }); document.getElementById('back-to-today').addEventListener('click', () => { if(!isEditMode) { this.currentDate = new Date(); this.render(); } }); }, render() { this.body.innerHTML = ''; const year = this.currentDate.getFullYear(); const month = this.currentDate.getMonth(); this.yearHeader.textContent = year; this.backgroundMonth.textContent = month + 1; const firstDayOfMonth = new Date(year, month, 1); const startDayOfWeek = firstDayOfMonth.getDay(); const startDate = new Date(year, month, 1 - startDayOfWeek); const today = new Date(); today.setHours(0,0,0,0); for (let i = 0; i < 42; i++) { const currentCellDate = new Date(startDate); currentCellDate.setDate(startDate.getDate() + i); const cell = document.createElement('div'); cell.className = 'calendar-day' + (isEditMode ? ' edit-mode-active' : '') + (currentCellDate.getMonth() !== month ? ' other-month' : '') + (currentCellDate.getTime() === today.getTime() ? ' today' : ''); const date = currentCellDate.getDate(); const lunar = getLunarDate(currentCellDate); const solarTerm = getSolarTerm(currentCellDate.getFullYear(), currentCellDate.getMonth() + 1, date); const holiday = getHoliday(currentCellDate); cell.innerHTML = `<span class="day-number" style="color: var(--day-color);">${date}</span><div class="space-y-px"><div class="lunar-date">${lunar.day === 1 ? lunar.toString.substring(0, lunar.isLeap ? 3 : 2) : lunar.dayString}</div>${solarTerm ? `<div class="solarterm-text truncate" data-key="${solarTerm}">${solarTerm}</div>` : ''}${holiday ? `<div class="holiday-text truncate" data-key="${holiday}">${holiday}</div>` : ''}</div>`; cell.dataset.date = currentCellDate.toISOString(); this.body.appendChild(cell); } } };
+            const Calendar = { body: document.getElementById('calendar-body'), yearHeader: document.getElementById('year-header'), backgroundMonth: document.getElementById('background-month'), currentDate: new Date(), init() { this.render(); document.getElementById('prev-month').addEventListener('click', () => { if(!isEditMode) { this.currentDate.setMonth(this.currentDate.getMonth() - 1); this.render(); } }); document.getElementById('next-month').addEventListener('click', () => { if(!isEditMode) { this.currentDate.setMonth(this.currentDate.getMonth() + 1); this.render(); } }); document.getElementById('back-to-today').addEventListener('click', () => { if(!isEditMode) { this.currentDate = new Date(); this.render(); } }); }, render() { this.body.innerHTML = ''; const year = this.currentDate.getFullYear(); const month = this.currentDate.getMonth(); this.yearHeader.textContent = year; this.backgroundMonth.textContent = month + 1; const firstDayOfMonth = new Date(year, month, 1); const startDayOfWeek = firstDayOfMonth.getDay(); const startDate = new Date(year, month, 1 - startDayOfWeek); const today = new Date(); today.setHours(0,0,0,0); for (let i = 0; i < 42; i++) { const currentCellDate = new Date(startDate); currentCellDate.setDate(startDate.getDate() + i); const cell = document.createElement('div'); cell.className = 'calendar-day' + (isEditMode ? ' edit-mode-active' : '') + (currentCellDate.getMonth() !== month ? ' other-month' : '') + (currentCellDate.getTime() === today.getTime() ? ' today' : ''); const date = currentCellDate.getDate(); const lunar = getLunarDate(currentCellDate); const solarTerm = getSolarTerm(currentCellDate.getFullYear(), currentCellDate.getMonth() + 1, date); const holiday = getHoliday(currentCellDate); const showMoonIcon = settingsState.calendar?.showMoonIcon ?? false; const moonIconHTML = showMoonIcon ? `<div class="calendar-moon-icon">${MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '16px', `main-cal-${i}`)}</div>` : ''; cell.innerHTML = `${moonIconHTML}<span class="day-number" style="color: var(--day-color);">${date}</span><div class="space-y-px"><div class="lunar-date">${lunar.day === 1 ? lunar.toString.substring(0, lunar.isLeap ? 3 : 2) : lunar.dayString}</div>${solarTerm ? `<div class="solarterm-text truncate" data-key="${solarTerm}">${solarTerm}</div>` : ''}${holiday ? `<div class="holiday-text truncate" data-key="${holiday}">${holiday}</div>` : ''}</div>`; cell.dataset.date = currentCellDate.toISOString(); this.body.appendChild(cell); } } };
 
             // ===================================================================
             // 指針時鐘模組
@@ -1268,6 +1345,7 @@
             document.body.addEventListener('click',(e)=>{const cell=e.target.closest('.calendar-day');const key=e.target.dataset.key;if(key&&explanations[key]){e.stopPropagation();showExplanationModal(key,explanations[key]);return}if(cell&&cell.closest('#calendar-body')&&cell.dataset.date){showDayDetailModal(cell.dataset.date)}const closeModalBtn=e.target.closest('[data-close-modal]');if(closeModalBtn){hideModal(closeModalBtn.dataset.closeModal)}if(e.target.classList.contains('modal-backdrop')){hideModal(e.target.id)}});
             document.getElementById('marquee-params-btn').addEventListener('click', () => showModal('modal-backdrop-marquee-params'));
             document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){['modal-backdrop-day','modal-backdrop-picker','modal-backdrop-explanation','modal-backdrop-settings','modal-backdrop-prompt', 'modal-backdrop-marquee-params'].forEach(hideModal)}});
+
             function resetActivityTimeout(){actionButtons.classList.remove('hidden');clearTimeout(activityTimeout);if(!isEditMode){activityTimeout=setTimeout(()=>actionButtons.classList.add('hidden'),3000)}}
             ['mousemove','mousedown','touchstart','keydown'].forEach(event=>document.addEventListener(event,resetActivityTimeout));
             document.getElementById('fullscreen-btn').addEventListener('click',()=>{if(!document.fullscreenElement){document.documentElement.requestFullscreen()}else{document.exitFullscreen()}});
@@ -1318,8 +1396,22 @@
                     const id = toggle.dataset.widgetToggle;
                     toggle.checked = transformStates[id]?.visible ?? false;
                 });
+                document.querySelectorAll('#modal-backdrop-settings input[data-setting-type="toggle"]').forEach(toggle => {
+                    const widget = toggle.dataset.widget;
+                    const key = toggle.dataset.key;
+                    if (settingsState[widget] && typeof settingsState[widget][key] !== 'undefined') {
+                        toggle.checked = settingsState[widget][key];
+                    }
+                });
                 updateLocationSelectors();
                 loadMarqueeSettingsToUI(document.getElementById('marquee-selector').value);
+                
+                // 更新定時特效 UI
+                const teSettings = settingsState.timedEffect;
+                if (teSettings) {
+                    document.getElementById('timed-effect-enabled-toggle').checked = teSettings.enabled;
+                    document.getElementById('timed-effect-interval-seconds').value = teSettings.intervalSeconds;
+                }
             }
 
             // --- Marquee 設定 UI ---
@@ -1440,6 +1532,18 @@
                             }
                         }
                         saveCurrentSettings();
+                    }
+                }
+                const settingToggle = e.target.closest('input[data-setting-type="toggle"]');
+                if (settingToggle) {
+                    const widget = settingToggle.dataset.widget;
+                    const key = settingToggle.dataset.key;
+                    if (settingsState[widget]) {
+                        settingsState[widget][key] = settingToggle.checked;
+                        saveCurrentSettings();
+                        if (widget === 'calendar') {
+                            Calendar.render();
+                        }
                     }
                 }
             });
@@ -1670,6 +1774,30 @@
             document.getElementById('useCurrentLocationBtn').addEventListener('click', () => { if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(pos => { fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&localityLanguage=en`).then(r => r.json()).then(geo => { const city = geo.locality || geo.city; if (city) { handleLocationChange(city); updateLocationSelectors(); } }); }); } });
 
             // ===================================================================
+            // 定時特效設定
+            // ===================================================================
+            function setupTimedEffectControls() {
+                const effectEnabled = document.getElementById('timed-effect-enabled-toggle');
+                const effectInterval = document.getElementById('timed-effect-interval-seconds');
+
+                [10, 15, 20, 30, 60].forEach(val => {
+                    effectInterval.add(new Option(String(val), val));
+                });
+
+                const updateSetting = () => {
+                    if (!settingsState.timedEffect) {
+                        settingsState.timedEffect = JSON.parse(JSON.stringify(userDefaultLayout.settings.timedEffect));
+                    }
+                    settingsState.timedEffect.enabled = effectEnabled.checked;
+                    settingsState.timedEffect.intervalSeconds = parseInt(effectInterval.value, 10);
+                    saveCurrentSettings();
+                };
+
+                effectEnabled.addEventListener('change', updateSetting);
+                effectInterval.addEventListener('change', updateSetting);
+            }
+
+            // ===================================================================
             // 應用程式初始化
             // ===================================================================
             (function initializeApp() {
@@ -1700,6 +1828,7 @@
                 AnalogClock.init();
                 Weather.init();
                 MoonPhaseWidget.init();
+                setupTimedEffectControls();
                 resetActivityTimeout();
                 updateLayoutSelector();
                 saveCurrentSettings(); 
