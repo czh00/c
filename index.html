@@ -182,9 +182,10 @@
         .yi-tag { background-color: var(--yi-color); color: var(--bg-primary); }
         .ji-tag { background-color: var(--ji-color); color: white; }
         .yi-text, .ji-text { font-size: 0.8em; padding: 0; border-radius: 0; cursor: help; }
-        .param-list { list-style: disc; list-style-position: inside; margin-top: 1rem; color: #d1d5db; }
+        .param-list { list-style: none; padding-left: 0; margin-top: 1rem; color: #d1d5db; }
         .param-item { font-size: 0.875rem; margin-bottom: 0.5rem; }
-        .param-item strong { color: #f7fafc; }
+        .param-item strong { color: #f7fafc; min-width: 120px; display: inline-block; }
+        .param-group-title { font-weight: bold; color: #a5b4fc; margin-top: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #4b5563; }
         .yi-text { color: var(--yi-color); background-color: rgba(52, 211, 153, 0.1); }
         .ji-text { color: var(--ji-color); background-color: rgba(248, 113, 113, 0.1); }
         .today .yi-text, .today .ji-text { background-color: rgba(200, 210, 254, 0.2); }
@@ -707,11 +708,15 @@
                                 <label for="marquee-speed-input" class="flex-shrink-0">速度</label>
                                 <input type="range" id="marquee-speed-input" min="1" max="1000" class="width-full">
                             </div>
-                            <!-- Group 3: Vertical & Color -->
+                            <!-- Group 3: Controls -->
                             <div class="display-flex align-items-center column-gap-4">
-                                <label class="display-flex align-items-center space-x-2 cursor-pointer flex-shrink-0"><input type="checkbox" id="marquee-vertical-toggle" class="form-checkbox"><span>直向捲動</span></label>
+                                <label class="display-flex align-items-center space-x-2 cursor-pointer flex-shrink-0"><input type="checkbox" id="marquee-vertical-toggle" class="form-checkbox"><span>直向</span></label>
+                                <div class="display-flex align-items-center">
+                                    <label for="marquee-direction-select" class="flex-shrink-0 margin-right-2">方向:</label>
+                                    <select id="marquee-direction-select"></select>
+                                </div>
                                 <div class="display-flex align-items-center column-gap-2">
-                                    <label for="marquee-default-color">文字顏色</label>
+                                    <label for="marquee-default-color">顏色</label>
                                     <input type="color" id="marquee-default-color" class="color-picker">
                                 </div>
                             </div>
@@ -755,7 +760,62 @@
 
     <div id="modal-backdrop-explanation" class="modal-backdrop"><div class="modal-content max-width-sm"><div class="padding-6"><div class="display-flex justify-content-space-between align-items-center margin-bottom-3"><h3 id="explanation-title" class="font-size-xl font-weight-bold color-indigo-300"></h3><button data-close-modal="modal-backdrop-explanation" class="color-gray-400 hover-color-white font-size-3xl line-height-none">&times;</button></div><p id="explanation-content" class="color-gray-300 line-height-relaxed"></p></div></div></div>
     <div id="modal-backdrop-prompt" class="modal-backdrop"><div class="modal-content max-width-sm"><div class="padding-6"><h3 id="prompt-title" class="font-size-xl font-weight-bold color-indigo-300 margin-bottom-4"></h3><p id="prompt-message" class="color-gray-300 margin-bottom-4"></p><input id="prompt-input" type="text" class="width-full bg-gray-700 border-1px border-color-gray-600 border-radius-sm padding-horizontal-3 padding-vertical-2 color-white margin-bottom-4"><div class="display-flex justify-content-flex-end gap-2"><button id="prompt-cancel-btn" class="toolbar-btn">取消</button><button id="prompt-ok-btn" class="toolbar-btn">確定</button></div></div></div></div>
-    <div id="modal-backdrop-marquee-params" class="modal-backdrop"><div class="modal-content max-width-md"><div class="padding-6"><div class="display-flex justify-content-space-between align-items-center margin-bottom-4"><h3 class="font-size-xl font-weight-bold color-indigo-300">可用參數列表</h3><button data-close-modal="modal-backdrop-marquee-params" class="color-gray-400 hover-color-white font-size-3xl line-height-none">&times;</button></div><ul class="param-list max-height-80 overflow-y-auto padding-right-2"><li class="param-item"><strong>%YYYY%</strong>: 四位數西元年</li><li class="param-item"><strong>%ROC_YY%</strong>: 民國年</li><li class="param-item"><strong>%MM%</strong>: 兩位數月份</li><li class="param-item"><strong>%DD%</strong>: 兩位數日期</li><li class="param-item"><strong>%HH%</strong>: 24小時制</li><li class="param-item"><strong>%hh%</strong>: 12小時制</li><li class="param-item"><strong>%mm%</strong>: 分鐘</li><li class="param-item"><strong>%ss%</strong>: 秒數</li><li class="param-item"><strong>%WEEKDAY%</strong>: 中文全稱星期</li><li class="param-item"><strong>%W_SHORT%</strong>: 中文簡稱星期</li><li class="param-item"><strong>%ap_c%</strong>: 中文時段</li><li class="param-item"><strong>%br%</strong>: (僅直向)手動換行</li><li class="param-item margin-top-4 padding-top-4 border-top-1px border-color-gray-700"><strong>%L_GZ%</strong>: 農曆年干支</li><li class="param-item"><strong>%L_SX%</strong>: 生肖</li><li class="param-item"><strong>%LM_C%</strong>: 農曆中文月份</li><li class="param-item"><strong>%LD_C%</strong>: 農曆中文日期</li><li class="param-item margin-top-4 padding-top-4 border-top-1px border-color-gray-700"><strong>%MOON_PHASE%</strong>: 當日月相名稱 (例: 望月(滿月))</li><li class="param-item"><strong>%MOON_ICON%</strong>: 當日月相圖示</li><li class="param-item"><strong>%MOON_DAY%</strong>: 農曆日期 (數字)</li><li class="param-item margin-top-4 padding-top-4 border-top-1px border-color-gray-700"><strong>%WEATHER_LOC%</strong>: 地點</li><li class="param-item"><strong>%WEATHER_DESC%</strong>: 天氣描述</li><li class="param-item"><strong>%TEMP%</strong>: 氣溫(°C)</li><li class="param-item"><strong>%SUNRISE%</strong>: 日出 (HH:mm)</li><li class="param-item"><strong>%SUNSET%</strong>: 日落 (HH:mm)</li></ul></div></div></div>
+    
+    <div id="modal-backdrop-marquee-params" class="modal-backdrop">
+        <div class="modal-content max-width-md">
+            <div class="padding-6">
+                <div class="display-flex justify-content-space-between align-items-center margin-bottom-4">
+                    <h3 class="font-size-xl font-weight-bold color-indigo-300">跑馬燈可用參數列表</h3>
+                    <button data-close-modal="modal-backdrop-marquee-params" class="color-gray-400 hover-color-white font-size-3xl line-height-none">&times;</button>
+                </div>
+                <ul class="param-list max-height-80 overflow-y-auto padding-right-2">
+                    <li class="param-group-title">西元日期與時間</li>
+                    <li class="param-item"><strong>%YYYY%</strong>: 四位數西元年 (例如: 2024)</li>
+                    <li class="param-item"><strong>%YY%</strong>: 兩位數西元年 (例如: 24)</li>
+                    <li class="param-item"><strong>%ROC_YY%</strong>: 民國年 (例如: 113)</li>
+                    <li class="param-item"><strong>%MM%</strong>: 兩位數月份 (例如: 09)</li>
+                    <li class="param-item"><strong>%M%</strong>: 月份，無前導零 (例如: 9)</li>
+                    <li class="param-item"><strong>%DD%</strong>: 兩位數日期 (例如: 08)</li>
+                    <li class="param-item"><strong>%D%</strong>: 日期，無前導零 (例如: 8)</li>
+                    <li class="param-item"><strong>%WEEKDAY%</strong>: 星期全名 (例如: 星期日)</li>
+                    <li class="param-item"><strong>%W_SHORT%</strong>: 星期簡稱 (例如: 週日)</li>
+                    <li class="param-item"><strong>%W_CHAR%</strong>: 星期單字 (例如: 日)</li>
+                    <li class="param-item"><strong>%W_NUM%</strong>: 星期數字 (0 為星期日)</li>
+                    <li class="param-item"><strong>%HH%</strong>: 24小時制，兩位數 (例如: 23)</li>
+                    <li class="param-item"><strong>%H%</strong>: 24小時制，無前導零 (例如: 23)</li>
+                    <li class="param-item"><strong>%hh%</strong>: 12小時制，兩位數 (例如: 11)</li>
+                    <li class="param-item"><strong>%h%</strong>: 12小時制，無前導零 (例如: 11)</li>
+                    <li class="param-item"><strong>%mm%</strong>: 分鐘，兩位數 (例如: 05)</li>
+                    <li class="param-item"><strong>%m%</strong>: 分鐘，無前導零 (例如: 5)</li>
+                    <li class="param-item"><strong>%ss%</strong>: 秒數，兩位數 (例如: 01)</li>
+                    <li class="param-item"><strong>%s%</strong>: 秒數，無前導零 (例如: 1)</li>
+                    <li class="param-item"><strong>%ap_c%</strong>: 中文時段 (例如: 上午, 下午)</li>
+                    <li class="param-item"><strong>%AP%</strong>: 英文時段，大寫 (AM/PM)</li>
+                    <li class="param-item"><strong>%ap%</strong>: 英文時段，小寫 (am/pm)</li>
+                    <li class="param-item"><strong>%br%</strong>: (僅直向)手動換行</li>
+
+                    <li class="param-group-title">農曆與生肖</li>
+                    <li class="param-item"><strong>%L_GZ%</strong>: 農曆年干支 (例如: 甲辰)</li>
+                    <li class="param-item"><strong>%L_SX%</strong>: 生肖 (例如: 龍)</li>
+                    <li class="param-item"><strong>%LM_C%</strong>: 農曆中文月份 (例如: 八月)</li>
+                    <li class="param-item"><strong>%LD_C%</strong>: 農曆中文日期 (例如: 初三)</li>
+
+                    <li class="param-group-title">月相</li>
+                    <li class="param-item"><strong>%MOON_PHASE%</strong>: 當日月相名稱 (例: 望月(滿月))</li>
+                    <li class="param-item"><strong>%MOON_ICON%</strong>: 當日月相圖示 (SVG圖示)</li>
+                    <li class="param-item"><strong>%MOON_DAY%</strong>: 農曆日期 (數字, 1-30)</li>
+
+                    <li class="param-group-title">天氣資訊</li>
+                    <li class="param-item"><strong>%WEATHER_LOC%</strong>: 地點</li>
+                    <li class="param-item"><strong>%WEATHER_DESC%</strong>: 天氣描述 (例如: 晴)</li>
+                    <li class="param-item"><strong>%TEMP%</strong>: 氣溫(°C)</li>
+                    <li class="param-item"><strong>%SUNRISE%</strong>: 日出時間 (HH:mm)</li>
+                    <li class="param-item"><strong>%SUNSET%</strong>: 日落時間 (HH:mm)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -850,10 +910,10 @@
                     "analogClock": { "visible": true, "colors": { "--analog-face-color": "transparent", "--analog-hand-color": "#ffffff", "--analog-second-hand-color": "#ff3333", "--analog-tick-color": "#cccccc", "--analog-number-color": "#ffffff" } },
                     "moonPhase": { "visible": true, "colors": { "--moon-light-color": "#f0e68c", "--moon-dark-color": "#222222", "--moon-header-color": "#a78bfa", "--moon-desc-color": "#d1d5db", "--moon-highlight-color": "#fcd34d" } },
                     "marquees": [
-                        { "text": "%YYYY%/%ROC_YY%年%MM%月%DD%日%W_SHORT%%ap_c%%hh%:%mm%農%LM_C%%LD_C%%MOON_ICON%%WEATHER_LOC%%WEATHER_DESC%%TEMP%°C日出%SUNRISE%日落%SUNSET%", "speed": 80, "vertical": false, "colors": {"default":"#FFFFFF"} },
-                        { "text": "", "speed": 80, "vertical": false, "colors": {"default":"#FFFFFF"} }, { "text": "", "speed": 80, "vertical": false, "colors": {"default":"#FFFFFF"} },
-                        { "text": "", "speed": 80, "vertical": false, "colors": {"default":"#FFFFFF"} }, { "text": "", "speed": 80, "vertical": false, "colors": {"default":"#FFFFFF"} },
-                        { "text": "", "speed": 80, "vertical": false, "colors": {"default":"#FFFFFF"} }
+                        { "text": "%YYYY%/%ROC_YY%年%MM%月%DD%日%W_SHORT%%ap_c%%hh%:%mm%農%LM_C%%LD_C%%MOON_ICON%%WEATHER_LOC%%WEATHER_DESC%%TEMP%°C日出%SUNRISE%日落%SUNSET%", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} },
+                        { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }, { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} },
+                        { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }, { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} },
+                        { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }
                     ],
                     "location": "taiwan",
                     "effect": { "enabled": true, "trigger": "10s", "color": "#A0A0FF", "random": true }
@@ -1040,7 +1100,7 @@
                         const settings = settingsState.marquees[this.index];
                         if (!settings || !settings.text || !settings.text.trim()) return;
                         
-                        const { text, vertical: isVertical, speed } = settings;
+                        const { text, vertical: isVertical, speed, direction } = settings;
                         this.innerDiv.style.flexDirection = isVertical ? 'column' : 'row';
                         this.innerDiv.style.width = isVertical ? '100%' : 'fit-content';
                         this.mainContainer.style.alignItems = isVertical ? 'flex-start' : 'center';
@@ -1052,7 +1112,6 @@
                         instance1.innerHTML = this.buildInitialHTML(text);
                         this.innerDiv.appendChild(instance1);
                         
-                        // --- 修改: 使用 offsetHeight/offsetWidth 進行測量 ---
                         const contentMeasure = isVertical ? instance1.offsetHeight : instance1.offsetWidth;
                         const containerMeasure = isVertical ? this.mainContainer.offsetHeight : this.mainContainer.offsetWidth;
                         
@@ -1065,9 +1124,29 @@
                         
                         const duration = travelDistance / (parseInt(speed, 10) || 80);
                         const animName = `marquee-${this.index}-${Date.now()}`;
-                        const transformProp = isVertical ? 'translateY' : 'translateX';
                         
-                        this.animationStyleTag.innerHTML = `@keyframes ${animName} { from { transform: ${transformProp}(0) translateZ(0); } to { transform: ${transformProp}(-${travelDistance}px) translateZ(0); }}`;
+                        let fromTransform, toTransform;
+                        switch(direction) {
+                            case 'right':
+                                fromTransform = `translateX(-${travelDistance}px)`;
+                                toTransform = `translateX(0px)`;
+                                break;
+                            case 'up':
+                                fromTransform = `translateY(0px)`;
+                                toTransform = `translateY(-${travelDistance}px)`;
+                                break;
+                            case 'down':
+                                fromTransform = `translateY(-${travelDistance}px)`;
+                                toTransform = `translateY(0px)`;
+                                break;
+                            case 'left':
+                            default:
+                                fromTransform = `translateX(0px)`;
+                                toTransform = `translateX(-${travelDistance}px)`;
+                                break;
+                        }
+
+                        this.animationStyleTag.innerHTML = `@keyframes ${animName} { from { transform: ${fromTransform} translateZ(0); } to { transform: ${toTransform} translateZ(0); }}`;
                         this.innerDiv.style.animation = `${animName} ${duration}s linear infinite`;
                         this.innerDiv.style.animationPlayState = isEditMode ? 'paused' : 'running';
                     }, 50);
@@ -1313,12 +1392,24 @@
             const marqueeVerticalToggle = document.getElementById('marquee-vertical-toggle');
             const marqueeEnabledToggle = document.getElementById('marquee-enabled-toggle');
             const marqueeColorInput = document.getElementById('marquee-default-color');
+            const marqueeDirectionSelect = document.getElementById('marquee-direction-select');
 
 
             for (let i = 0; i < 6; i++) {
                 marqueeSelector.add(new Option(`${i+1}`, i));
             }
+            ['left', 'right', 'up', 'down'].forEach(dir => {
+                const text = {'left':'左', 'right':'右', 'up':'上', 'down':'下'}[dir];
+                marqueeDirectionSelect.add(new Option(text, dir));
+            });
 
+            function updateDirectionOptions(isVertical) {
+                for (const option of marqueeDirectionSelect.options) {
+                    const isVerticalOption = ['up', 'down'].includes(option.value);
+                    option.disabled = isVertical ? !isVerticalOption : isVerticalOption;
+                }
+            }
+            
             function loadMarqueeSettingsToUI(index) {
                 const settings = settingsState.marquees[index];
                 if (!settings) return;
@@ -1326,7 +1417,9 @@
                 marqueeSpeedInput.value = settings.speed;
                 marqueeVerticalToggle.checked = settings.vertical;
                 marqueeEnabledToggle.checked = transformStates[`marquee-container-${index}`]?.visible ?? false;
+                marqueeDirectionSelect.value = settings.direction || (settings.vertical ? 'up' : 'left');
                 marqueeColorInput.value = (settings.colors && settings.colors.default) ? settings.colors.default : '#FFFFFF';
+                updateDirectionOptions(settings.vertical);
             }
 
             marqueeSelector.addEventListener('change', (e) => loadMarqueeSettingsToUI(e.target.value));
@@ -1338,6 +1431,7 @@
                 settingsState.marquees[index].text = marqueeTextInput.value;
                 settingsState.marquees[index].speed = marqueeSpeedInput.value;
                 settingsState.marquees[index].vertical = marqueeVerticalToggle.checked;
+                settingsState.marquees[index].direction = marqueeDirectionSelect.value;
                 if (!settingsState.marquees[index].colors) {
                     settingsState.marquees[index].colors = {};
                 }
@@ -1346,6 +1440,14 @@
                 MarqueeManager.rebuildAnimationByIndex(index);
                 saveCurrentSettings();
             }
+
+            marqueeVerticalToggle.addEventListener('change', e => {
+                const isVertical = e.target.checked;
+                updateDirectionOptions(isVertical);
+                // 自動設定預設方向並更新
+                marqueeDirectionSelect.value = isVertical ? 'up' : 'left';
+                updateMarqueeSettingFromUI();
+            });
             
             marqueeEnabledToggle.addEventListener('change', e => {
                 const index = marqueeSelector.value;
@@ -1363,8 +1465,8 @@
             ['input', 'change'].forEach(evt => {
                 marqueeTextInput.addEventListener(evt, updateMarqueeSettingFromUI);
                 marqueeSpeedInput.addEventListener(evt, updateMarqueeSettingFromUI);
-                marqueeVerticalToggle.addEventListener(evt, updateMarqueeSettingFromUI);
                 marqueeColorInput.addEventListener(evt, updateMarqueeSettingFromUI);
+                marqueeDirectionSelect.addEventListener(evt, updateMarqueeSettingFromUI);
             });
 
             document.getElementById('settings-btn').addEventListener('click', () => {
@@ -1489,18 +1591,45 @@
                 widgetEl.style.borderWidth = `${2 * inverseScale}px`; 
             };
             const applyAllTransforms = () => { Object.keys(transformStates).forEach(id => applyTransform(document.getElementById(id), transformStates[id])); };
-            function checkAndClampWidgetBounds(state) { if (!state || !state.visible) return; const winW = window.innerWidth; const winH = window.innerHeight; const renderedWidth = state.width * state.scale; const renderedHeight = state.height * state.scale; const clamp = (val, min, max) => Math.max(min, Math.min(val, max)); state.left = clamp(state.left, 0, Math.max(0, winW - renderedWidth)); state.top = clamp(state.top, 0, Math.max(0, winH - renderedHeight)); }
+            
+            // --- [MODIFIED] 這是我修改的重點區域 ---
+            function checkAndClampWidgetBounds(state) {
+                if (!state || !state.visible) return;
+                const winW = window.innerWidth;
+                const winH = window.innerHeight;
+                const renderedWidth = state.width * state.scale;
+                const renderedHeight = state.height * state.scale;
+            
+                // 允許跑出去的邊界百分比 (5%)
+                const overflowPercentage = 0.05; 
+                const marginW = renderedWidth * overflowPercentage;
+                const marginH = renderedHeight * overflowPercentage;
+            
+                const clamp = (val, min, max) => Math.max(min, Math.min(val, max));
+            
+                // 新的邊界限制
+                // 允許左邊界超出 marginW
+                const minLeft = -marginW; 
+                // 允許右邊界超出 marginW (物件左上角 + 物件寬度 = 物件右側位置)
+                const maxLeft = winW - renderedWidth + marginW; 
+                // 允許上邊界超出 marginH
+                const minTop = -marginH; 
+                 // 允許下邊界超出 marginH (物件左上角 + 物件高度 = 物件底部位置)
+                const maxTop = winH - renderedHeight + marginH;
+            
+                state.left = clamp(state.left, minLeft, maxLeft);
+                state.top = clamp(state.top, minTop, maxTop);
+            }
+            // --- [MODIFIED] 修改結束 ---
+
             const ensureWidgetsInBounds = () => { Object.values(transformStates).forEach(checkAndClampWidgetBounds); applyAllTransforms(); };
             
-            // --- 修改: 調整 onDragStart 函式 ---
             const onDragStart = (e) => {
                 if (!isEditMode) return;
                 const targetWidget = e.target.closest('.widget-container');
                 if (!targetWidget) return;
             
-                // 將所有 widget 的 z-index 設為 10
                 allWidgetContainers().forEach(w => w.style.zIndex = '10');
-                // 將當前點擊的 widget z-index 設為 100
                 targetWidget.style.zIndex = '100';
             
                 e.preventDefault();
@@ -1533,7 +1662,6 @@
                 window.addEventListener('mouseup', onDragEnd);
                 window.addEventListener('touchend', onDragEnd);
             };
-            // --- 修改結束 ---
 
             const onDragMove = (e) => {
                 if (!activeHandle || !activeWidget) return;
