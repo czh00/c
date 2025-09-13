@@ -176,7 +176,8 @@
         .widget-container.edit-mode .marquee-edit-indicator {
             display: flex;
         }
-        .marquee-inner { display: flex; width: fit-content; height: fit-content; will-change: transform; transform: translateZ(0); font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; backface-visibility: hidden; perspective: 1000px; margin-right: auto; }
+        /* 2024-09-13: 改用 translate3d 以提升 iOS 上的動畫流暢度 */
+        .marquee-inner { display: flex; width: fit-content; height: fit-content; will-change: transform; transform: translate3d(0, 0, 0); font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; backface-visibility: hidden; perspective: 1000px; margin-right: auto; }
         .marquee-text-instance { white-space: nowrap; flex-shrink: 0; line-height: 1; }
         .marquee-text-instance svg { vertical-align: middle; }
 
