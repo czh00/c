@@ -352,7 +352,7 @@
         .border-top-1px { border-top-width: 1px; }
         .border-bottom-1px { border-bottom-width: 1px; }
         .border-color-gray-600 { border-color: #4b5563; }
-        .border-color-gray-700 { border-color: #374151; }
+        .border-color-gray-700 { border-color: #374151; padding: 0; margin: 0; }
 
         .border-radius-sm { border-radius: 0.25rem; }
         .border-radius-lg { border-radius: 0.5rem; }
@@ -600,9 +600,9 @@
     <div id="modal-backdrop-settings" class="modal-backdrop">
         <div class="modal-content max-width-5xl max-height-90vh display-flex flex-direction-column">
             <!-- Header (Sticky) -->
-            <div class="padding-6 padding-bottom-4 border-bottom-1px border-color-gray-700 flex-shrink-0">
+            <div class="p0">
                 <div class="display-flex justify-content-space-between align-items-center">
-                    <h3 class="font-size-xl font-weight-bold color-indigo-300">設定</h3>
+                    <h3 class="font-size-xl font-weight-bold color-indigo-300 p0">設定</h3>
                     <div class="display-flex align-items-center gap-3">
                         <button id="default-settings-btn" class="toolbar-btn font-size-sm padding-horizontal-3 padding-vertical-1">恢復預設</button>
                         <button id="random-colors-btn" class="toolbar-btn font-size-sm padding-horizontal-3 padding-vertical-1">隨機顏色</button>
@@ -611,12 +611,12 @@
                 </div>
             </div>
             <!-- Scrollable Content -->
-            <div class="padding-6 overflow-y-auto">
-                <div class="margin-bottom-6">
+            <div class="p0">
+                <div class="p0">
                      <div class="display-grid grid-columns-1 md-grid-columns-2 lg-grid-columns-4 column-gap-8 row-gap-6">
                         <!-- 月曆設定 -->
                         <div>
-                            <h4 class="font-size-lg font-weight-semibold color-gray-400 margin-bottom-2 border-bottom-1px border-color-gray-600 padding-bottom-1 display-flex align-items-center gap-2">
+                            <h4 class="font-size-lg font-weight-semibold color-gray-400 margin-bottom-2 border-bottom-1px border-color-gray-600 p0">
                                 <input type="checkbox" data-widget-toggle="calendar-container" class="form-checkbox">
                                 <span>月曆</span>
                             </h4>
@@ -637,7 +637,7 @@
                         </div>
                         <!-- 月相設定 -->
                         <div>
-                            <h4 class="font-size-lg font-weight-semibold color-gray-400 margin-bottom-2 border-bottom-1px border-color-gray-600 padding-bottom-1 display-flex align-items-center gap-2">
+                            <h4 class="font-size-lg font-weight-semibold color-gray-400 margin-bottom-2 border-bottom-1px border-color-gray-600 p0">
                                 <input type="checkbox" data-widget-toggle="moon-phase-container" class="form-checkbox">
                                 <span>月相</span>
                             </h4>
@@ -651,7 +651,7 @@
                         </div>
                         <!-- LED 時鐘設定 -->
                         <div>
-                            <h4 class="font-size-lg font-weight-semibold color-gray-400 margin-bottom-2 border-bottom-1px border-color-gray-600 padding-bottom-1 display-flex align-items-center gap-2">
+                            <h4 class="font-size-lg font-weight-semibold color-gray-400 margin-bottom-2 border-bottom-1px border-color-gray-600 p0">
                                 <input type="checkbox" data-widget-toggle="led-clock-container" class="form-checkbox">
                                 <span>LED 時鐘</span>
                             </h4>
@@ -665,7 +665,7 @@
                         </div>
                         <!-- 指針時鐘設定 -->
                         <div>
-                            <h4 class="font-size-lg font-weight-semibold color-gray-400 margin-bottom-2 border-bottom-1px border-color-gray-600 padding-bottom-1 display-flex align-items-center gap-2">
+                            <h4 class="font-size-lg font-weight-semibold color-gray-400 margin-bottom-2 border-bottom-1px border-color-gray-600 p0">
                                 <input type="checkbox" data-widget-toggle="analog-clock-container" class="form-checkbox">
                                 <span>指針時鐘</span>
                             </h4>
@@ -696,12 +696,39 @@
 
                 <!-- 跑馬燈 & 天氣設定 -->
                 <div class="margin-top-6 padding-top-6 border-top-1px border-color-gray-700">
-                    <h4 class="font-size-lg font-weight-semibold color-gray-400 margin-bottom-3 border-bottom-1px border-color-gray-600 padding-bottom-1 display-flex align-items-center gap-2">
-                        <input type="checkbox" id="marquee-enabled-toggle" class="form-checkbox" title="啟用/停用目前選擇的跑馬燈">
-                        <span>跑馬燈</span>
-                    </h4>
-                    <div class="margin-top-3 display-grid grid-columns-1 md-grid-column-span-12 column-gap-6 row-gap-4 align-items-center flex-shrink-0">
-                        <div class="md-grid-column-span-12 display-flex align-items-center gap-2 flex-wrap">
+                    <!-- 2024-09-13: 將跑馬燈控制項與地區設定並排 -->
+                    <div class="display-grid grid-columns-1 md-grid-columns-2 gap-4 align-items-center">
+                        <!-- 左側：跑馬燈主要控制項 -->
+                        <div class="display-flex flex-direction-column row-gap-3 flex-shrink-0">
+                            <div class="display-flex align-items-center column-gap-6 flex-wrap">
+                                <div class="display-flex align-items-center gap-2">
+                                    <input type="checkbox" id="marquee-enabled-toggle" class="form-checkbox" title="啟用/停用目前選擇的跑馬燈">
+                                    <label for="marquee-enabled-toggle" class="font-size-lg font-weight-semibold color-gray-400 cursor-pointer">跑馬燈</label>
+                                </div>
+                                <div class="display-flex align-items-center">
+                                    <label for="marquee-selector" class="flex-shrink-0">組別:</label>
+                                    <select id="marquee-selector" class="width-auto bg-gray-700 border-1px border-color-gray-600 border-radius-sm margin-left-2"></select>
+                                </div>
+                                <div class="display-flex align-items-center column-gap-2 flex-grow-1 min-width-200px">
+                                    <label for="marquee-speed-input" class="flex-shrink-0">速度</label>
+                                    <input type="range" id="marquee-speed-input" min="1" max="1000" class="width-full">
+                                </div>
+                                <div class="display-flex align-items-center column-gap-4">
+                                    <label class="display-flex align-items-center space-x-2 cursor-pointer flex-shrink-0"><input type="checkbox" id="marquee-vertical-toggle" class="form-checkbox"><span>直向</span></label>
+                                    <div class="display-flex align-items-center">
+                                        <label for="marquee-direction-select" class="flex-shrink-0 margin-right-2">方向:</label>
+                                        <select id="marquee-direction-select"></select>
+                                    </div>
+                                    <div class="display-flex align-items-center column-gap-2">
+                                        <label for="marquee-default-color">顏色</label>
+                                        <input type="color" id="marquee-default-color" class="color-picker">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                
+                        <!-- 右側：地區與天氣設定 -->
+                        <div class="display-flex align-items-center justify-content-flex-end gap-2 flex-wrap">
                             <label class="flex-shrink-0 margin-right-1">地區</label>
                             <select id="countySelect"></select>
                             <select id="districtSelect"></select>
@@ -711,32 +738,8 @@
                             </button>
                         </div>
                     </div>
-                    <div class="margin-top-4 display-flex flex-direction-column row-gap-3 flex-shrink-0">
-                        <div class="display-flex align-items-center column-gap-6 flex-wrap">
-                            <!-- Group 1: Selector -->
-                            <div class="display-flex align-items-center">
-                                <label for="marquee-selector" class="flex-shrink-0">組別:</label>
-                                <select id="marquee-selector" class="width-auto bg-gray-700 border-1px border-color-gray-600 border-radius-sm margin-left-2"></select>
-                            </div>
-                            <!-- Group 2: Speed -->
-                            <div class="display-flex align-items-center column-gap-2 flex-grow-1 min-width-200px">
-                                <label for="marquee-speed-input" class="flex-shrink-0">速度</label>
-                                <input type="range" id="marquee-speed-input" min="1" max="1000" class="width-full">
-                            </div>
-                            <!-- Group 3: Controls -->
-                            <div class="display-flex align-items-center column-gap-4">
-                                <label class="display-flex align-items-center space-x-2 cursor-pointer flex-shrink-0"><input type="checkbox" id="marquee-vertical-toggle" class="form-checkbox"><span>直向</span></label>
-                                <div class="display-flex align-items-center">
-                                    <label for="marquee-direction-select" class="flex-shrink-0 margin-right-2">方向:</label>
-                                    <select id="marquee-direction-select"></select>
-                                </div>
-                                <div class="display-flex align-items-center column-gap-2">
-                                    <label for="marquee-default-color">顏色</label>
-                                    <input type="color" id="marquee-default-color" class="color-picker">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                
+                    <!-- 跑馬燈內容設定 -->
                     <div class="margin-top-4 grid-column-span-2 display-flex align-items-flex-start">
                        <label for="marquee-text-input" class="flex-shrink-0 margin-right-3 padding-top-1">內容</label>
                        <div class="display-flex align-items-flex-start width-full">
@@ -757,8 +760,8 @@
     <div id="modal-backdrop-marquee-params" class="modal-backdrop">
         <div class="modal-content max-width-md">
             <div class="padding-6">
-                <div class="display-flex justify-content-space-between align-items-center margin-bottom-4">
-                    <h3 class="font-size-xl font-weight-bold color-indigo-300">跑馬燈可用參數列表</h3>
+                <div class="display-flex justify-content-space-between align-items-center">
+                    <h3 class="font-size-xl font-weight-bold color-indigo-300 p0">跑馬燈可用參數列表</h3>
                     <button data-close-modal="modal-backdrop-marquee-params" class="color-gray-400 hover-color-white font-size-3xl line-height-none">&times;</button>
                 </div>
                 <ul class="param-list max-height-80 overflow-y-auto padding-right-2">
@@ -943,7 +946,7 @@
                     "analogClock": { "visible": true, "colors": { "--analog-face-color": "transparent", "--analog-hand-color": "#ffffff", "--analog-second-hand-color": "#ff3333", "--analog-tick-color": "#cccccc", "--analog-number-color": "#ffffff" } },
                     "moonPhase": { "visible": false, "colors": { "--moon-light-color": "#f0e68c", "--moon-dark-color": "#222222", "--moon-header-color": "#a78bfa", "--moon-desc-color": "#d1d5db", "--moon-highlight-color": "#fcd34d" } },
                     "marquees": [
-                        { "text": "%YYYY%/%ROC_YY%年%MM%月%DD%日%br%%W_SHORT%%ap_c%%hh%%C(#00FF00, :)%%mm%%br%%C(#FFFF00, 農曆)%%LM_C%%LD_C%%L_GZ%%MOON_ICON%%br%%WEATHER_LOC%%WEATHER_DESC%%TEMP%°C%br%日出%SUNRISE%%br%日落%SUNSET%", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} },
+                        { "text": "%YYYY%/%ROC_YY%年%MM%月%DD%日%br%%W_SHORT%%ap_c%%hh%%C(#00FF00, :)%%mm%%br%%C(#FFFF00, 農曆)%%LM_C%%LD_C%%SHICHEN_NAME%%L_GZ%%L_SX%%L_GZ%%MOON_ICON%%br%%WEATHER_LOC%%WEATHER_DESC%%TEMP%°C%br%日出%SUNRISE%%br%日落%SUNSET%", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} },
                         { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }, { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} },
                         { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }, { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} },
                         { "text": "", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }
@@ -978,7 +981,8 @@
                     
                     // --- 定時特效觸發邏輯 ---
                     const effectSettings = settingsState.timedEffect;
-                    if (effectSettings && effectSettings.enabled && s > 0 && s % effectSettings.intervalSeconds === 0) {
+                    // 2024-09-13: 檢查是否在編輯模式，如果是，則不觸發特效
+                    if (!isEditMode && effectSettings && effectSettings.enabled && s > 0 && s % effectSettings.intervalSeconds === 0) {
                         // 避免重複觸發
                         if (Object.values(isWidgetAnimating).some(v => v)) return;
 
@@ -1632,8 +1636,15 @@
             // ===================================================================
             document.getElementById('edit-layout-btn').addEventListener('click', () => {
                 isEditMode = !isEditMode;
+                // 2024-09-13: 取得定時特效的 UI 元件
+                const timedEffectToggle = document.getElementById('timed-effect-enabled-toggle');
+                const timedEffectInterval = document.getElementById('timed-effect-interval-seconds');
+
                 if (isEditMode) {
                     MarqueeManager.setPlayState(false);
+                    // 2024-09-13: 禁用定時特效選項
+                    timedEffectToggle.disabled = true;
+                    timedEffectInterval.disabled = true;
                 } else {
                     MarqueeManager.setPlayState(true);
                     saveCurrentSettings(); 
@@ -1641,6 +1652,9 @@
                     editToolbar.style.top = 'auto';
                     editToolbar.style.bottom = '';
                     editToolbar.style.transform = 'translateX(-50%)';
+                    // 2024-09-13: 啟用定時特效選項
+                    timedEffectToggle.disabled = false;
+                    timedEffectInterval.disabled = false;
                 }
                 
                 document.body.classList.toggle('edit-mode', isEditMode);
