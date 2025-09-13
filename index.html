@@ -161,9 +161,9 @@
             width: 100%; 
             height: 100%; 
             overflow: hidden; 
-            transform: translateZ(0); /* 新增: 提升為合成層 */
-            backface-visibility: hidden; /* 新增: 輔助提升 */
-            perspective: 1000px; /* 新增: 從子層移動至此 */
+            transform: translateZ(0); /* 新增: 提升為合成層以啟用 GPU 加速 */
+            backface-visibility: hidden; /* 新增: 輔助提升穩定性 */
+            perspective: 1000px; /* 新增: 從子層移動至此，為子動畫建立3D場景 */
         }
         .marquee-edit-indicator {
             position: absolute;
@@ -1195,6 +1195,7 @@
                         if (travelDistance <= 0) return;
                         const duration = travelDistance / (parseInt(speed, 10) || 80);
                         const animName = `marquee-${this.index}-${Date.now()}`;
+                        
                         // Gem 修改：改用更明確的 translate3d 來定義動畫，以增強 iOS 上的穩定性，避免循環閃爍
                         let fromTransform, toTransform;
                         switch(direction) {
@@ -1250,6 +1251,7 @@
                 async updateWeather() {
                     const locationName = settingsState.location?.trim(); if (!locationName) { this.data = null; MarqueeManager.rebuildAllAnimations(); return; }
                     const coords = await this.fetchCoordinates(locationName); this.data = coords ? await this.fetchWeather(coords.latitude, coords.longitude) : null;
+                    // Gem 修改：確保天氣資料取得後才重建跑馬燈
                     MarqueeManager.rebuildAllAnimations();
                 },
                 getWeatherDescription(code) { const map={0:"晴",1:"多雲時晴",2:"局部多雲",3:"陰",45:"霧",48:"凍霧",51:"毛毛雨",53:"毛毛雨",55:"毛毛雨",56:"凍毛毛雨",57:"凍毛毛雨",61:"雨",63:"雨",65:"大雨",66:"凍雨",67:"凍雨",71:"雪",73:"雪",75:"大雪",77:"冰雹",80:"陣雨",81:"陣雨",82:"大陣雨",85:"陣雪",86:"大陣雪",95:"雷陣雨",96:"雷陣雨伴冰雹",99:"雷陣雨伴冰雹"}; return map[code] || "未知"; },
@@ -1870,7 +1872,8 @@
                 updateLayoutSelector();
                 saveCurrentSettings(); 
                 window.addEventListener('resize', () => { ensureWidgetsInBounds(); MarqueeManager.rebuildAllAnimations(); saveCurrentSettings(); });
-                document.fonts.ready.then(() => { ensureWidgetsInBounds(); MarqueeManager.rebuildAllAnimations(); });
+                // Gem 修改：移除這裡的 rebuildAllAnimations()，讓天氣模組初始化後再觸發第一次重建
+                document.fonts.ready.then(() => { ensureWidgetsInBounds(); });
             })();
         });
 
