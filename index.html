@@ -1195,7 +1195,7 @@
                         if (travelDistance <= 0) return;
                         const duration = travelDistance / (parseInt(speed, 10) || 80);
                         const animName = `marquee-${this.index}-${Date.now()}`;
-                        // 2024-09-14: 改用更明確的 translate3d 來定義動畫，以增強 iOS 上的穩定性，避免循環閃爍
+                        // Gem 修改：改用更明確的 translate3d 來定義動畫，以增強 iOS 上的穩定性，避免循環閃爍
                         let fromTransform, toTransform;
                         switch(direction) {
                             case 'right':
