@@ -91,7 +91,6 @@
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; }
         .calendar-day { padding: 0.25rem; margin: 0; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; font-size: 0.9em; border: 1px solid #555; cursor: pointer; transition: background-color 0.3s; background-color: transparent !important; z-index: 1; position: relative; overflow: hidden; }
         .calendar-day:not(.edit-mode-active):hover { background-color: var(--bg-hover); cursor: pointer; }
-        
         /* 當月相圖示顯示時的新版面配置 */
         .calendar-day.with-moon-icon {
             flex-direction: row;
@@ -124,7 +123,6 @@
         #calendar-body, #moon-calendar-body { flex-grow: 1; display: grid; min-height: 0; }
         #calendar-container main, #moon-phase-container main { overflow: hidden; }
         .background-month { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 900; color: var(--month-color); z-index: 1; user-select: none; opacity: 0.8; line-height: 0.8; pointer-events: none; }
-        
 
         /* --- LED 時鐘 spezifische樣式 --- */
         #led-clock-container svg { width: 100%; height: 100%; overflow: visible; }
@@ -177,7 +175,8 @@
             display: flex;
         }
         /* 2024-09-13: 改用 translate3d 以提升 iOS 上的動畫流暢度 */
-        .marquee-inner { display: flex; width: fit-content; height: fit-content; will-change: transform; transform: translate3d(0, 0, 0); font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; backface-visibility: hidden; perspective: 1000px; margin-right: auto; }
+        /* 2024-09-14: 移除 marquee-inner 的靜態 transform 屬性，交由 animation keyframes 完全控制，避免循環閃爍 */
+        .marquee-inner { display: flex; width: fit-content; height: fit-content; will-change: transform; font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; backface-visibility: hidden; perspective: 1000px; margin-right: auto; }
         .marquee-text-instance { white-space: nowrap; flex-shrink: 0; line-height: 1; }
         .marquee-text-instance svg { vertical-align: middle; }
 
@@ -193,7 +192,6 @@
         .widget-container.edit-mode .move-handle { display: flex; }
         .resize-handle-w { width: 8px; height: 50px; top: 50%; right: -4px; transform: translateY(-50%); border-radius: 4px; cursor: ew-resize; }
         .resize-handle-h { width: 50px; height: 8px; bottom: -4px; left: 50%; transform: translateX(-50%); border-radius: 4px; cursor: ns-resize; }
-
 
         /* --- Modal 彈出視窗樣式 --- */
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); display: flex; justify-content: center; align-items: center; z-index: 1050; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
@@ -216,7 +214,6 @@
         #month-year-picker .month-cell { padding: 8px; text-align: center; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
         #month-year-picker .month-cell:hover { background-color: var(--bg-hover); }
         #month-year-picker .month-cell.selected { background-color: #4f46e5; color: white; }
-        
         /* --- UI 按鈕與工具列 --- */
         .action-buttons { position: fixed; bottom: 1rem; right: 1rem; display: flex; gap: 0.5rem; z-index: 1000; opacity: 1; transition: opacity 0.5s ease-in-out; }
         .action-buttons.hidden { opacity: 0; pointer-events: none; }
@@ -241,7 +238,6 @@
         #edit-mode-grid::before { top: 0; left: 50%; width: 1px; height: 100%; transform: translateX(-50%); }
         #edit-mode-grid::after { top: 50%; left: 0; width: 100%; height: 1px; transform: translateY(-50%); }
         body.edit-mode #edit-mode-grid { display: block; }
-        
         /* --- 由 Tailwind 轉換的語意化 CSS --- */
         .display-flex { display: flex; }
         .align-items-center { align-items: center; }
@@ -275,7 +271,6 @@
         .padding-horizontal-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
         .padding-vertical-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
         .padding-vertical-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-        
         .margin-1 { margin: 0.25rem; }
         .margin-top-1 { margin-top: 0.25rem; }
         .margin-bottom-2 { margin-bottom: 0.5rem; }
@@ -306,7 +301,6 @@
         .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
         .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem; }
         .space-x-2 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.5rem; }
-        
         .width-5 { width: 1.25rem; }
         .height-5 { height: 1.25rem; }
         .width-6 { width: 1.5rem; }
@@ -327,13 +321,11 @@
 
         .font-weight-bold { font-weight: 700; }
         .font-weight-semibold { font-weight: 600; }
-        
         .font-size-sm { font-size: 0.875rem; line-height: 1.25rem; }
         .font-size-md { font-size: 1rem; line-height: 1.5rem; }
         .font-size-lg { font-size: 1.125rem; line-height: 1.75rem; }
         .font-size-xl { font-size: 1.25rem; line-height: 1.75rem; }
         .font-size-3xl { font-size: 1.875rem; line-height: 2.25rem; }
-        
         .line-height-none { line-height: 1; }
         .line-height-relaxed { line-height: 1.625; }
         .letter-spacing-wide { letter-spacing: 0.025em; }
@@ -348,7 +340,6 @@
         .bg-gray-700 { background-color: #374151; }
         .bg-gray-800 { background-color: #1f2937; }
         .bg-indigo-600 { background-color: #4f46e5; }
-        
         .border-1px { border-width: 1px; }
         .border-top-1px { border-top-width: 1px; }
         .border-bottom-1px { border-bottom-width: 1px; }
@@ -361,9 +352,7 @@
 
         .cursor-pointer { cursor: pointer; }
         .cursor-help { cursor: help; }
-        
         .transition-colors { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
-        
         .hover-bg-gray-600:hover { background-color: #4b5563; }
         .hover-bg-gray-700:hover { background-color: rgba(75, 85, 99, 0.3) !important; }
         .hover-color-white:hover { color: #ffffff; }
@@ -374,7 +363,6 @@
         .overflow-hidden { overflow: hidden; }
         .overflow-y-auto { overflow-y: auto; }
         .position-relative { position: relative; }
-        
         #calendar-container button, #moon-phase-container button,
         .action-button, .toolbar-btn, [data-close-modal],
         #useCurrentLocationBtn, #marquee-params-btn, #default-settings-btn, #random-colors-btn,
@@ -424,7 +412,6 @@
     </style>
 </head>
 <body class="antialiased">
-    
     <div id="edit-mode-grid"></div>
 
     <!-- 月曆 Widget -->
@@ -456,7 +443,6 @@
         <div class="resize-handle-w control-handle"></div>
         <div class="resize-handle-h control-handle"></div>
     </div>
-    
     <!-- LED 時鐘 Widget -->
     <div id="led-clock-container" class="widget-container">
         <div class="widget-content-wrapper">
@@ -486,7 +472,6 @@
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="width-full height-full"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"></path></svg>
         </div>
     </div>
-    
     <!-- 跑馬燈 Widgets -->
     <div id="marquee-container-0" class="widget-container marquee-widget">
         <div class="marquee-edit-indicator">1</div>
@@ -551,7 +536,6 @@
         <div class="resize-handle-h control-handle"></div>
     </div>
 
-
     <!-- UI Elements -->
     <div id="action-buttons" class="action-buttons">
         <button id="edit-layout-btn" class="action-button" title="編輯版面">
@@ -597,7 +581,6 @@
 </div>
 </div></div></div>
     <div id="modal-backdrop-picker" class="modal-backdrop"><div id="month-year-picker" class="modal-content"><div class="padding-5"><div class="year-nav margin-bottom-4"><button id="picker-prev-year" class="calendar-nav-arrow">&lt;</button><span id="picker-year" class="font-size-xl font-weight-bold">2024</span><button id="picker-next-year" class="calendar-nav-arrow">&gt;</button></div><div id="picker-month-grid" class="month-grid"></div></div></div></div>
-    
     <div id="modal-backdrop-settings" class="modal-backdrop">
         <div class="modal-content max-width-5xl max-height-90vh display-flex flex-direction-column">
             <!-- Header (Sticky) -->
@@ -677,7 +660,6 @@
                                 <div class="display-flex justify-content-space-between align-items-center"><label>數字</label><input type="color" class="color-picker" data-setting-type="color" data-widget="analogClock" data-var="--analog-number-color"></div>
                             </div>
                         </div>
-                        
                         <!-- 定時特效設定 -->
                         <div class="grid-column-span-2 md-grid-column-span-4">
                             <div class="display-flex align-items-center justify-content-space-between width-full padding-vertical-2 border-top-1px border-color-gray-700 margin-top-4">
@@ -727,7 +709,6 @@
                                 </div>
                             </div>
                         </div>
-                
                         <!-- 右側：地區與天氣設定 -->
                         <div class="display-flex align-items-center justify-content-flex-end gap-2 flex-wrap">
                             <label class="flex-shrink-0 margin-right-1">地區</label>
@@ -739,7 +720,6 @@
                             </button>
                         </div>
                     </div>
-                
                     <!-- 跑馬燈內容設定 -->
                     <div class="margin-top-4 grid-column-span-2 display-flex align-items-flex-start">
                        <label for="marquee-text-input" class="flex-shrink-0 margin-right-3 padding-top-1">內容</label>
@@ -757,7 +737,6 @@
 
     <div id="modal-backdrop-explanation" class="modal-backdrop"><div class="modal-content max-width-sm"><div class="padding-6"><div class="display-flex justify-content-space-between align-items-center margin-bottom-3"><h3 id="explanation-title" class="font-size-xl font-weight-bold color-indigo-300"></h3><button data-close-modal="modal-backdrop-explanation" class="color-gray-400 hover-color-white font-size-3xl line-height-none">&times;</button></div><p id="explanation-content" class="color-gray-300 line-height-relaxed"></p></div></div></div>
     <div id="modal-backdrop-prompt" class="modal-backdrop"><div class="modal-content max-width-sm"><div class="padding-6"><h3 id="prompt-title" class="font-size-xl font-weight-bold color-indigo-300 margin-bottom-4"></h3><p id="prompt-message" class="color-gray-300 margin-bottom-4"></p><input id="prompt-input" type="text" class="width-full bg-gray-700 border-1px border-color-gray-600 border-radius-sm padding-horizontal-3 padding-vertical-2 color-white margin-bottom-4"><div class="display-flex justify-content-flex-end gap-2"><button id="prompt-cancel-btn" class="toolbar-btn">取消</button><button id="prompt-ok-btn" class="toolbar-btn">確定</button></div></div></div></div>
-    
     <div id="modal-backdrop-marquee-params" class="modal-backdrop">
         <div class="modal-content max-width-md">
             <div class="padding-6">
@@ -794,13 +773,11 @@
                     <li class="param-item"><strong>%ap_c%</strong>: 中文時段 (例如: 上午, 下午)</li>
                     <li class="param-item"><strong>%AP%</strong>: 英文時段，大寫 (AM/PM)</li>
                     <li class="param-item"><strong>%ap%</strong>: 英文時段，小寫 (am/pm)</li>
-                    
                     <li class="param-group-title">農曆與生肖</li>
                     <li class="param-item"><strong>%L_GZ%</strong>: 農曆年干支 (例如: 甲辰)</li>
                     <li class="param-item"><strong>%L_SX%</strong>: 生肖 (例如: 龍)</li>
                     <li class="param-item"><strong>%LM_C%</strong>: 農曆中文月份 (例如: 八月)</li>
                     <li class="param-item"><strong>%LD_C%</strong>: 農曆中文日期 (例如: 初三)</li>
-                    
                     <li class="param-group-title">時辰</li>
                     <li class="param-item"><strong>%SHICHEN_GZ%</strong>: 時辰干支 (例如: 甲子)</li>
                     <li class="param-item"><strong>%SHICHEN_NAME%</strong>: 時辰全名 (例如: 子時)</li>
@@ -865,7 +842,6 @@
             function getHoliday(date){const year=date.getFullYear();const gKey=`${date.getMonth()+1}-${date.getDate()}`;if(gregorianHolidays[gKey])return gregorianHolidays[gKey];if(date.getMonth()===4&&date.getDay()===0&&date.getDate()>7&&date.getDate()<=14)return"母親節";const l=getLunarDate(date);if(l.day>0){const lKey=(l.month===12&&l.day===29&&getLunarMonthDays(l.year,12)===29)?"12-29":`${l.month}-${l.day}`;if(lKey==="12-29")return"除夕";if(lunarHolidays[lKey])return lunarHolidays[lKey]}return null}
             const yiJiMap={};
             function getYiJiForDate(year,month,day){const key=`${year}-${month}-${day}`;if(yiJiMap[key])return yiJiMap[key];const allGood=["嫁娶","祈福","求嗣","出行","入宅","開市","安床","祭祀","納采","修造"];const allBad=["動土","安葬","作灶","伐木","行喪","破土","詞訟","赴任"];const seed=year*10000+month*100+day;const randomGood=[...allGood].sort(()=>0.5-(seed%1000/1000)).slice(0,5);const randomBad=[...allBad].sort(()=>0.5-(seed%888/888)).slice(0,3);return{good:randomGood,bad:randomBad}}
-            
             // --- 時辰計算輔助 ---
             function getDailyGanzhi(date) {
                 const cleanDate = new Date(date);
@@ -907,7 +883,6 @@
             const allWidgetContainers = () => document.querySelectorAll('.widget-container');
             const actionButtons = document.getElementById('action-buttons');
             const editToolbar = document.getElementById('edit-toolbar');
-            
             // --- 狀態變數 ---
             let isEditMode = false;
             let activityTimeout;
@@ -959,7 +934,6 @@
                     }
                 }
             };
-            
             // ===================================================================
             // LED 時鐘模組
             // ===================================================================
@@ -979,7 +953,6 @@
                 updateDigit(digitElement, number) { const pattern = this.segmentMap[number]; digitElement.querySelectorAll('.segment').forEach((segment, i) => { segment.style.opacity = pattern[i] ? '1' : '0.1'; }); },
                 update() {
                     const now = new Date(); let h = now.getHours(); const m = now.getMinutes(); const s = now.getSeconds();
-                    
                     // --- 定時特效觸發邏輯 ---
                     const effectSettings = settingsState.timedEffect;
                     // 2024-09-13: 檢查是否在編輯模式，如果是，則不觸發特效
@@ -997,7 +970,6 @@
                                 targets.push(id);
                             }
                         });
-                        
                         MarqueeManager.instances.forEach(instance => {
                             const state = transformStates[instance.container.id];
                             // 只有當元件可見且內容未達捲動標準時，才加入特效目標
@@ -1050,14 +1022,12 @@
                         });
                     }
 
-
                     if (this.periodTextElement) { this.periodTextElement.textContent = TimeHelper.getPeriodText(h); }
                     let h12 = h % 12; if (h12 === 0) h12 = 12; const hStr = String(h12).padStart(2, '0'); const mStr = String(m).padStart(2, '0'); const sStr = String(s).padStart(2, '0');
                     this.updateDigit(this.digits.h1, parseInt(hStr[0])); this.updateDigit(this.digits.h2, parseInt(hStr[1])); this.updateDigit(this.digits.m1, parseInt(mStr[0])); this.updateDigit(this.digits.m2, parseInt(mStr[1])); this.updateDigit(this.digits.s1, parseInt(sStr[0])); this.updateDigit(this.digits.s2, parseInt(sStr[1]));
                     const colonOpacity = s % 2 === 0 ? '1' : '0.2'; this.colons.h.querySelectorAll('.colon').forEach(c => c.style.opacity = colonOpacity);
                 },
             };
-            
             // ===================================================================
             // 月曆模組
             // ===================================================================
@@ -1093,7 +1063,6 @@
             // 指針時鐘模組
             // ===================================================================
             const AnalogClock = { hourHand: document.querySelector('#analog-clock-container .hour-hand'), minuteHand: document.querySelector('#analog-clock-container .minute-hand'), secondHand: document.querySelector('#analog-clock-container .second-hand'), ticksContainer: document.getElementById('ticks-container'), init() { this.ticksContainer.innerHTML = ''; for (let i = 1; i <= 60; i++) { const isHour = i % 5 === 0; const rotation = i * 6; const wrapper = document.createElement('div'); wrapper.className = 'tick-wrapper'; wrapper.style.transform = `rotate(${rotation}deg)`; const tick = document.createElement('div'); tick.className = isHour ? 'tick tick-hour' : 'tick tick-minute'; wrapper.appendChild(tick); if (isHour) { wrapper.style.setProperty('--rotation', `${rotation}deg`); const numDiv = document.createElement('div'); numDiv.className = 'number'; numDiv.innerHTML = `<div>${i / 5}</div>`; wrapper.appendChild(numDiv); } this.ticksContainer.appendChild(wrapper); } this.update(); }, update() { const now = new Date(); const s = now.getSeconds() + now.getMilliseconds() / 1000; const m = now.getMinutes() + s / 60; const h = now.getHours() % 12 + m / 60; this.hourHand.style.transform = `translateX(-50%) rotate(${(h / 12) * 360}deg)`; this.minuteHand.style.transform = `translateX(-50%) rotate(${(m / 60) * 360}deg)`; this.secondHand.style.transform = `translateX(-50%) rotate(${(s / 60) * 360}deg)`; requestAnimationFrame(() => this.update()); } };
-            
             // ===================================================================
             // 跑馬燈模組 (重構為 Class)
             // ===================================================================
@@ -1116,16 +1085,13 @@
                     if (Weather.data) { const formatTime = (dateStr) => dateStr ? new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'N/A'; weatherReplacements = { '%WEATHER_LOC%': Weather.getChineseLocationName(settingsState.location), '%WEATHER_DESC%': Weather.getWeatherDescription(Weather.data.current.weather_code), '%TEMP%': Math.round(Weather.data.current.temperature_2m), '%SUNRISE%': formatTime(Weather.data.daily.sunrise[0]), '%SUNSET%': formatTime(Weather.data.daily.sunset[0]), }; }
                     return { '%YYYY%': year, '%ROC_YY%': year - 1911, '%YY%': String(year).slice(-2), '%MM%': pad(month), '%M%': month, '%DD%': pad(day), '%D%': day, '%WEEKDAY%': weekdays[dayOfWeek], '%W_NUM%': dayOfWeek, '%W_SHORT%': `週${dayOfWeekChars[dayOfWeek]}`, '%W_CHAR%': dayOfWeekChars[dayOfWeek], '%L_GZ%': yearGZ, '%L_SX%': yearSX, '%LM_C%': lunar ? lunar.toString.split(/月/)[0] + '月' : '', '%LD_C%': lunar ? lunar.dayString : '', '%HH%': pad(hours), '%H%': hours, '%hh%': pad(h12), '%h%': h12, '%mm%': pad(minutes), '%m%': minutes, '%ss%': pad(seconds), '%s%': seconds, '%AP%': amPm, '%ap%': amPm.toLowerCase(), '%ap_c%': periodText, ...weatherReplacements, '%MOON_PHASE%': moonName, '%MOON_ICON%': lunar ? MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '1em', `marquee-${this.index}`) : '', '%MOON_DAY%': lunar ? lunar.day : '', '%SHICHEN_GZ%': shichen.gz, '%SHICHEN_NAME%': shichen.name, '%SHICHEN_CHAR%': shichen.char };
                 }
-                
                 buildInitialHTML(text) {
                     const settings = settingsState.marquees[this.index];
                     const isVertical = settings.vertical;
                     const defaultColor = (settings.colors && settings.colors.default) ? settings.colors.default : '#FFFFFF';
                     const replacements = this.getReplacements();
-                    
                     // 建立一個包含所有參數（標準、顏色、換行）的正規表示式
                     const paramRegex = new RegExp(`%C\\(#([0-9a-fA-F]{6}),\\s*([^%)]+)\\)%|${Object.keys(replacements).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')}|%br%`, 'g');
-                    
                     let resultHTML = '';
                     let lastIndex = 0;
                     let match;
@@ -1154,7 +1120,6 @@
                             const cssVar = marqueeParamColorMap[param];
                             const color = cssVar ? getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() : defaultColor;
                             const replacementContent = replacements[param];
-                            
                             if (param === '%MOON_ICON%') {
                                 resultHTML += `<span data-time-key="${param}" style="display: inline-flex; align-items: center; justify-content: center;">${replacementContent}</span>`;
                             } else {
@@ -1169,7 +1134,6 @@
                         const remainingText = text.substring(lastIndex);
                         resultHTML += `<span style="color:${defaultColor}">${remainingText.replace(/ /g, '\u00A0')}</span>`;
                     }
-                    
                     return isVertical ? `<div>${resultHTML}</div>` : resultHTML;
                 }
 
@@ -1191,15 +1155,13 @@
                     clearTimeout(this.rebuildTimeout);
                     this.innerDiv.style.animation = '';
                     this.isScrolling = false; // 預設為不滾動
-                    
                     this.rebuildTimeout = setTimeout(() => {
                         this.animationStyleTag.innerHTML = '';
                         this.innerDiv.innerHTML = '';
-                        this.innerDiv.style.transform = 'translateX(0) translateY(0) translateZ(0)';
+                        this.innerDiv.style.transform = 'translate3d(0, 0, 0)';
 
                         const settings = settingsState.marquees[this.index];
                         if (!settings || !settings.text || !settings.text.trim()) return;
-                        
                         const { text, vertical: isVertical, speed, direction } = settings;
                         this.innerDiv.style.flexDirection = isVertical ? 'column' : 'row';
                         this.innerDiv.style.width = isVertical ? '100%' : 'fit-content';
@@ -1211,32 +1173,40 @@
                         instance1.style.textAlign = isVertical ? 'center' : 'left';
                         instance1.innerHTML = this.buildInitialHTML(text);
                         this.innerDiv.appendChild(instance1);
-                        
                         instance1.getBoundingClientRect();
 
                         const contentMeasure = isVertical ? instance1.offsetHeight : instance1.offsetWidth;
                         const containerMeasure = isVertical ? this.mainContainer.offsetHeight : this.mainContainer.offsetWidth;
-                        
                         if (contentMeasure <= containerMeasure) return;
-                        
                         this.isScrolling = true; // 內容超出容器，設定為滾動狀態
                         this.innerDiv.appendChild(instance1.cloneNode(true));
 
                         const travelDistance = contentMeasure;
                         if (travelDistance <= 0) return;
-                        
                         const duration = travelDistance / (parseInt(speed, 10) || 80);
                         const animName = `marquee-${this.index}-${Date.now()}`;
-                        
+                        // 2024-09-14: 改用更明確的 translate3d 來定義動畫，以增強 iOS 上的穩定性，避免循環閃爍
                         let fromTransform, toTransform;
                         switch(direction) {
-                            case 'right': fromTransform = `translateX(-${travelDistance}px)`; toTransform = `translateX(0px)`; break;
-                            case 'up': fromTransform = `translateY(0px)`; toTransform = `translateY(-${travelDistance}px)`; break;
-                            case 'down': fromTransform = `translateY(-${travelDistance}px)`; toTransform = `translateY(0px)`; break;
-                            default: fromTransform = `translateX(0px)`; toTransform = `translateX(-${travelDistance}px)`; break;
+                            case 'right':
+                                fromTransform = `translate3d(-${travelDistance}px, 0, 0)`;
+                                toTransform = `translate3d(0, 0, 0)`;
+                                break;
+                            case 'up':
+                                fromTransform = `translate3d(0, 0, 0)`;
+                                toTransform = `translate3d(0, -${travelDistance}px, 0)`;
+                                break;
+                            case 'down':
+                                fromTransform = `translate3d(0, -${travelDistance}px, 0)`;
+                                toTransform = `translate3d(0, 0, 0)`;
+                                break;
+                            default: // 'left'
+                                fromTransform = `translate3d(0, 0, 0)`;
+                                toTransform = `translate3d(-${travelDistance}px, 0, 0)`;
+                                break;
                         }
 
-                        this.animationStyleTag.innerHTML = `@keyframes ${animName} { from { transform: ${fromTransform} translateZ(0); } to { transform: ${toTransform} translateZ(0); }}`;
+                        this.animationStyleTag.innerHTML = `@keyframes ${animName} { from { transform: ${fromTransform}; } to { transform: ${toTransform}; }}`;
                         this.innerDiv.style.animation = `${animName} ${duration}s linear infinite`;
                         this.innerDiv.style.animationPlayState = isEditMode ? 'paused' : 'running';
                     }, 50);
@@ -1245,7 +1215,6 @@
                     this.innerDiv.style.animationPlayState = shouldPlay ? 'running' : 'paused';
                 }
             }
-            
             const MarqueeManager = {
                 instances: [],
                 init() {
@@ -1287,13 +1256,11 @@
                     return englishName.charAt(0).toUpperCase() + englishName.slice(1);
                 }
             };
-            
             // ===================================================================
             // 月相模組
             // ===================================================================
             const MoonPhaseWidget = { yearHeader: document.getElementById('moon-phase-year-header'), backgroundMonth: document.getElementById('moon-background-month'), body: document.getElementById('moon-calendar-body'), currentDate: new Date(), init() { this.render(); document.getElementById('moon-phase-prev-month').addEventListener('click', () => { if(!isEditMode) { this.currentDate.setMonth(this.currentDate.getMonth() - 1); this.render(); } }); document.getElementById('moon-phase-next-month').addEventListener('click', () => { if(!isEditMode) { this.currentDate.setMonth(this.currentDate.getMonth() + 1); this.render(); } }); document.getElementById('moon-phase-today').addEventListener('click', () => { if(!isEditMode) { this.currentDate = new Date(); this.render(); } }); }, getMoonPhaseSVG(lunarDay, size = '100px', context = 'widget') { const phase = (lunarDay - 1) / 29.53, r = 50, cx = 50, cy = 50; const light = getComputedStyle(document.documentElement).getPropertyValue('--moon-light-color').trim() || '#f0e68c'; const dark = getComputedStyle(document.documentElement).getPropertyValue('--moon-dark-color').trim() || '#222222'; const cos_angle = Math.cos(phase * 2 * Math.PI + Math.PI); const base = phase > 0.5 ? `<rect x="0" y="0" width="${cx}" height="${r*2}" fill="${light}" /><rect x="${cx}" y="0" width="${cx}" height="${r*2}" fill="${dark}" />` : `<rect x="0" y="0" width="${cx}" height="${r*2}" fill="${dark}" /><rect x="${cx}" y="0" width="${cx}" height="${r*2}" fill="${light}" />`; const terminator = `<ellipse cx="${cx}" cy="${cy}" rx="${r * Math.abs(cos_angle)}" ry="${r}" fill="${cos_angle > 0 ? light : dark}" />`; const id = `moon-clip-${context}-${lunarDay}-${size.replace(/[^a-zA-Z0-9]/g, '')}`; return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" style="filter: drop-shadow(0 0 10px ${light}33);"><defs><clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${r}" /></clipPath></defs><g clip-path="url(#${id})">${base}${terminator}</g></svg>`; }, render() { this.body.innerHTML = ''; const year = this.currentDate.getFullYear(); const month = this.currentDate.getMonth(); this.yearHeader.textContent = year; this.backgroundMonth.textContent = month + 1; const firstDayOfMonth = new Date(year, month, 1); const startDayOfWeek = firstDayOfMonth.getDay(); const startDate = new Date(year, month, 1 - startDayOfWeek); const today = new Date(); today.setHours(0,0,0,0); for (let i = 0; i < 42; i++) { const cellDate = new Date(startDate); cellDate.setDate(startDate.getDate() + i); const lunar = getLunarDate(cellDate); const cell = document.createElement('div'); cell.className = `calendar-day ${cellDate.getMonth() !== month ? 'other-month' : ''} ${cellDate.getTime() === today.getTime() ? 'today' : ''}`; const lunarDateText = lunar.day === 1 ? lunar.toString.substring(0, lunar.isLeap ? 3 : 2) : lunar.dayString; cell.innerHTML = ` <span class="day-number">${cellDate.getDate()}</span> <div class="moon-icon-small">${this.getMoonPhaseSVG(lunar.day, '100%', `grid-${i}`)}</div> <div class="lunar-date">${lunarDateText}</div> `; 
             cell.addEventListener('click', () => { if(!isEditMode) showDayDetailModal(cellDate.toISOString()); }); this.body.appendChild(cell); } } };
-
 
             // ===================================================================
             // Modal 和 UI 互動
@@ -1342,7 +1309,6 @@
                 modalSolarTermEl.textContent=solarTerm||'';
                 modalSolarTermEl.style.display=solarTerm?'block':'none';
                 if(solarTerm)modalSolarTermEl.dataset.key=solarTerm;
-                
                 const formatTime = (dateStr) => dateStr ? new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
                 const sunriseTime = Weather.data?.daily?.sunrise?.[0] ? formatTime(Weather.data.daily.sunrise[0]) : '讀取中...';
                 const sunsetTime = Weather.data?.daily?.sunset?.[0] ? formatTime(Weather.data.daily.sunset[0]) : '讀取中...';
@@ -1361,7 +1327,6 @@
             function getAllSolarTermsForYear(year){if(!solarTermsCache[year])calculateAndCacheSolarTerms(year);return Object.entries(solarTermsCache[year]).map(([key,name])=>{const[y,m,d]=key.split('-').map(Number);return{date:new Date(y,m-1,d),name}}).sort((a,b)=>a.date-b.date)}
             function getAllHolidaysForYear(year){let holidays=Object.entries(gregorianHolidays).map(([key,name])=>{const[m,d]=key.split('-');return{date:new Date(year,m-1,d),name}});Object.entries(lunarHolidays).forEach(([key,name])=>{const[m,d]=key.split('-');const solarDate=lunarToSolar(year,parseInt(m),parseInt(d));if(solarDate)holidays.push({date:solarDate,name})});let md=new Date(year,4,1);md.setDate(14-(md.getDay()||7)+1);holidays.push({date:md,name:"母親節"});return holidays.sort((a,b)=>a.date-b.date)}
             function updateCountdowns(currentDate){const today=new Date(currentDate);today.setHours(0,0,0,0);const formatCountdownText=(items,type)=>{const futureEvents=items.filter(item=>item.date>=today);if(futureEvents.length===0)return`找不到${today.getFullYear()+1}年的${type}資料`;const firstEvent=futureEvents[0];const diffDays=Math.ceil((firstEvent.date.getTime()-today.getTime())/86400000);if(diffDays===0){return futureEvents[1]?`今天是 ${firstEvent.name}，距離下個${type} [${futureEvents[1].name}] 還有 ${Math.ceil((futureEvents[1].date-today)/86400000)} 天`:`今天是 ${firstEvent.name}！`}return`距離 ${firstEvent.name} 還有 ${diffDays} 天`};let allHolidays=[...getAllHolidaysForYear(today.getFullYear()),...getAllHolidaysForYear(today.getFullYear()+1)];let allSolarTerms=[...getAllSolarTermsForYear(today.getFullYear()),...getAllSolarTermsForYear(today.getFullYear()+1)];document.getElementById('countdown-holiday-text').textContent=formatCountdownText(allHolidays,'節日');document.getElementById('countdown-solarterm-text').textContent=formatCountdownText(allSolarTerms,'節氣')}
-            
             const pickerYearEl=document.getElementById('picker-year'),pickerMonthGridEl=document.getElementById('picker-month-grid');
             let pickerYear=new Date().getFullYear();
             let pickerTarget = null; 
@@ -1388,7 +1353,6 @@
                 renderPicker(pickerTarget.currentDate.getFullYear(), pickerTarget.currentDate.getMonth(), pickerTarget.currentDate);
                 showModal('modal-backdrop-picker');
             }
-            
             document.getElementById('year-header').addEventListener('click', () => openPickerFor(Calendar));
             document.getElementById('moon-phase-year-header').addEventListener('click', () => openPickerFor(MoonPhaseWidget));
 
@@ -1404,7 +1368,6 @@
                     renderPicker(pickerYear, -1, pickerTarget.currentDate);
                 }
             });
-            
             pickerMonthGridEl.addEventListener('click', (e) => {
                 const cell = e.target.closest('.month-cell');
                 if (cell && pickerTarget) {
@@ -1422,7 +1385,6 @@
             ['mousemove','mousedown','touchstart','keydown'].forEach(event=>document.addEventListener(event,resetActivityTimeout));
             document.getElementById('fullscreen-btn').addEventListener('click',()=>{if(!document.fullscreenElement){document.documentElement.requestFullscreen()}else{document.exitFullscreen()}});
             document.addEventListener('fullscreenchange',()=>{const isFullscreen=!!document.fullscreenElement;document.getElementById('fullscreen-enter-icon').classList.toggle('display-none',isFullscreen);document.getElementById('fullscreen-exit-icon').classList.toggle('display-none',!isFullscreen)});
-            
             // ===================================================================
             // 設定、顏色與儲存
             // ===================================================================
@@ -1431,7 +1393,6 @@
                 saveCurrentSettings();
                 Weather.updateWeather();
             }
-            
             function applyAllSettings() {
                 Object.keys(settingsState).forEach(widgetKey => {
                     if (settingsState[widgetKey] && settingsState[widgetKey].colors) {
@@ -1452,7 +1413,6 @@
                     settings: settingsState
                 }));
             }
-            
             function updateSettingsUIFromState() {
                 document.querySelectorAll('#modal-backdrop-settings input[data-setting-type="color"]').forEach(picker => {
                     const widget = picker.dataset.widget;
@@ -1477,7 +1437,6 @@
                 });
                 updateLocationSelectors();
                 loadMarqueeSettingsToUI(document.getElementById('marquee-selector').value);
-                
                 // 更新定時特效 UI
                 const teSettings = settingsState.timedEffect;
                 if (teSettings) {
@@ -1495,7 +1454,6 @@
             const marqueeColorInput = document.getElementById('marquee-default-color');
             const marqueeDirectionSelect = document.getElementById('marquee-direction-select');
 
-
             for (let i = 0; i < 6; i++) {
                 marqueeSelector.add(new Option(`${i+1}`, i));
             }
@@ -1510,7 +1468,6 @@
                     option.disabled = isVertical ? !isVerticalOption : isVerticalOption;
                 }
             }
-            
             function loadMarqueeSettingsToUI(index) {
                 const settings = settingsState.marquees[index];
                 if (!settings) return;
@@ -1524,11 +1481,9 @@
             }
 
             marqueeSelector.addEventListener('change', (e) => loadMarqueeSettingsToUI(e.target.value));
-            
             function updateMarqueeSettingFromUI() {
                 const index = marqueeSelector.value;
                 if (!settingsState.marquees[index]) return;
-                
                 settingsState.marquees[index].text = marqueeTextInput.value;
                 settingsState.marquees[index].speed = marqueeSpeedInput.value;
                 settingsState.marquees[index].vertical = marqueeVerticalToggle.checked;
@@ -1537,7 +1492,6 @@
                     settingsState.marquees[index].colors = {};
                 }
                 settingsState.marquees[index].colors['default'] = marqueeColorInput.value;
-                
                 MarqueeManager.rebuildAnimationByIndex(index);
                 saveCurrentSettings();
             }
@@ -1548,7 +1502,6 @@
                 marqueeDirectionSelect.value = isVertical ? 'up' : 'left';
                 updateMarqueeSettingFromUI();
             });
-            
             marqueeEnabledToggle.addEventListener('change', e => {
                 const index = marqueeSelector.value;
                 const widgetId = `marquee-container-${index}`;
@@ -1573,7 +1526,6 @@
                 updateSettingsUIFromState();
                 showModal('modal-backdrop-settings');
             });
-            
             document.querySelector('#modal-backdrop-settings').addEventListener('input', e => {
                 if (e.target.dataset.settingType === 'color') { 
                     const widget = e.target.dataset.widget;
@@ -1657,7 +1609,6 @@
                     timedEffectToggle.disabled = false;
                     timedEffectInterval.disabled = false;
                 }
-                
                 document.body.classList.toggle('edit-mode', isEditMode);
                 allWidgetContainers().forEach(c => c.classList.toggle('edit-mode', isEditMode));
                 document.getElementById('edit-icon').classList.toggle('display-none', isEditMode);
@@ -1693,13 +1644,11 @@
                     else if (h.classList.contains('resize-handle-w')) h.style.transform = `translateY(-50%) scale(${inverseScale})`; 
                     else if (h.classList.contains('resize-handle-h')) h.style.transform = `translateX(-50%) scale(${inverseScale})`; 
                 }); 
-                
                 const indicator = widgetEl.querySelector('.marquee-edit-indicator');
                 if (indicator) indicator.style.transform = `scale(${inverseScale})`;
                 widgetEl.style.borderWidth = `${2 * inverseScale}px`; 
             };
             const applyAllTransforms = () => { Object.keys(transformStates).forEach(id => applyTransform(document.getElementById(id), transformStates[id])); };
-            
             function checkAndClampWidgetBounds(state) {
                 if (!state || !state.visible) return;
                 const winW = window.innerWidth;
@@ -1719,7 +1668,6 @@
             }
 
             const ensureWidgetsInBounds = () => { Object.values(transformStates).forEach(checkAndClampWidgetBounds); applyAllTransforms(); };
-            
             const onDragStart = (e) => {
                 if (!isEditMode) return;
                 const targetWidget = e.target.closest('.widget-container');
@@ -1793,7 +1741,6 @@
             };
             const onDragEnd = () => { if (!activeHandle) return; ensureWidgetsInBounds(); document.body.style.cursor = 'default'; document.body.style.userSelect = 'auto'; activeHandle = null; activeWidget = null; window.removeEventListener('mousemove', onDragMove); window.removeEventListener('touchmove', onDragMove); window.removeEventListener('mouseup', onDragEnd); window.removeEventListener('touchend', onDragEnd); saveCurrentSettings(); };
             document.body.addEventListener('mousedown', onDragStart); document.body.addEventListener('touchstart', onDragStart, { passive: false });
-            
             // ===================================================================
             // 版面配置儲存/載入
             // ===================================================================
@@ -1833,7 +1780,6 @@
             document.addEventListener('touchmove', handleToolbarDragMove, { passive: false });
             document.addEventListener('mouseup', handleToolbarDragEnd);
             document.addEventListener('touchend', handleToolbarDragEnd);
-            
             const layoutSelector=document.getElementById('layout-selector');
             function updateLayoutSelector(){layoutSelector.innerHTML='';for(let i=0;i<10;i++){const saved=localStorage.getItem(`widgets_layout_${i}`);const option=document.createElement('option');option.value=i;let text=`${i+1}. (空)`;if(saved){const data=JSON.parse(saved);
             text=`${i+1}. ${data.name||'未命名'}`}option.textContent=text;layoutSelector.appendChild(option)}}
@@ -1904,7 +1850,6 @@
                 } else {
                     applyLayout(JSON.parse(JSON.stringify(userDefaultLayout)));
                 }
-                
                 Calendar.init();
                 LedClock.init();
                 AnalogClock.init();
@@ -1915,7 +1860,6 @@
                 updateLayoutSelector();
                 saveCurrentSettings(); 
                 window.addEventListener('resize', () => { ensureWidgetsInBounds(); MarqueeManager.rebuildAllAnimations(); saveCurrentSettings(); });
-                
                 document.fonts.ready.then(() => { ensureWidgetsInBounds(); MarqueeManager.rebuildAllAnimations(); });
             })();
         });
