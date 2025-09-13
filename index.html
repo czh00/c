@@ -153,18 +153,7 @@
         .number > div { transform: rotate(calc(-1 * var(--rotation))); }
 
         /* --- 跑馬燈 spezifische樣式 --- */
-        /* Gem 修改：為了解決 iOS 閃爍問題，將父層也提升為合成層(Compositing Layer) */
-        .marquee-widget main { 
-            display: flex; 
-            align-items: center; 
-            justify-content: flex-start; 
-            width: 100%; 
-            height: 100%; 
-            overflow: hidden; 
-            transform: translateZ(0); /* 新增: 提升為合成層以啟用 GPU 加速 */
-            backface-visibility: hidden; /* 新增: 輔助提升穩定性 */
-            perspective: 1000px; /* 新增: 從子層移動至此，為子動畫建立3D場景 */
-        }
+        .marquee-widget main { display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 100%; overflow: hidden; transform: translateZ(0); -webkit-transform: translateZ(0); }
         .marquee-edit-indicator {
             position: absolute;
             top: -10px;
@@ -185,8 +174,7 @@
         .widget-container.edit-mode .marquee-edit-indicator {
             display: flex;
         }
-        /* Gem 修改：移除 perspective，因已移至父層 */
-        .marquee-inner { display: flex; width: fit-content; height: fit-content; will-change: transform; font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; backface-visibility: hidden; margin-right: auto; }
+        .marquee-inner { display: flex; width: fit-content; height: fit-content; will-change: transform; transform: translateZ(0); font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; -webkit-backface-visibility: hidden; backface-visibility: hidden; perspective: 1000px; margin-right: auto; }
         .marquee-text-instance { white-space: nowrap; flex-shrink: 0; line-height: 1; }
         .marquee-text-instance svg { vertical-align: middle; }
 
@@ -810,6 +798,9 @@
     </div>
 
     <script>
+        // --- 全域變數，用於控制天氣載入狀態 ---
+        let weatherDataLoaded = false;
+
         document.addEventListener('DOMContentLoaded', function () {
             // --- 農曆轉換核心演算法 ---
             function getLunarYearDays(y){let i,sum=348;for(i=0x8000;i>0x8;i>>=1)sum+=(lunarInfo[y-1900]&i)?1:0;return sum+getLunarLeapDays(y)}
@@ -1164,14 +1155,24 @@
                 rebuildAnimation() {
                     clearTimeout(this.rebuildTimeout);
                     this.innerDiv.style.animation = '';
-                    this.isScrolling = false; // 預設為不滾動
+                    this.isScrolling = false;
+                    const settings = settingsState.marquees[this.index];
+                    if (!settings) return;
+                    const hasWeatherParams = settings.text && /%WEATHER_|%SUNRISE%|%SUNSET%|%TEMP%/.test(settings.text);
+                    // 如果包含天氣參數且天氣資料尚未載入，則僅顯示靜態文字
+                    if (hasWeatherParams && !weatherDataLoaded) {
+                        this.innerDiv.style.transform = 'translateX(0) translateY(0)';
+                        const staticContent = this.buildInitialHTML(settings.text);
+                        this.innerDiv.innerHTML = `<div class="marquee-text-instance">${staticContent}</div>`;
+                        return; // 終止函式，不設定動畫
+                    }
+                    // 天氣已載入或不含天氣參數，正常設定動畫
                     this.rebuildTimeout = setTimeout(() => {
                         this.animationStyleTag.innerHTML = '';
                         this.innerDiv.innerHTML = '';
-                        this.innerDiv.style.transform = 'translate3d(0, 0, 0)';
+                        this.innerDiv.style.transform = 'translateX(0) translateY(0) translateZ(0)';
 
-                        const settings = settingsState.marquees[this.index];
-                        if (!settings || !settings.text || !settings.text.trim()) return;
+                        if (!settings.text || !settings.text.trim()) return;
                         const { text, vertical: isVertical, speed, direction } = settings;
                         this.innerDiv.style.flexDirection = isVertical ? 'column' : 'row';
                         this.innerDiv.style.width = isVertical ? '100%' : 'fit-content';
@@ -1195,33 +1196,20 @@
                         if (travelDistance <= 0) return;
                         const duration = travelDistance / (parseInt(speed, 10) || 80);
                         const animName = `marquee-${this.index}-${Date.now()}`;
-                        
-                        // Gem 修改：改用更明確的 translate3d 來定義動畫，以增強 iOS 上的穩定性，避免循環閃爍
                         let fromTransform, toTransform;
                         switch(direction) {
-                            case 'right':
-                                fromTransform = `translate3d(-${travelDistance}px, 0, 0)`;
-                                toTransform = `translate3d(0, 0, 0)`;
-                                break;
-                            case 'up':
-                                fromTransform = `translate3d(0, 0, 0)`;
-                                toTransform = `translate3d(0, -${travelDistance}px, 0)`;
-                                break;
-                            case 'down':
-                                fromTransform = `translate3d(0, -${travelDistance}px, 0)`;
-                                toTransform = `translate3d(0, 0, 0)`;
-                                break;
-                            default: // 'left'
-                                fromTransform = `translate3d(0, 0, 0)`;
-                                toTransform = `translate3d(-${travelDistance}px, 0, 0)`;
-                                break;
+                            case 'right': fromTransform = `translateX(-${travelDistance}px)`; toTransform = `translateX(0px)`; break;
+                            case 'up': fromTransform = `translateY(0px)`; toTransform = `translateY(-${travelDistance}px)`; break;
+                            case 'down': fromTransform = `translateY(-${travelDistance}px)`; toTransform = `translateY(0px)`; break;
+                            default: fromTransform = `translateX(0px)`; toTransform = `translateX(-${travelDistance}px)`; break;
                         }
 
-                        this.animationStyleTag.innerHTML = `@keyframes ${animName} { from { transform: ${fromTransform}; } to { transform: ${toTransform}; }}`;
+                        this.animationStyleTag.innerHTML = `@keyframes ${animName} { from { transform: ${fromTransform} translateZ(0); } to { transform: ${toTransform} translateZ(0); }}`;
                         this.innerDiv.style.animation = `${animName} ${duration}s linear infinite`;
                         this.innerDiv.style.animationPlayState = isEditMode ? 'paused' : 'running';
                     }, 50);
                 }
+
                  setPlayState(shouldPlay) {
                     this.innerDiv.style.animationPlayState = shouldPlay ? 'running' : 'paused';
                 }
@@ -1249,9 +1237,16 @@
                 async fetchCoordinates(name) { const data = await this.fetchAPI(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en&format=json`); return data?.results?.[0] || null; },
                 async fetchWeather(lat, lon) { const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=weather_code,sunrise,sunset&timezone=auto`; return await this.fetchAPI(url); },
                 async updateWeather() {
-                    const locationName = settingsState.location?.trim(); if (!locationName) { this.data = null; MarqueeManager.rebuildAllAnimations(); return; }
-                    const coords = await this.fetchCoordinates(locationName); this.data = coords ? await this.fetchWeather(coords.latitude, coords.longitude) : null;
-                    // Gem 修改：確保天氣資料取得後才重建跑馬燈
+                    const locationName = settingsState.location?.trim();
+                    if (!locationName) {
+                        this.data = null;
+                        weatherDataLoaded = true; // 標記為已載入
+                        MarqueeManager.rebuildAllAnimations();
+                        return;
+                    }
+                    const coords = await this.fetchCoordinates(locationName);
+                    this.data = coords ? await this.fetchWeather(coords.latitude, coords.longitude) : null;
+                    weatherDataLoaded = true; // 標記為已載入
                     MarqueeManager.rebuildAllAnimations();
                 },
                 getWeatherDescription(code) { const map={0:"晴",1:"多雲時晴",2:"局部多雲",3:"陰",45:"霧",48:"凍霧",51:"毛毛雨",53:"毛毛雨",55:"毛毛雨",56:"凍毛毛雨",57:"凍毛毛雨",61:"雨",63:"雨",65:"大雨",66:"凍雨",67:"凍雨",71:"雪",73:"雪",75:"大雪",77:"冰雹",80:"陣雨",81:"陣雨",82:"大陣雨",85:"陣雪",86:"大陣雪",95:"雷陣雨",96:"雷陣雨伴冰雹",99:"雷陣雨伴冰雹"}; return map[code] || "未知"; },
@@ -1872,8 +1867,7 @@
                 updateLayoutSelector();
                 saveCurrentSettings(); 
                 window.addEventListener('resize', () => { ensureWidgetsInBounds(); MarqueeManager.rebuildAllAnimations(); saveCurrentSettings(); });
-                // Gem 修改：移除這裡的 rebuildAllAnimations()，讓天氣模組初始化後再觸發第一次重建
-                document.fonts.ready.then(() => { ensureWidgetsInBounds(); });
+                document.fonts.ready.then(() => { ensureWidgetsInBounds(); MarqueeManager.rebuildAllAnimations(); });
             })();
         });
 
