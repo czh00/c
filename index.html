@@ -153,18 +153,7 @@
         .number > div { transform: rotate(calc(-1 * var(--rotation))); }
 
         /* --- 跑馬燈 spezifische樣式 --- */
-        .marquee-widget main {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            transform: translateZ(0);
-            -webkit-transform: translateZ(0);
-            outline: 1px solid transparent; /* 修正 iOS 閃爍問題 */
-            -webkit-transform-style: preserve-3d; /* 修正 iOS 閃爍問題 */
-        }
+        .marquee-widget main { display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 100%; overflow: hidden; transform: translateZ(0); -webkit-transform: translateZ(0); }
         .marquee-edit-indicator {
             position: absolute;
             top: -10px;
@@ -1167,29 +1156,23 @@
                     clearTimeout(this.rebuildTimeout);
                     this.innerDiv.style.animation = '';
                     this.isScrolling = false;
-
                     const settings = settingsState.marquees[this.index];
                     if (!settings) return;
-
                     const hasWeatherParams = settings.text && /%WEATHER_|%SUNRISE%|%SUNSET%|%TEMP%/.test(settings.text);
-
-                    // **[iOS 時序問題修正]** 將所有邏輯包在 setTimeout 中，確保 DOM 操作在一個乾淨的週期中執行
+                    // 如果包含天氣參數且天氣資料尚未載入，則僅顯示靜態文字
+                    if (hasWeatherParams && !weatherDataLoaded) {
+                        this.innerDiv.style.transform = 'translateX(0) translateY(0)';
+                        const staticContent = this.buildInitialHTML(settings.text);
+                        this.innerDiv.innerHTML = `<div class="marquee-text-instance">${staticContent}</div>`;
+                        return; // 終止函式，不設定動畫
+                    }
+                    // 天氣已載入或不含天氣參數，正常設定動畫
                     this.rebuildTimeout = setTimeout(() => {
                         this.animationStyleTag.innerHTML = '';
                         this.innerDiv.innerHTML = '';
                         this.innerDiv.style.transform = 'translateX(0) translateY(0) translateZ(0)';
 
-                        // 檢查是否需要天氣資料，以及資料是否已載入
-                        if (hasWeatherParams && !weatherDataLoaded) {
-                            // 如果需要天氣但尚未載入，則僅顯示包含「讀取中」的靜態文字
-                            const staticContent = this.buildInitialHTML(settings.text);
-                            this.innerDiv.innerHTML = `<div class="marquee-text-instance">${staticContent}</div>`;
-                            return; // 終止函式，不設定動畫
-                        }
-
-                        // 如果不需要天氣，或天氣已載入，則正常設定動畫
                         if (!settings.text || !settings.text.trim()) return;
-
                         const { text, vertical: isVertical, speed, direction } = settings;
                         this.innerDiv.style.flexDirection = isVertical ? 'column' : 'row';
                         this.innerDiv.style.width = isVertical ? '100%' : 'fit-content';
@@ -1201,29 +1184,19 @@
                         instance1.style.textAlign = isVertical ? 'center' : 'left';
                         instance1.innerHTML = this.buildInitialHTML(text);
                         this.innerDiv.appendChild(instance1);
-                        
-                        // 強制瀏覽器重新計算佈局以取得正確尺寸
                         instance1.getBoundingClientRect();
 
                         const contentMeasure = isVertical ? instance1.offsetHeight : instance1.offsetWidth;
                         const containerMeasure = isVertical ? this.mainContainer.offsetHeight : this.mainContainer.offsetWidth;
-
-                        // 如果內容沒有超出容器，則不需要滾動
-                        if (contentMeasure <= containerMeasure) {
-                            this.isScrolling = false;
-                            return;
-                        }
-                        
+                        if (contentMeasure <= containerMeasure) return;
                         this.isScrolling = true; // 內容超出容器，設定為滾動狀態
                         this.innerDiv.appendChild(instance1.cloneNode(true));
 
                         const travelDistance = contentMeasure;
                         if (travelDistance <= 0) return;
-
                         const duration = travelDistance / (parseInt(speed, 10) || 80);
                         const animName = `marquee-${this.index}-${Date.now()}`;
                         let fromTransform, toTransform;
-                        
                         switch(direction) {
                             case 'right': fromTransform = `translateX(-${travelDistance}px)`; toTransform = `translateX(0px)`; break;
                             case 'up': fromTransform = `translateY(0px)`; toTransform = `translateY(-${travelDistance}px)`; break;
@@ -1234,7 +1207,7 @@
                         this.animationStyleTag.innerHTML = `@keyframes ${animName} { from { transform: ${fromTransform} translateZ(0); } to { transform: ${toTransform} translateZ(0); }}`;
                         this.innerDiv.style.animation = `${animName} ${duration}s linear infinite`;
                         this.innerDiv.style.animationPlayState = isEditMode ? 'paused' : 'running';
-                    }, 50); // 使用 50ms 延遲以確保 DOM 更新
+                    }, 50);
                 }
 
                  setPlayState(shouldPlay) {
@@ -1267,14 +1240,14 @@
                     const locationName = settingsState.location?.trim();
                     if (!locationName) {
                         this.data = null;
-                        weatherDataLoaded = true; // 標記為已載入 (即使是失敗或無地點)
+                        weatherDataLoaded = true; // 標記為已載入
                         MarqueeManager.rebuildAllAnimations();
                         return;
                     }
                     const coords = await this.fetchCoordinates(locationName);
                     this.data = coords ? await this.fetchWeather(coords.latitude, coords.longitude) : null;
                     weatherDataLoaded = true; // 標記為已載入
-                    MarqueeManager.rebuildAllAnimations(); // 資料更新後，重建所有跑馬燈
+                    MarqueeManager.rebuildAllAnimations();
                 },
                 getWeatherDescription(code) { const map={0:"晴",1:"多雲時晴",2:"局部多雲",3:"陰",45:"霧",48:"凍霧",51:"毛毛雨",53:"毛毛雨",55:"毛毛雨",56:"凍毛毛雨",57:"凍毛毛雨",61:"雨",63:"雨",65:"大雨",66:"凍雨",67:"凍雨",71:"雪",73:"雪",75:"大雪",77:"冰雹",80:"陣雨",81:"陣雨",82:"大陣雨",85:"陣雪",86:"大陣雪",95:"雷陣雨",96:"雷陣雨伴冰雹",99:"雷陣雨伴冰雹"}; return map[code] || "未知"; },
                 getChineseLocationName(englishName) {
