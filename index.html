@@ -247,7 +247,14 @@
             vertical-align: middle; /* 讓所有項目垂直置中 */
         }
         /* 註解：已移除 .marquee-plain-text 的特定字體大小規則，以確保所有文字（包括 LED 數字和一般文字）大小一致 */
-        .marquee-text-instance svg { vertical-align: middle; }
+        .marquee-text-instance svg {
+            vertical-align: middle;
+            /* 2024-09-14: 新增 transform 屬性微調垂直位置 */
+            /* 由於 SVG 的基準線與中文字體不同，導致視覺上偏下 */
+            /* 使用 translateY 向上移動一點距離 (負值表示向上) */
+            /* 您可以微調 -5% 這個值以達到最理想的對齊效果 */
+            transform: translateY(-5%);
+        }
 
         /* --- 月相Widget樣式 --- */
         #moon-phase-container .calendar-day.selected { border-color: var(--moon-highlight-color); box-shadow: 0 0 5px var(--moon-highlight-color); border-radius: 0.375rem; }
