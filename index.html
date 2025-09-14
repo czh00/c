@@ -96,7 +96,7 @@
             transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
         }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; }
-        .calendar-day { padding: 0.25rem; margin: 0; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; font-size: 0.9em; border: 1px solid #555; cursor: pointer; transition: background-color 0.3s; background-color: transparent !important; z-index: 1; position: relative; overflow: hidden; }
+        .calendar-day { padding: 0.25rem; margin: 0; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; font-size: 0.9em; border: 1px solid #555; cursor: pointer; transition: background-color 0.3s, opacity 0.3s; background-color: transparent !important; z-index: 1; position: relative; overflow: hidden; }
         .calendar-day:not(.edit-mode-active):hover { background-color: var(--bg-hover); cursor: pointer; }
         /* 當月相圖示顯示時的新版面配置 */
         .calendar-day.with-moon-icon {
@@ -118,7 +118,8 @@
 
         .day-header { border: 1px solid #555; background-color: var(--bg-secondary); color: var(--week-color); font-size: 0.9em; padding: 0.25rem; text-align: center; font-weight: 600; }
         .today { background-color: var(--today-bg); color: white; box-shadow: 0 0 10px 1px var(--today-border); border-radius: 0.5em; }
-        .other-month { color: var(--text-muted); }
+        /* 修改：新增 opacity 屬性來淡化非當月日期 */
+        .other-month { color: var(--text-muted); opacity: 0.4; }
         .day-number-wrapper { margin-bottom: 2px; } /* 修改：為日期數字SVG新增的容器 */
         .lunar-date { font-size: 1.2em; color: var(--lunar-color); line-height: 1; }
         .holiday-text, .solarterm-text { font-size: 1.2em; font-weight: 500; cursor: help; line-height: 1; }
@@ -253,7 +254,7 @@
             /* 由於 SVG 的基準線與中文字體不同，導致視覺上偏下 */
             /* 使用 translateY 向上移動一點距離 (負值表示向上) */
             /* 您可以微調 -5% 這個值以達到最理想的對齊效果 */
-            transform: translateY(-5%);
+            transform: translateY(-6%);
         }
 
         /* --- 月相Widget樣式 --- */
@@ -490,7 +491,6 @@
 <body class="antialiased">
     <div id="edit-mode-grid"></div>
 
-    <!-- 月曆 Widget -->
     <div id="calendar-container" class="widget-container">
         <div class="widget-content-wrapper">
             <div id="background-month" class="background-month"></div>
@@ -519,7 +519,6 @@
         <div class="resize-handle-w control-handle"></div>
         <div class="resize-handle-h control-handle"></div>
     </div>
-    <!-- LED 時鐘 Widget -->
     <div id="led-clock-container" class="widget-container">
         <div class="widget-content-wrapper">
             <main>
@@ -533,7 +532,6 @@
         <div class="resize-handle-h control-handle"></div>
     </div>
 
-    <!-- 指針時鐘 Widget -->
     <div id="analog-clock-container" class="widget-container">
         <div class="widget-content-wrapper">
             <main class="analog-clock-face">
@@ -548,7 +546,6 @@
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="width-full height-full"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"></path></svg>
         </div>
     </div>
-    <!-- 跑馬燈 Widgets -->
     <div id="marquee-container-0" class="widget-container marquee-widget">
         <div class="marquee-edit-indicator">1</div>
         <div class="widget-content-wrapper"><main><div class="marquee-inner"></div></main></div>
@@ -586,7 +583,6 @@
         <div class="resize-handle-w control-handle"></div><div class="resize-handle-h control-handle"></div>
     </div>
 
-    <!-- 月相 Widget -->
     <div id="moon-phase-container" class="widget-container">
         <div class="widget-content-wrapper">
             <div id="moon-background-month" class="background-month"></div>
@@ -612,7 +608,6 @@
         <div class="resize-handle-h control-handle"></div>
     </div>
 
-    <!-- UI Elements -->
     <div id="action-buttons" class="action-buttons">
         <button id="edit-layout-btn" class="action-button" title="編輯版面">
             <svg id="edit-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
@@ -636,7 +631,6 @@
         <button id="import-layout-btn" class="toolbar-btn">導入</button>
     </div>
 
-    <!-- Modals -->
     <div id="modal-backdrop-day" class="modal-backdrop"><div class="modal-content max-width-md"><div class="padding-6"><div class="display-flex justify-content-space-between align-items-flex-start margin-bottom-4"><div><h2 id="modal-gregorian-date" class="font-size-xl font-weight-bold color-white"></h2><p id="modal-lunar-date" class="font-size-md color-indigo-300"></p><p id="modal-holiday" class="font-size-md holiday-text margin-top-1 cursor-help"></p><p id="modal-solarterm" class="font-size-md solarterm-text cursor-help"></p></div><button data-close-modal="modal-backdrop-day" class="color-gray-400 hover-color-white font-size-3xl line-height-none">&times;</button></div><div class="margin-bottom-4 padding-3 bg-gray-800 border-radius-lg space-y-2 text-align-center"><p id="countdown-holiday-text" class="font-size-sm color-gray-300"></p><p id="countdown-solarterm-text" class="font-size-sm color-gray-300"></p></div>
 <div id="modal-day-details-grid" class="margin-top-4 display-grid grid-columns-2 gap-4 text-align-center">
     <div>
@@ -659,7 +653,6 @@
     <div id="modal-backdrop-picker" class="modal-backdrop"><div id="month-year-picker" class="modal-content"><div class="padding-5"><div class="year-nav margin-bottom-4"><button id="picker-prev-year" class="calendar-nav-arrow">&lt;</button><span id="picker-year" class="font-size-xl font-weight-bold">2024</span><button id="picker-next-year" class="calendar-nav-arrow">&gt;</button></div><div id="picker-month-grid" class="month-grid"></div></div></div></div>
     <div id="modal-backdrop-settings" class="modal-backdrop">
         <div class="modal-content max-width-5xl max-height-90vh display-flex flex-direction-column">
-            <!-- Header (Sticky) -->
             <div class="padding-horizontal-5 padding-vertical-2 bg-gray-800" style="position: sticky; top: 0; z-index: 1;">
                 <div class="display-flex justify-content-space-between align-items-center">
                     <h3 class="font-size-xl font-weight-bold color-indigo-300 p0">設定</h3>
@@ -670,11 +663,9 @@
                     </div>
                 </div>
             </div>
-            <!-- Scrollable Content -->
             <div class="overflow-y-auto padding-5">
                 <div class="p0">
                      <div class="display-grid grid-columns-1 md-grid-columns-2 lg-grid-columns-4 column-gap-8 row-gap-6">
-                        <!-- 月曆設定 -->
                         <div>
                             <h4 class="font-size-lg font-weight-semibold color-gray-400 margin-bottom-2 border-bottom-1px border-color-gray-600 padding-bottom-2">
                                 <input type="checkbox" data-widget-toggle="calendar-container" class="form-checkbox">
@@ -699,7 +690,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- 月相設定 -->
                         <div>
                             <h4 class="font-size-lg font-weight-semibold color-gray-400 margin-bottom-2 border-bottom-1px border-color-gray-600 padding-bottom-2">
                                 <input type="checkbox" data-widget-toggle="moon-phase-container" class="form-checkbox">
@@ -717,7 +707,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- LED 時鐘設定 -->
                         <div>
                             <h4 class="font-size-lg font-weight-semibold color-gray-400 margin-bottom-2 border-bottom-1px border-color-gray-600 padding-bottom-2">
                                 <input type="checkbox" data-widget-toggle="led-clock-container" class="form-checkbox">
@@ -735,7 +724,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- 指針時鐘設定 -->
                         <div>
                             <h4 class="font-size-lg font-weight-semibold color-gray-400 margin-bottom-2 border-bottom-1px border-color-gray-600 padding-bottom-2">
                                 <input type="checkbox" data-widget-toggle="analog-clock-container" class="form-checkbox">
@@ -752,7 +740,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- 定時特效設定 -->
                         <div class="grid-column-span-2 md-grid-column-span-4">
                             <div class="display-flex align-items-center justify-content-space-between width-full padding-vertical-2 border-top-1px border-color-gray-700 margin-top-4">
                                 <div class="display-flex align-items-center gap-2">
@@ -769,11 +756,8 @@
                      </div>
                 </div>
 
-                <!-- 跑馬燈 & 天氣設定 -->
                 <div class="margin-top-6 padding-top-6 border-top-1px border-color-gray-700">
-                    <!-- 2024-09-13: 將跑馬燈控制項與地區設定並排 -->
                     <div class="display-grid grid-columns-1 md-grid-columns-2 gap-4 align-items-center">
-                        <!-- 左側：跑馬燈主要控制項 -->
                         <div class="display-flex flex-direction-column row-gap-3 flex-shrink-0">
                             <div class="display-flex align-items-center column-gap-6 flex-wrap">
                                 <div class="display-flex align-items-center gap-2">
@@ -805,7 +789,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- 右側：地區與天氣設定 -->
                         <div class="display-flex align-items-center justify-content-flex-end gap-2 flex-wrap">
                             <label class="flex-shrink-0 margin-right-1">地區</label>
                             <select id="countySelect"></select>
@@ -816,7 +799,6 @@
                             </button>
                         </div>
                     </div>
-                    <!-- 跑馬燈內容設定 -->
                     <div class="margin-top-4 grid-column-span-2 display-flex align-items-flex-start">
                        <label for="marquee-text-input" class="flex-shrink-0 margin-right-3 padding-top-1">內容</label>
                        <div class="display-flex align-items-flex-start width-full">
@@ -938,7 +920,33 @@
             let solarTermsCache={};
             function calculateAndCacheSolarTerms(year){if(year<2000||year>2099){solarTermsCache[year]={};return}const yearMap={};const Y=year-2000;solarTermConstants.forEach(([name,month,C])=>{const day=Math.floor(Y*0.2422+C)-Math.floor(Y/4);yearMap[`${year}-${month}-${day}`]=name});solarTermsCache[year]=yearMap}
             function getSolarTerm(year,month,day){if(!solarTermsCache[year]){calculateAndCacheSolarTerms(year)}return solarTermsCache[year][`${year}-${month}-${day}`]||null}
-            function getHoliday(date){const year=date.getFullYear();const gKey=`${date.getMonth()+1}-${date.getDate()}`;if(gregorianHolidays[gKey])return gregorianHolidays[gKey];if(date.getMonth()===4&&date.getDay()===0&&date.getDate()>7&&date.getDate()<=14)return"母親節";const l=getLunarDate(date);if(l.day>0){const lKey=(l.month===12&&l.day===29&&getLunarMonthDays(l.year,12)===29)?"12-29":`${l.month}-${l.day}`;if(lKey==="12-29")return"除夕";if(lunarHolidays[lKey])return lunarHolidays[lKey]}return null}
+            function getHoliday(date) {
+                const month = date.getMonth() + 1;
+                const dayOfMonth = date.getDate();
+                const dayOfWeek = date.getDay(); // 0=Sunday
+
+                // 1. Check Gregorian (fixed date) holidays
+                const gKey = `${month}-${dayOfMonth}`;
+                if (gregorianHolidays[gKey]) return gregorianHolidays[gKey];
+
+                // 2. Check floating holidays (e.g., 2nd Sunday of May)
+                const weekOfMonth = Math.ceil(dayOfMonth / 7);
+                const fKey = `${month}-${weekOfMonth}-${dayOfWeek}`;
+                if (floatingHolidays[fKey]) return floatingHolidays[fKey];
+
+                // 3. Check Lunar holidays
+                const l = getLunarDate(date);
+                if (l.day > 0) {
+                    // Special, more robust check for Lunar New Year's Eve
+                    if (l.month === 12 && l.day === getLunarMonthDays(l.year, 12)) {
+                        return "除夕";
+                    }
+                    const lKey = `${l.month}-${l.day}`;
+                    if (lunarHolidays[lKey]) return lunarHolidays[lKey];
+                }
+
+                return null;
+            }
             const yiJiMap={};
             function getYiJiForDate(year,month,day){const key=`${year}-${month}-${day}`;if(yiJiMap[key])return yiJiMap[key];const allGood=["嫁娶","祈福","求嗣","出行","入宅","開市","安床","祭祀","納采","修造"];const allBad=["動土","安葬","作灶","伐木","行喪","破土","詞訟","赴任"];const seed=year*10000+month*100+day;const randomGood=[...allGood].sort(()=>0.5-(seed%1000/1000)).slice(0,5);const randomBad=[...allBad].sort(()=>0.5-(seed%888/888)).slice(0,3);return{good:randomGood,bad:randomBad}}
             // --- 時辰計算輔助 ---
@@ -1614,7 +1622,49 @@
             }
             function showExplanationModal(title,content){if(isEditMode)return;document.getElementById('explanation-title').textContent=title;document.getElementById('explanation-content').textContent=content;showModal('modal-backdrop-explanation')}
             function getAllSolarTermsForYear(year){if(!solarTermsCache[year])calculateAndCacheSolarTerms(year);return Object.entries(solarTermsCache[year]).map(([key,name])=>{const[y,m,d]=key.split('-').map(Number);return{date:new Date(y,m-1,d),name}}).sort((a,b)=>a.date-b.date)}
-            function getAllHolidaysForYear(year){let holidays=Object.entries(gregorianHolidays).map(([key,name])=>{const[m,d]=key.split('-');return{date:new Date(year,m-1,d),name}});Object.entries(lunarHolidays).forEach(([key,name])=>{const[m,d]=key.split('-');const solarDate=lunarToSolar(year,parseInt(m),parseInt(d));if(solarDate)holidays.push({date:solarDate,name})});let md=new Date(year,4,1);md.setDate(14-(md.getDay()||7)+1);holidays.push({date:md,name:"母親節"});return holidays.sort((a,b)=>a.date-b.date)}
+            function getAllHolidaysForYear(year){
+                let holidays = [];
+                // 1. Gregorian Holidays
+                Object.entries(gregorianHolidays).forEach(([key, name]) => {
+                    const [m, d] = key.split('-');
+                    holidays.push({ date: new Date(year, parseInt(m) - 1, parseInt(d)), name });
+                });
+
+                // 2. Lunar Holidays
+                Object.entries(lunarHolidays).forEach(([key, name]) => {
+                    [year, year - 1].forEach(lunarYear => {
+                        const [m, d] = key.split('-');
+                        const solarDate = lunarToSolar(lunarYear, parseInt(m), parseInt(d));
+                        if (solarDate && solarDate.getFullYear() === year) {
+                            holidays.push({ date: solarDate, name });
+                        }
+                    });
+                });
+
+                // Add Lunar New Year's Eve separately
+                [year, year - 1].forEach(lunarYear => {
+                    const lastDay = getLunarMonthDays(lunarYear, 12);
+                    const eveDate = lunarToSolar(lunarYear, 12, lastDay);
+                    if (eveDate && eveDate.getFullYear() === year) {
+                        holidays.push({ date: eveDate, name: "除夕" });
+                    }
+                });
+
+                // 3. Floating Holidays
+                Object.entries(floatingHolidays).forEach(([key, name]) => {
+                    const [m, week, dayOfWeek] = key.split('-').map(Number);
+                    const month = m - 1;
+                    let firstOfMonth = new Date(year, month, 1);
+                    let dateOfFirstDayOfWeek = 1 + ((dayOfWeek - firstOfMonth.getDay() + 7) % 7);
+                    let holidayDate = new Date(year, month, dateOfFirstDayOfWeek + (week - 1) * 7);
+                    if (holidayDate.getMonth() === month) {
+                        holidays.push({ date: holidayDate, name });
+                    }
+                });
+
+                const uniqueHolidays = Array.from(new Map(holidays.map(h => [h.date.toISOString().split('T')[0], h])).values());
+                return uniqueHolidays.sort((a, b) => a.date - b.date);
+            }
             function updateCountdowns(currentDate){
                 const today = new Date(currentDate);
                 today.setHours(0,0,0,0);
@@ -2208,11 +2258,11 @@
 
             const lunarInfo=[0x04bd8,0x04ae0,0x0a570,0x054d5,0x0d260,0x0d950,0x16554,0x056a0,0x09ad0,0x055d2,0x04ae0,0x0a5b6,0x0a4d0,0x0d250,0x1d255,0x0b540,0x0d6a0,0x0ada2,0x095b0,0x14977,0x04970,0x0a4b0,0x0b4b5,0x06a50,0x06d40,0x1ab54,0x02b60,0x09570,0x052f2,0x04970,0x06566,0x0d4a0,0x0ea50,0x06e95,0x05ad0,0x02b60,0x186e3,0x092e0,0x1c8d7,0x0c950,0x0d4a0,0x1d8a6,0x0b550,0x056a0,0x1a5b4,0x025d0,0x092d0,0x0d2b2,0x0a950,0x0b557,0x06ca0,0x0b550,0x15355,0x04da0,0x0a5d0,0x14573,0x052d0,0x0a9a8,0x0e950,0x06aa0,0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05260,0x0f263,0x0d950,0x05b57,0x056a0,0x096d0,0x04dd5,0x04ad0,0x0a4d0,0x0d4d4,0x0d250,0x0d558,0x0b540,0x0b5a0,0x195a6,0x095b0,0x049b0,0x0a974,0x0a4b0,0x0b27a,0x06a50,0x06d40,0x0af46,0x0ab60,0x09570,0x04af5,0x04970,0x064b0,0x074a3,0x0ea50,0x06b58,0x055c0,0x0ab60,0x096d5,0x092e0,0x0c960,0x0d954,0x0d4a0,0x0da50,0x07552,0x056a0,0x0abb7,0x025d0,0x092d0,0x0cab5,0x0a950,0x0b4a0,0x0baa4,0x0ad50,0x055d9,0x04ba0,0x0a5b0,0x15176,0x052b0,0x0a930,0x07954,0x06aa0,0x0ad50,0x05b52,0x04b60,0x0a6e6,0x0a4e0,0x0d260,0x0ea65,0x0d530,0x05aa0,0x076a3,0x096d0,0x04bd7,0x04ad0,0x0a4d0,0x1d0b6,0x0d250,0x0d520,0x0dd45,0x0b5a0,0x056d0,0x055b2,0x049b0,0x0a577,0x0a4b0,0x0aa50,0x1b255,0x06d20,0x0ada0,0x04950,0x097b8,0x04950,0x0b4a0,0x0b6a6,0x06d40,0x0ab50,0x052f4,0x052f0,0x0a960,0x0e964,0x0d4a0,0x0da50,0x1d552,0x056a0,0x096d0,0x055b5,0x049b0,0x0a5b0,0x0a4b5,0x0a4b0,0x1b25a,0x06d20,0x0ada0,0x14950,0x095b0,0x04977,0x04970,0x0a4b0,0x0b4b5,0x06a50,0x06d40,0x1ab54,0x02b60,0x09570,0x052f2,0x04970,0x06566,0x0d4a0,0x0ea50,0x06e95,0x05ad0,0x02b60,0x186e3,0x092e0,0x1c8d7,0x0c950,0x0d4a0,0x1d8a6,0x0b550,0x056a0,0x1a5b4,0x025d0,0x092d0,0x0d2b2,0x0a950,0x0b557,0x06ca0,0x0b550,0x15355,0x04da0,0x0a5d0,0x14573,0x052d0,0x0a9a8,0x0e950,0x06aa0,0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05260,0x0f263,0x0d950,0x05b57,0x056a0,0x096d0,0x04dd5];
             const nStr1="日一二三四五六七八九十";const nStr2="初十廿卅"; const tiangan = "甲乙丙丁戊己庚辛壬癸"; const dizhi = "子丑寅卯辰巳午未申酉戌亥"; const shengxiao = "鼠牛虎兔龍蛇馬羊猴雞狗豬";
-            const explanations={"春節":"農曆新年的第一天，是華人最盛大的傳統節日。","元宵節":"農曆正月十五，又稱上元節。","端午節":"農曆五月初五，為紀念愛國詩人屈原的節日。","七夕":"農曆七月初七，又稱情人節。","中元節":"農曆七月十五，祭祀祖先、普渡孤魂的日子。","中秋節":"農曆八月十五，是家人團圓的日子。","除夕":"農曆年的最後一天。家人會在這天團聚吃年夜飯。","元旦":"公曆新年的第一天。","情人節":"西方的傳統節日，情侶們會在這天互贈禮物。","和平紀念日":"紀念1947年2月28日發生的二二八事件。","兒童節":"為保障兒童的權利而設立的節日。","勞動節":"對勞動者表示尊重和慶祝的日子。","母親節":"每年五月的第二個星期日。","父親節":"感謝父親的節日，訂於每年的八月八日。","教師節":"感謝老師教導的節日。","國慶日":"紀念武昌起義，中華民國的國定假日。","聖誕節":"紀念耶穌基督誕生的日子。","立春":"春季的開始。","春分":"晝夜等長的日子。","清明":"天氣轉暖，掃墓祭祖的傳統節日。","立夏":"夏季的開始。","夏至":"北半球白晝最長的一天。","立秋":"秋季的開始。","秋分":"晝夜等長的日子。","立冬":"冬季的開始。","冬至":"北半球白晝最短的一天。"};
-            const lunarHolidays={"1-1":"春節","1-9":"天公生","1-15":"元宵節","2-2":"土地公生","3-23":"媽祖誕辰","5-5":"端午節","7-7":"七夕","7-15":"中元節","8-15":"中秋節","9-9":"重陽節","10-15":"下元節","12-8":"臘八節","12-24":"送神日","12-30":"除夕"};
-            const gregorianHolidays={"1-1":"元旦","2-14":"情人節","2-28":"和平紀念日","3-8":"婦女節","3-12":"植樹節","4-1":"愚人節","4-4":"兒童節","5-1":"勞動節","8-8":"父親節","9-3":"軍人節","9-28":"教師節","10-10":"國慶日","10-25":"台灣光復節","10-31":"萬聖夜","11-12":"國父誕辰","12-24":"平安夜","12-25":"聖誕節","12-31":"跨年夜"};
-            const solarTermConstants=[["小寒",1,5.4055],["大寒",1,20.12],["立春",2,3.87],["雨水",2,18.73],["驚蟄",3,5.63],["春分",3,20.646],["清明",4,4.81],["穀雨",4,20.1],["立夏",5,5.52],["小滿",5,21.04],["芒種",6,5.678],["夏至",6,21.37],["小暑",7,7.108],["大暑",7,22.83],["立秋",8,7.5],["處暑",8,23.13],["白露",9,7.646],["秋分",9,23.042],["寒露",10,8.318],["霜降",10,23.438],["立冬",11,7.438],["小雪",11,22.36],["大雪",12,7.18],["冬至",12,21.94]];
             const moonPhaseData={1:{n:'朔月',a:'新月',d:'月球位於日地之間，黑暗面朝向地球，不可見。'},2:{n:'既朔月',d:'新月之後，可見極細彎月。'},3:{n:'蛾眉新月',d:'月牙兒逐漸變寬，形如秀眉。'},4:{n:'蛾眉月',d:''},5:{n:'蛾眉月',d:''},6:{n:'夕月',d:'日落後不久即可在西方天空看到。'},7:{n:'上弦月',d:'可見月球被照亮的一半，形如字母 "D"。'},8:{n:'上弦月',d:''},9:{n:'九夜月',d:''},10:{n:'宵月',d:'夜晚大部分時間都能看到月亮。'},11:{n:'漸盈凸月',d:'月相接近圓滿。'},12:{n:'漸盈凸月',d:''},13:{n:'漸盈凸月',d:''},14:{n:'小望月',d:'距離滿月僅一步之遙。'},15:{n:'望月',a:'滿月',d:'地球位於日月之間，可見完整的月盤。'},16:{n:'既望月',d:'滿月之後，月亮開始由盈轉虧。'},17:{n:'立待月',d:'月出稍晚，需站著等待。'},18:{n:'居待月',d:'月出更晚，可坐著等待。'},19:{n:'寢待月',d:'月亮升起時已近睡覺時間。'},20:{n:'更待月',d:'月亮在深夜一更後升起。'},21:{n:'漸虧凸月',d:'可見部分減少，但仍大於一半。'},22:{n:'下弦月',d:'再次看到一半，形如反向 "D"。'},23:{n:'下弦月',d:''},24:{n:'有明月',d:'天將亮時，仍可見月亮。'},25:{n:'蛾眉殘月',d:'月相變回鐮刀形。'},26:{n:'蛾眉殘月',d:''},27:{n:'殘月',d:'月牙兒更細。'},28:{n:'殘月',d:''},29:{n:'曉月',d:'僅在黎明前短暫可見。'},30:{n:'晦月',d:'月亮完全消失，為農曆月結束。'}};
+            const explanations = {"春節":"農曆新年的第一天，是華人最盛大的傳統節日。","元宵節":"農曆正月十五，又稱上元節。","端午節":"農曆五月初五，為紀念愛國詩人屈原的節日。","七夕":"農曆七月初七，又稱情人節。","中元節":"農曆七月十五，祭祀祖先、普渡孤魂的日子。","中秋節":"農曆八月十五，是家人團圓的日子。","除夕":"農曆年的最後一天。家人會在這天團聚吃年夜飯。","元旦":"公曆新年的第一天。","情人節":"西方的傳統節日，情侶們會在這天互贈禮物。","和平紀念日":"紀念1947年2月28日發生的二二八事件。","婦女節":"為慶祝婦女在經濟、政治和社會等領域做出的重要貢獻而設立的節日。","植樹節":"為激發人們愛林、造林的熱情，促進國土綠化而設立的節日。","愚人節":"在每年4月1日，人們習慣以各種方式互相欺騙、捉弄及取笑。","兒童節":"為保障兒童的權利而設立的節日。","勞動節":"對勞動者表示尊重和慶祝的日子。","母親節":"感謝母親的節日，通常在每年五月的第二個星期日。","父親節":"感謝父親的節日，訂於每年的八月八日。","國際父親節":"許多國家感謝父親的節日，訂於每年六月的第三個星期日。","軍人節":"紀念軍人對國家的貢獻與犧牲。","教師節":"感謝老師教導的節日。","國慶日":"紀念武昌起義，中華民國的國定假日。","台灣光復節":"紀念台灣在1945年10月25日結束日本統治。","萬聖夜":"在每年的10月31日，小孩會裝扮成各種鬼怪討糖果。","國父誕辰":"紀念中華民國國父孫中山先生的生日。","感恩節":"北美地區感謝豐收的傳統節日，在美國為十一月的第四個星期四。","平安夜":"聖誕節前夕，即12月24日夜晚。","聖誕節":"紀念耶穌基督誕生的日子。","跨年夜":"指元旦前一晚，即12月31日夜晚。","天公生":"農曆正月初九，玉皇大帝的誕辰。","土地公生":"農曆二月初二，為土地公（福德正神）的誕辰。","媽祖誕辰":"農曆三月二十三，是海上守護神媽祖的生日。","重陽節":"農曆九月初九，有登高、賞菊、敬老的習俗。","下元節":"農曆十月十五，是為水官解厄之辰。","臘八節":"農曆十二月初八，傳統上會喝臘八粥。","送神日":"農曆十二月二十四，送眾神明回天庭述職的日子。","立春":"春季的開始。","雨水":"降雨開始，雨量漸增。","驚蟄":"春雷始鳴，驚醒蟄伏的昆蟲。","春分":"晝夜等長的日子。","清明":"天氣轉暖，掃墓祭祖的傳統節日。","穀雨":"雨水增多，有利於穀類作物的生長。","立夏":"夏季的開始。","小滿":"農作物子粒開始灌漿飽滿。","芒種":"麥類等有芒作物成熟，夏種開始。","夏至":"北半球白晝最長的一天。","小暑":"天氣開始炎熱。","大暑":"一年中最熱的時期。","立秋":"秋季的開始。","處暑":"炎熱的夏天即將過去。","白露":"天氣轉涼，清晨的露水日益加重。","秋分":"晝夜等長的日子。","寒露":"氣溫更低，露水有寒意。","霜降":"天氣漸冷，開始有霜。","立冬":"冬季的開始。","小雪":"開始下雪，但雪量不大。","大雪":"降雪量增大，地面可能會有積雪。","冬至":"北半球白晝最短的一天。","小寒":"氣候開始寒冷。","大寒":"一年中最寒冷的時期。"};
+            const lunarHolidays={"1-1":"春節","1-9":"天公生","1-15":"元宵節","2-2":"土地公生","3-23":"媽祖誕辰","5-5":"端午節","7-7":"七夕","7-15":"中元節","8-15":"中秋節","9-9":"重陽節","10-15":"下元節","12-8":"臘八節","12-24":"送神日","12-30":"除夕"};
+            const gregorianHolidays = {"1-1":"元旦","2-14":"情人節","2-28":"和平紀念日","3-8":"婦女節","3-12":"植樹節","4-1":"愚人節","4-4":"兒童節","5-1":"勞動節","8-8":"父親節","9-3":"軍人節","9-28":"教師節","10-10":"國慶日","10-25":"台灣光復節","10-31":"萬聖夜","11-12":"國父誕辰","12-24":"平安夜","12-25":"聖誕節","12-31":"跨年夜"};            const solarTermConstants=[["小寒",1,5.4055],["大寒",1,20.12],["立春",2,3.87],["雨水",2,18.73],["驚蟄",3,5.63],["春分",3,20.646],["清明",4,4.81],["穀雨",4,20.1],["立夏",5,5.52],["小滿",5,21.04],["芒種",6,5.678],["夏至",6,21.37],["小暑",7,7.108],["大暑",7,22.83],["立秋",8,7.5],["處暑",8,23.13],["白露",9,7.646],["秋分",9,23.042],["寒露",10,8.318],["霜降",10,23.438],["立冬",11,7.438],["小雪",11,22.36],["大雪",12,7.18],["冬至",12,21.94]];
+            const floatingHolidays = {"5-2-0":"母親節","6-3-0":"國際父親節","11-4-4":"感恩節"};
             const taiwanLocations = { "台灣": { "english": "taiwan", "districts": { "台灣": "taiwan" } }, "基隆市": { "english": "keelung", "districts": { "基隆市": "keelung", "仁愛區": "renai", "信義區": "xinyi", "中正區": "zhongzheng", "中山區": "zhongshan", "安樂區": "anle", "暖暖區": "nuannuan", "七堵區": "qidu" } }, "臺北市": { "english": "taipei", "districts": { "臺北市": "taipei", "中正區": "zhongzheng", "大同區": "datong", "中山區": "zhongshan", "松山區": "songshan", "大安區": "da'an", "萬華區": "wanhua", "信義區": "xinyi", "士林區": "shilin", "北投區": "beitou", "內湖區": "neihu", "南港區": "nangang", "文山區": "wenshan" } }, "新北市": { "english": "new taipei", "districts": { "新北市": "new taipei", "板橋區": "banqiao", "三重區": "sanchong", "中和區": "zhonghe", "永和區": "yonghe", "新莊區": "xinzhuang", "新店區": "xindian", "土城區": "tucheng", "蘆洲區": "luzhou", "樹林區": "shulin", "汐止區": "xizhi", "鶯歌區": "yingge", "三峽區": "sanxia", "淡水區": "danshui", "瑞芳區": "ruifang", "五股區": "wugu", "泰山區": "taishan", "林口區": "linkou", "深坑區": "shengkeng", "石碇區": "shiding", "坪林區": "pinglin", "三芝區": "sanzhi", "石門區": "shimen", "八里區": "bali", "平溪區": "pingxi", "雙溪區": "shuangxi", "貢寮區": "gongliao", "金山區": "jinshan", "萬里區": "wanli", "烏來區": "wulai" } }, "桃園市": { "english": "taoyuan", "districts": { "桃園市": "taoyuan", "桃園區": "taoyuan", "中壢區": "zhongli", "平鎮區": "pingzhen", "八德區": "bade", "楊梅區": "yangmei", "蘆竹區": "luzhu", "大溪區": "daxi", "龍潭區": "longtan", "龜山區": "guishan", "大園區": "dayuan", "觀音區": "guanyin", "新屋區": "xinwu", "復興區": "fuxing" } }, "臺中市": { "english": "taichung", "districts": { "臺中市": "taichung", "中區": "central", "東區": "east", "南區": "south", "西區": "west", "北區": "north", "北屯區": "beitun", "西屯區": "xitun", "南屯區": "nantun", "太平區": "taiping", "大里區": "dali", "霧峰區": "wufeng", "烏日區": "wuri", "豐原區": "fengyuan", "后里區": "houli", "石岡區": "shigang", "東勢區": "dongshi", "和平區": "heping", "新社區": "xinshe", "潭子區": "tanzi", "大雅區": "daya", "神岡區": "shengang", "大肚區": "dadu", "沙鹿區": "shalu", "龍井區": "longjing", "梧棲區": "wuqi", "清水區": "qingshui", "大甲區": "dajia", "外埔區": "waipu", "大安區": "daan" } }, "臺南市": { "english": "tainan", "districts": { "臺南市": "tainan", "中西區": "west central", "東區": "east", "南區": "south", "北區": "north", "安平區": "anping", "安南區": "annan", "永康區": "yongkang", "歸仁區": "guiren", "新化區": "xinhua", "左鎮區": "zuozhen", "玉井區": "yujing", "楠西區": "nanxi", "南化區": "nanhua", "仁德區": "rende", "關廟區": "guanmiao", "龍崎區": "longqi", "官田區": "guantian", "麻豆區": "madou", "佳里區": "jiali", "西港區": "xigang", "七股區": "qigu", "將軍區": "jiangjun", "學甲區": "xuejia", "北門區": "beimen", "新營區": "xinying", "後壁區": "houbi", "白河區": "baihe", "東山區": "dongshan", "六甲區": "liujia", "下營區": "xiaying", "柳營區": "liuying", "鹽水區": "yanshui", "善化區": "shanhua", "大內區": "danei", "山上區": "shanshang", "新市區": "xingshi", "安定區": "anding" } }, "高雄市": { "english": "kaohsiung", "districts": { "高雄市": "kaohsiung", "楠梓區": "nanzi", "左營區": "zuoying", "鼓山區": "gushan", "三民區": "sanmin", "鹽埕區": "yancheng", "前金區": "qianjin", "新興區": "xinxing", "苓雅區": "lingya", "前鎮區": "qianzhen", "旗津區": "qijin", "小港區": "xiaogang", "鳳山區": "fengshan", "林園區": "linyuan", "大寮區": "daliao", "大樹區": "dashu", "大社區": "dashe", "仁武區": "renwu", "鳥松區": "niaosong", "岡山區": "gangshan", "橋頭區": "qiaotou", "燕巢區": "yanchao", "田寮區": "tianliao", "阿蓮區": "alian", "路竹區": "luzhu", "湖內區": "hunei", "茄萣區": "qieding", "永安區": "yong'an", "彌陀區": "mizuo", "梓官區": "ziguan", "旗山區": "qishan", "美濃區": "meinong", "六龜區": "liugui", "甲仙區": "jiaxian", "杉林區": "shanlin", "內門區": "neimen", "茂林區": "maolin", "桃源區": "taoyuan", "那瑪夏區": "namasia" } }, "新竹縣": { "english": "hsinchu county", "districts": { "新竹縣": "hsinchu county", "竹北市": "zhubei", "竹東鎮": "zhudong", "新埔鎮": "xinpu", "關西鎮": "guanxi", "湖口鄉": "hukou", "新豐鄉": "xinfeng", "芎林鄉": "qionglin", "橫山鄉": "hengshan", "北埔鄉": "beipu", "寶山鄉": "baoshan", "峨眉鄉": "emei", "尖石鄉": "jianshi", "五峰鄉": "wufeng" } }, "苗栗縣": { "english": "miaoli", "districts": { "苗栗縣": "miaoli", "苗栗市": "miaoli city", "頭份市": "toufen", "苑裡鎮": "yuanli", "通霄鎮": "tongxiao", "竹南鎮": "zhunan", "後龍鎮": "houlong", "卓蘭鎮": "zhuolan", "大湖鄉": "dahu", "公館鄉": "gongguan", "銅鑼鄉": "tongluo", "南庄鄉": "nanzhuang", "頭屋鄉": "touwu", "三灣鄉": "sanwan", "三義鄉": "sanyi", "西湖鄉": "xihu", "造橋鄉": "zaoqiao", "獅潭鄉": "shitan", "泰安鄉": "taian" } }, "彰化縣": { "english": "changhua", "districts": { "彰化縣": "changhua", "彰化市": "changhua city", "員林市": "yuanlin", "和美鎮": "hemei", "鹿港鎮": "lukang", "溪湖鎮": "xihu", "田中鎮": "tianzhong", "北斗鎮": "beidou", "二林鎮": "erlin", "線西鄉": "xianxi", "伸港鄉": "shengang", "福興鄉": "fuxing", "秀水鄉": "xiushui", "花壇鄉": "huatan", "芬園鄉": "fenyuan", "大村鄉": "dacun", "埔鹽鄉": "puyan", "埔心鄉": "puxin", "永靖鄉": "yongjing", "社頭鄉": "shetou", "二水鄉": "ershui", "田尾鄉": "tianwei", "埤頭鄉": "pitou", "芳苑鄉": "fangyuan", "大城鄉": "dacheng", "竹塘鄉": "zhutang", "溪州鄉": "xizhou" } }, "南投縣": { "english": "nantou", "districts": { "南投縣": "nantou", "南投市": "nantou city", "埔里鎮": "puli", "草屯鎮": "caotun", "竹山鎮": "zhushan", "集集鎮": "jiji", "名間鄉": "mingjian", "鹿谷鄉": "lugu", "中寮鄉": "zhongliao", "魚池鄉": "yuchi", "國姓鄉": "guoxing", "水里鄉": "shuili", "信義鄉": "xinyi", "仁愛鄉": "ren'ai" } }, "雲林縣": { "english": "yunlin", "districts": { "雲林縣": "yunlin", "斗六市": "douliu", "斗南鎮": "dounan", "虎尾鎮": "huwei", "西螺鎮": "xiluo", "土庫鎮": "tuku", "北港鎮": "beigang", "古坑鄉": "gukeng", "大埤鄉": "dapi", "莿桐鄉": "citong", "林內鄉": "linnei", "二崙鄉": "erlun", "崙背鄉": "lunbei", "麥寮鄉": "mailiao", "東勢鄉": "dongshi", "褒忠鄉": "baozhong", "臺西鄉": "taixi", "元長鄉": "yuanchang", "四湖鄉": "sihu", "口湖鄉": "kouhu", "水林鄉": "shuilin" } }, "嘉義縣": { "english": "chiayi county", "districts": { "嘉義縣": "chiayi county", "太保市": "taibao", "朴子市": "puzi", "布袋鎮": "budai", "大林鎮": "dalin", "民雄鄉": "minxiong", "溪口鄉": "xikou", "新港鄉": "xingang", "六腳鄉": "liujiao", "東石鄉": "dongshi", "義竹鄉": "yizu", "鹿草鄉": "lucao", "水上鄉": "shuishang", "中埔鄉": "zhongpu", "竹崎鄉": "zhuqi", "梅山鄉": "meishan", "番路鄉": "fanlu", "大埔鄉": "dapu", "阿里山鄉": "alishan" } }, "屏東縣": { "english": "pingtung", "districts": { "屏東縣": "pingtung", "屏東市": "pingtung city", "潮州鎮": "chaozhou", "東港鎮": "donggang", "恆春鎮": "hengchun", "萬丹鄉": "wandan", "長治鄉": "changzhi", "麟洛鄉": "linluo", "九如鄉": "jiuru", "里港鄉": "ligang", "鹽埔鄉": "yanpu", "高樹鄉": "gaoshu", "萬巒鄉": "wanluan", "內埔鄉": "neipu", "竹田鄉": "zhutian", "新埤鄉": "xinpi", "枋寮鄉": "fangliao", "新園鄉": "xinyuan", "崁頂鄉": "kanding", "林邊鄉": "linbian", "南州鄉": "nanzhou", "佳冬鄉": "jiadong", "琉球鄉": "liuqiu", "車城鄉": "checheng", "滿州鄉": "manzhou", "枋山鄉": "fangshan", "三地門鄉": "sandimen", "霧臺鄉": "wutai", "瑪家鄉": "majia", "泰武鄉": "taiwu", "來義鄉": "laiyi", "春日鄉": "chunri", "獅子鄉": "shizi", "牡丹鄉": "mudan" } }, "宜蘭縣": { "english": "yilan", "districts": { "宜蘭縣": "yilan", "宜蘭市": "yilan city", "羅東鎮": "luodong", "蘇澳鎮": "su'ao", "頭城鎮": "toucheng", "礁溪鄉": "jiaoxi", "壯圍鄉": "zhuangwei", "員山鄉": "yuanshan", "冬山鄉": "dongshan", "五結鄉": "wujie", "三星鄉": "sanxing", "大同鄉": "datong", "南澳鄉": "nan'ao" } }, "花蓮縣": { "english": "hualien", "districts": { "花蓮縣": "hualien", "花蓮市": "hualien city", "鳳林鎮": "fenglin", "玉里鎮": "yuli", "新城鄉": "xincheng", "吉安鄉": "ji'an", "壽豐鄉": "shoufeng", "光復鄉": "guangfu", "豐濱鄉": "fengbin", "瑞穗鄉": "ruisui", "富里鄉": "fuli", "秀林鄉": "xiulin", "萬榮鄉": "wanrong", "卓溪鄉": "zhuoxi" } }, "臺東縣": { "english": "taitung", "districts": { "臺東縣": "taitung", "臺東市": "taitung city", "成功鎮": "chenggong", "關山鎮": "guanshan", "卑南鄉": "beinan", "鹿野鄉": "luye", "池上鄉": "chishang", "東河鄉": "donghe", "長濱鄉": "changbin", "太麻里鄉": "taimali", "大武鄉": "dawu", "達仁鄉": "daren", "金峰鄉": "jinfeng", "海端鄉": "haiduan", "延平鄉": "yanping", "綠島鄉": "ludao", "蘭嶼鄉": "lanyu" } }, "澎湖縣": { "english": "penghu", "districts": { "澎湖縣": "penghu", "馬公市": "magong", "湖西鄉": "huxi", "白沙鄉": "baisha", "西嶼鄉": "xiyu", "望安鄉": "wang'an", "七美鄉": "qimei" } }, "金門縣": { "english": "kinmen", "districts": { "金門縣": "kinmen", "金城鎮": "jincheng", "金湖鎮": "jinhu", "金沙鎮": "jinsha", "金寧鄉": "jinning", "烈嶼鄉": "lieyu", "烏坵鄉": "wuqiu" } }, "連江縣": { "english": "lienchiang", "districts": { "連江縣": "lienchiang", "南竿鄉": "nangan", "北竿鄉": "beigan", "莒光鄉": "juguang", "東引鄉": "dongyin" } }, "新竹市": { "english": "hsinchu", "districts": { "新竹市": "hsinchu", "東區": "east", "北區": "north", "香山區": "xiangshan" } }, "嘉義市": { "english": "chiayi", "districts": { "嘉義市": "chiayi", "東區": "east", "西區": "west" } } };
     </script>
 </body>
