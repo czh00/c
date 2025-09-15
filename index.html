@@ -1025,7 +1025,7 @@
                 update() {
                     const now = new Date(); let h = now.getHours(); const m = now.getMinutes(); const s = now.getSeconds();
                     const effectSettings = settingsState.timedEffect;
-                    if (!isEditMode && effectSettings && effectSettings.enabled && s > 0 && s % effectSettings.intervalSeconds === 0) {
+                    if (!isEditMode && effectSettings && effectSettings.enabled && s % effectSettings.intervalSeconds === 0) {
                         if (Object.values(isWidgetAnimating).some(v => v)) return;
                         let targets = [];
                         ['calendar-container', 'moon-phase-container', 'led-clock-container', 'analog-clock-container'].forEach(id => {
