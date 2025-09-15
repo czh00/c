@@ -241,7 +241,6 @@
         .widget-container.edit-mode .control-handle { display: block; }
         .move-handle { width: 28px; height: 28px; top: 50%; left: 50%; transform: translate(-50%, -50%); cursor: move; padding: 4px; border-radius: 6px; align-items: center; justify-content: center; }
         .widget-container.edit-mode .move-handle { display: flex; }
-        .widget-container.edit-mode .reset-handle { display: flex; } /* FIX: 確保重設按鈕在編輯模式下為 flex 佈局以使其內容置中 */
         .reset-handle {
             position: absolute;
             width: 24px;
@@ -253,10 +252,11 @@
             border-radius: 6px;
             background-color: rgba(239, 68, 68, 0.8);
             z-index: 101;
-            transform-origin: top right; /* FIX: Changed to top right to keep it anchored */
-            align-items: center; /* 新增：垂直置中 */
-            justify-content: center; /* 新增：水平置中 */
+            transform-origin: top right;
+            align-items: center;
+            justify-content: center;
         }
+        .widget-container.edit-mode .reset-handle { display: flex; }
         .resize-handle-w { width: 8px; height: 50px; top: 50%; right: -4px; transform: translateY(-50%); border-radius: 4px; cursor: ew-resize; }
         .resize-handle-h { width: 50px; height: 8px; bottom: -4px; left: 50%; transform: translateX(-50%); border-radius: 4px; cursor: ns-resize; }
 
@@ -307,7 +307,8 @@
         #edit-mode-grid::before { top: 0; left: 50%; width: 1px; height: 100%; transform: translateX(-50%); }
         #edit-mode-grid::after { top: 50%; left: 0; width: 100%; height: 1px; transform: translateY(-50%); }
         body.edit-mode #edit-mode-grid { display: block; }
-        /* --- 由 Tailwind 轉換的語意化 CSS --- */
+
+        /* --- 由 Tailwind 轉換的語意化 CSS (部分保留) --- */
         .display-flex { display: flex; }
         .align-items-center { align-items: center; }
         .justify-content-space-between { justify-content: space-between; }
@@ -323,7 +324,6 @@
         .grid-columns-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .grid-column-span-2 { grid-column: span 2 / span 2; }
         .grid-column-span-4 { grid-column: span 4 / span 4; }
-
         .p0 { padding: 0; margin: 0; }
         .padding-1 { padding: 0.25rem; }
         .padding-2 { padding: 0.5rem; }
@@ -332,7 +332,6 @@
         .padding-5 { padding: 1.25rem; }
         .padding-6 { padding: 1.5rem; }
         .padding-top-1 { padding-top: 0.25rem; }
-        .padding-bottom-1 { padding-bottom: 0.25rem; }
         .padding-bottom-2 { padding-bottom: 0.5rem; }
         .padding-bottom-4 { padding-bottom: 1rem; }
         .padding-right-2 { padding-right: 0.25rem; }
@@ -340,33 +339,23 @@
         .padding-horizontal-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
         .padding-vertical-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
         .padding-vertical-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-        .margin-1 { margin: 0.25rem; }
-        .margin-top-1 { margin-top: 0.25rem; }
         .margin-bottom-2 { margin-bottom: 0.5rem; }
         .margin-bottom-3 { margin-bottom: 0.75rem; }
         .margin-bottom-4 { margin-bottom: 1rem; }
         .margin-bottom-6 { margin-bottom: 1.5rem; }
-        .margin-right-1 { margin-right: 0.25rem; }
         .margin-right-3 { margin-right: 0.75rem; }
         .margin-left-2 { margin-left: 0.5rem; }
-        .margin-left-4 { margin-left: 1rem; }
-        .margin-left-auto { margin-left: auto; }
-        .margin-vertical-4 { margin-top: 1rem; margin-bottom: 1rem; }
+        .margin-top-1 { margin-top: 0.25rem; }
         .margin-top-2 { margin-top: 0.5rem; }
-        .margin-top-3 { margin-top: 0.75rem; }
         .margin-top-4 { margin-top: 1rem; }
         .margin-top-6 { margin-top: 1.5rem; }
-
         .gap-2 { gap: 0.5rem; }
         .gap-3 { gap: 0.75rem; }
         .gap-4 { gap: 1rem; }
-        .column-gap-2 { column-gap: 0.5rem; }
         .column-gap-6 { column-gap: 1.5rem; }
         .column-gap-8 { column-gap: 2rem; }
         .row-gap-3 { row-gap: 0.75rem; }
-        .row-gap-4 { row-gap: 1rem; }
         .row-gap-6 { row-gap: 1.5rem; }
-
         .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
         .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem; }
         .space-x-2 > :not([hidden]) ~ :not([hidden]) { margin-left: 0.5rem; }
@@ -381,13 +370,11 @@
         .height-full { height: 100%; }
         .width-auto { width: auto; }
         .min-width-200px { min-width: 200px; }
-
         .max-width-sm { max-width: 24rem; }
         .max-width-md { max-width: 28rem; }
         .max-width-5xl { max-width: 64rem; }
         .max-height-80 { max-height: 20rem; }
         .max-height-90vh { max-height: 90vh; }
-
         .font-weight-bold { font-weight: 700; }
         .font-weight-semibold { font-weight: 600; }
         .font-size-sm { font-size: 0.875rem; line-height: 1.25rem; }
@@ -397,41 +384,27 @@
         .font-size-3xl { font-size: 1.875rem; line-height: 2.25rem; }
         .line-height-none { line-height: 1; }
         .line-height-relaxed { line-height: 1.625; }
-        .letter-spacing-wide { letter-spacing: 0.025em; }
         .text-align-center { text-align: center; }
-
         .color-white { color: #ffffff; }
         .color-gray-300 { color: #d1d5db; }
         .color-gray-400 { color: #9ca3af; }
         .color-indigo-300 { color: #a5b4fc; }
-
-        .bg-transparent { background-color: transparent; }
-        .bg-gray-700 { background-color: #374151; }
         .bg-gray-800 { background-color: #1f2937; }
-        .bg-indigo-600 { background-color: #4f46e5; }
-        .border-1px { border-width: 1px; }
         .border-top-1px { border-top-width: 1px; }
         .border-bottom-1px { border-bottom-width: 1px; }
         .border-color-gray-600 { border-color: #4b5563; }
         .border-color-gray-700 { border-color: #374151; }
-
-        .border-radius-sm { border-radius: 0.25rem; }
         .border-radius-lg { border-radius: 0.5rem; }
-        .border-radius-full { border-radius: 9999px; }
-
         .cursor-pointer { cursor: pointer; }
         .cursor-help { cursor: help; }
-        .transition-colors { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
-        .hover-bg-gray-600:hover { background-color: #4b5563; }
-        .hover-bg-gray-700:hover { background-color: rgba(75, 85, 99, 0.3) !important; }
         .hover-color-white:hover { color: #ffffff; }
-        .hover-color-indigo-300:hover { color: #a5b4fc; }
-        .hover-bg-indigo-700:hover { background-color: #4338ca; }
-
         .display-none { display: none !important; }
         .overflow-hidden { overflow: hidden; }
         .overflow-y-auto { overflow-y: auto; }
         .position-relative { position: relative; }
+
+        /* --- 全域按鈕樣式重置 --- */
+        /* 此區塊用來統一所有按鈕的基礎外觀，移除瀏覽器預設樣式，確保視覺一致性 */
         #calendar-container button, #moon-phase-container button,
         .action-button, .toolbar-btn, [data-close-modal],
         #useCurrentLocationBtn, #marquee-params-btn, #default-settings-btn, #random-colors-btn,
@@ -439,10 +412,9 @@
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
-            color: #d1d5db; /* Default light color for text & icons */
+            color: #d1d5db;
             transition: color 0.2s, background-color 0.2s;
         }
-
         #calendar-container button:hover, #moon-phase-container button:hover,
         .toolbar-btn:hover:not(:disabled), [data-close-modal]:hover,
         #useCurrentLocationBtn:hover, #marquee-params-btn:hover, #default-settings-btn:hover,
@@ -450,15 +422,12 @@
         #prompt-cancel-btn:hover, #prompt-ok-btn:hover, .action-button:hover {
             color: #ffffff !important;
         }
-
-        /* Add a subtle visual feedback for circular/rounded buttons on hover */
+        /* 為圓形或有圓角的按鈕提供懸停時的背景回饋 */
         .action-button:hover, #useCurrentLocationBtn:hover, #marquee-params-btn:hover,
         #picker-prev-year:hover, #picker-next-year:hover, #prev-month:hover,
         #next-month:hover, #moon-phase-prev-month:hover, #moon-phase-next-month:hover {
             background-color: rgba(75, 85, 99, 0.3) !important;
         }
-
-        /* Ensure icon-only buttons are centered and properly sized */
         .action-button {
             display: inline-flex;
             align-items: center;
@@ -471,24 +440,19 @@
             .md-grid-columns-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .md-grid-columns-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
             .md-grid-column-span-2 { grid-column: span 2 / span 2; }
-            .md-grid-column-span-12 { grid-column: span 12 / span 12; }
         }
         @media (min-width: 1024px) {
             .lg-grid-columns-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-            .lg-grid-columns-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
         }
-
     </style>
 </head>
 <body class="antialiased">
     <!-- SVG 圖示定義區 -->
     <svg style="display: none;">
         <defs>
-            <!-- 移動圖示 -->
-            <symbol id="icon-move" viewBox="0 0 24 24">
+            <symbol id="icon-move" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"></path>
             </symbol>
-            <!-- 還原尺寸圖示 -->
             <symbol id="icon-reset-size" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <text x="5" y="17" font-size="12" font-weight="bold" fill="currentColor" stroke="none">1x</text>
                 <rect x="2" y="4" width="20" height="16" rx="2"></rect>
@@ -505,11 +469,11 @@
                 <h1 id="year-header" class="calendar-title" title="點擊快速選擇年月"></h1>
                 <div class="calendar-nav">
                     <button id="prev-month" class="calendar-nav-arrow">
-                        <svg class="height-6 width-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                        <svg class="height-6 width-6" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                     </button>
                     <button id="back-to-today" class="calendar-nav-today">今天</button>
                     <button id="next-month" class="calendar-nav-arrow">
-                        <svg class="height-6 width-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                        <svg class="height-6 width-6" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                     </button>
                 </div>
             </header>
@@ -520,29 +484,14 @@
                 <div id="calendar-body" class="calendar-grid"></div>
             </main>
         </div>
-        <div class="reset-handle control-handle" title="還原尺寸與比例">
-            <svg xmlns="http://www.w3.org/2000/svg" class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-reset-size"></use></svg>
-        </div>
-        <div class="move-handle control-handle">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="width-full height-full"><use href="#icon-move"></use></svg>
-        </div>
-        <div class="resize-handle-w control-handle"></div>
-        <div class="resize-handle-h control-handle"></div>
     </div>
+
     <div id="led-clock-container" class="widget-container">
         <div class="widget-content-wrapper">
             <main>
                 <svg id="led-clock-svg" viewBox="0 0 1200 350"></svg>
             </main>
         </div>
-        <div class="reset-handle control-handle" title="還原尺寸與比例">
-            <svg xmlns="http://www.w3.org/2000/svg" class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-reset-size"></use></svg>
-        </div>
-        <div class="move-handle control-handle">
-             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="width-full height-full"><use href="#icon-move"></use></svg>
-        </div>
-        <div class="resize-handle-w control-handle"></div>
-        <div class="resize-handle-h control-handle"></div>
     </div>
 
     <div id="analog-clock-container" class="widget-container">
@@ -555,21 +504,11 @@
                 <div class="analog-pivot"></div>
             </main>
         </div>
-        <div class="reset-handle control-handle" title="還原尺寸與比例">
-            <svg xmlns="http://www.w3.org/2000/svg" class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-reset-size"></use></svg>
-        </div>
-        <div class="move-handle control-handle">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="width-full height-full"><use href="#icon-move"></use></svg>
-        </div>
     </div>
+
     <div id="marquee-container-0" class="widget-container marquee-widget">
         <div class="marquee-edit-indicator">1</div>
         <div class="widget-content-wrapper"><main><div class="marquee-inner"></div></main></div>
-        <div class="reset-handle control-handle" title="還原尺寸與比例">
-            <svg xmlns="http://www.w3.org/2000/svg" class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-reset-size"></use></svg>
-        </div>
-        <div class="move-handle control-handle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="width-full height-full"><use href="#icon-move"></use></svg></div>
-        <div class="resize-handle-w control-handle"></div><div class="resize-handle-h control-handle"></div>
     </div>
 
     <div id="moon-phase-container" class="widget-container">
@@ -578,9 +517,9 @@
             <header class="calendar-header">
                 <h1 id="moon-phase-year-header" class="calendar-title" title="點擊快速選擇年月"></h1>
                 <div class="calendar-nav">
-                    <button id="moon-phase-prev-month" class="calendar-nav-arrow"><svg class="height-6 width-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
+                    <button id="moon-phase-prev-month" class="calendar-nav-arrow"><svg class="height-6 width-6" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button>
                     <button id="moon-phase-today" class="calendar-nav-today">今天</button>
-                    <button id="moon-phase-next-month" class="calendar-nav-arrow"><svg class="height-6 width-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
+                    <button id="moon-phase-next-month" class="calendar-nav-arrow"><svg class="height-6 width-6" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
                 </div>
             </header>
             <main class="padding-bottom-2" style="position: relative; z-index: 2;">
@@ -590,14 +529,6 @@
                 <div id="moon-calendar-body" class="calendar-grid"></div>
             </main>
         </div>
-        <div class="reset-handle control-handle" title="還原尺寸與比例">
-            <svg xmlns="http://www.w3.org/2000/svg" class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-reset-size"></use></svg>
-        </div>
-        <div class="move-handle control-handle">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="width-full height-full"><use href="#icon-move"></use></svg>
-        </div>
-        <div class="resize-handle-w control-handle"></div>
-        <div class="resize-handle-h control-handle"></div>
     </div>
 
     <div id="action-buttons" class="action-buttons">
@@ -634,7 +565,7 @@
         <p class="font-size-sm color-gray-400">日落</p>
         <p id="modal-sunset-time" class="font-size-lg font-weight-semibold color-white"></p>
     </div>
-    <div class="grid-column-span-2 display-flex align-items-center justify-content-center gap-4 padding-top-4 margin-top-2 border-top-1px border-color-gray-700">
+    <div class="grid-column-span-2 display-flex align-items-center justify-content-center gap-4 padding-top-1 margin-top-2 border-top-1px border-color-gray-700">
          <div id="modal-moon-icon" class="width-16 height-16"></div>
          <div>
             <p class="font-size-sm color-gray-400">當日月相</p>
@@ -748,8 +679,7 @@
                         </div>
                      </div>
                 </div>
-
-                <div class="margin-top-6 padding-top-6 border-top-1px border-color-gray-700">
+                <div class="margin-top-6 padding-top-1 border-top-1px border-color-gray-700">
                     <div class="display-grid grid-columns-1 md-grid-columns-2 gap-4 align-items-center">
                         <div class="display-flex flex-direction-column row-gap-3 flex-shrink-0">
                             <div class="display-flex align-items-center column-gap-6 flex-wrap">
@@ -759,7 +689,7 @@
                                 </div>
                                 <div class="display-flex align-items-center">
                                     <label for="marquee-selector" class="flex-shrink-0">組別:</label>
-                                    <select id="marquee-selector" class="width-auto bg-gray-700 border-1px border-color-gray-600 border-radius-sm margin-left-2"></select>
+                                    <select id="marquee-selector" class="width-auto margin-left-2"></select>
                                     <button id="add-marquee-btn" class="toolbar-btn margin-left-2" style="padding: 4px 8px; font-size: 16px;" title="新增跑馬燈">+</button>
                                     <button id="remove-marquee-btn" class="toolbar-btn margin-left-2" style="padding: 4px 8px; font-size: 16px;" title="刪除跑馬燈">-</button>
                                 </div>
@@ -789,7 +719,7 @@
                             <select id="countySelect"></select>
                             <select id="districtSelect"></select>
                             <input id="manualLocationInput" type="text" placeholder="手動輸入英文地名" class="width-40">
-                            <button id="useCurrentLocationBtn" class="padding-1_5 border-radius-full transition-colors flex-shrink-0" title="使用目前位置">
+                            <button id="useCurrentLocationBtn" class="padding-1_5 border-radius-lg flex-shrink-0" title="使用目前位置">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L12 6"/><path d="M12 18L12 22"/><path d="M20 12L22 12"/><path d="M2 12L4 12"/><circle cx="12" cy="12" r="2"/><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/></svg>
                             </button>
                         </div>
@@ -797,8 +727,8 @@
                     <div class="margin-top-4 grid-column-span-2 display-flex align-items-flex-start">
                        <label for="marquee-text-input" class="flex-shrink-0 margin-right-3 padding-top-1">內容</label>
                        <div class="display-flex align-items-flex-start width-full">
-                           <textarea id="marquee-text-input" class="width-full bg-gray-700 border-1px border-color-gray-600 border-radius-sm padding-horizontal-3 padding-vertical-2 color-white" rows="3"></textarea>
-                           <button id="marquee-params-btn" class="margin-left-2 padding-1_5 border-radius-full transition-colors flex-shrink-0" title="顯示可用參數">
+                           <textarea id="marquee-text-input" class="width-full" rows="3"></textarea>
+                           <button id="marquee-params-btn" class="margin-left-2 padding-1_5 border-radius-lg flex-shrink-0" title="顯示可用參數">
                                <svg xmlns="http://www.w3.org/2000/svg" class="height-5 width-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" /></svg>
                            </button>
                        </div>
@@ -809,7 +739,7 @@
     </div>
 
     <div id="modal-backdrop-explanation" class="modal-backdrop"><div class="modal-content max-width-sm"><div class="padding-6"><div class="display-flex justify-content-space-between align-items-center margin-bottom-3"><h3 id="explanation-title" class="font-size-xl font-weight-bold color-indigo-300"></h3><button data-close-modal="modal-backdrop-explanation" class="color-gray-400 hover-color-white font-size-3xl line-height-none">&times;</button></div><p id="explanation-content" class="color-gray-300 line-height-relaxed"></p></div></div></div>
-    <div id="modal-backdrop-prompt" class="modal-backdrop"><div class="modal-content max-width-sm"><div class="padding-6"><h3 id="prompt-title" class="font-size-xl font-weight-bold color-indigo-300 margin-bottom-4"></h3><p id="prompt-message" class="color-gray-300 margin-bottom-4"></p><input id="prompt-input" type="text" class="width-full bg-gray-700 border-1px border-color-gray-600 border-radius-sm padding-horizontal-3 padding-vertical-2 color-white margin-bottom-4"><div class="display-flex justify-content-flex-end gap-2"><button id="prompt-cancel-btn" class="toolbar-btn">取消</button><button id="prompt-ok-btn" class="toolbar-btn">確定</button></div></div></div></div>
+    <div id="modal-backdrop-prompt" class="modal-backdrop"><div class="modal-content max-width-sm"><div class="padding-6"><h3 id="prompt-title" class="font-size-xl font-weight-bold color-indigo-300 margin-bottom-4"></h3><p id="prompt-message" class="color-gray-300 margin-bottom-4"></p><input id="prompt-input" type="text" class="width-full margin-bottom-4"><div class="display-flex justify-content-flex-end gap-2"><button id="prompt-cancel-btn" class="toolbar-btn">取消</button><button id="prompt-ok-btn" class="toolbar-btn">確定</button></div></div></div></div>
     <div id="modal-backdrop-marquee-params" class="modal-backdrop">
         <div class="modal-content max-width-md">
             <div class="padding-6">
@@ -822,7 +752,6 @@
                     <li class="param-item"><strong>%C(#RRGGBB, 文字)%</strong>: 自訂文字顏色。例如: %C(#FFD700, 黃色文字)%</li>
                     <li class="param-item"><strong>%br%</strong>: (僅直向)手動換行</li>
                     <li class="param-item"><strong>提示:</strong> %C(...)% 參數中的文字部分不能再包含其他參數。系統會自動為時間、天氣等參數套用主題色彩。</li>
-
                     <li class="param-group-title">西元日期與時間</li>
                     <li class="param-item"><strong>%YYYY%</strong>: 四位數西元年 (例如: 2024)</li>
                     <li class="param-item"><strong>%YY%</strong>: 兩位數西元年 (例如: 24)</li>
@@ -855,12 +784,10 @@
                     <li class="param-item"><strong>%SHICHEN_GZ%</strong>: 時辰干支 (例如: 甲子)</li>
                     <li class="param-item"><strong>%SHICHEN_NAME%</strong>: 時辰全名 (例如: 子時)</li>
                     <li class="param-item"><strong>%SHICHEN_CHAR%</strong>: 時辰地支 (例如: 子)</li>
-
                     <li class="param-group-title">月相</li>
                     <li class="param-item"><strong>%MOON_PHASE%</strong>: 當日月相名稱 (例: 望月(滿月))</li>
                     <li class="param-item"><strong>%MOON_ICON%</strong>: 當日月相圖示 (SVG圖示)</li>
                     <li class="param-item"><strong>%MOON_DAY%</strong>: 農曆日期 (數字, 1-30)</li>
-
                     <li class="param-group-title">天氣資訊</li>
                     <li class="param-item"><strong>%WEATHER_LOC%</strong>: 地點</li>
                     <li class="param-item"><strong>%WEATHER_DESC%</strong>: 天氣描述 (例如: 晴)</li>
@@ -873,12 +800,14 @@
     </div>
 
     <script>
-        // --- 全域變數，用於控制天氣載入狀態 ---
+        // --- 全域變數 ---
         let weatherDataLoaded = false;
         let layouts = [];
 
         document.addEventListener('DOMContentLoaded', function () {
             // --- 農曆轉換核心演算法 ---
+            // 說明: 這部分是高效率的農曆計算函式，包含從西元日期取得農曆日期、天干地支、節氣等。
+            // 為了效能，它使用了預先計算的資料陣列 (lunarInfo) 並搭配位元運算來快速查詢。
             function getLunarYearDays(y){let i,sum=348;for(i=0x8000;i>0x8;i>>=1)sum+=(lunarInfo[y-1900]&i)?1:0;return sum+getLunarLeapDays(y)}
             function getLunarLeapMonth(y){return lunarInfo[y-1900]&0xf}
             function getLunarLeapDays(y){return getLunarLeapMonth(y)?((lunarInfo[y-1900]&0x10000)?30:29):0}
@@ -933,8 +862,6 @@
                 }
                 return null;
             }
-            const yiJiMap={};
-            function getYiJiForDate(year,month,day){const key=`${year}-${month}-${day}`;if(yiJiMap[key])return yiJiMap[key];const allGood=["嫁娶","祈福","求嗣","出行","入宅","開市","安床","祭祀","納采","修造"];const allBad=["動土","安葬","作灶","伐木","行喪","破土","詞訟","赴任"];const seed=year*10000+month*100+day;const randomGood=[...allGood].sort(()=>0.5-(seed%1000/1000)).slice(0,5);const randomBad=[...allBad].sort(()=>0.5-(seed%888/888)).slice(0,3);return{good:randomGood,bad:randomBad}}
             function getDailyGanzhi(date) {
                 const cleanDate = new Date(date);
                 cleanDate.setHours(0, 0, 0, 0);
@@ -944,6 +871,7 @@
                 const dayStemIndex = (6 + positiveOffset) % 10;
                 return { stemIndex: dayStemIndex };
             }
+            // --- 時間輔助工具 ---
             const ShichenHelper = {
                 hourStemStart: [0, 2, 4, 6, 8, 0, 2, 4, 6, 8],
                 getData(date) {
@@ -968,8 +896,8 @@
             const editToolbar = document.getElementById('edit-toolbar');
             let isEditMode = false;
             let activityTimeout;
-            let transformStates = {};
-            let settingsState = {};
+            let transformStates = {}; // 儲存所有 widget 的位置、大小、縮放、可見度
+            let settingsState = {};   // 儲存所有 widget 的外觀設定 (顏色、開關等)
             let isWidgetAnimating = {};
 
             // --- 跑馬燈參數與顏色變數的映射表 ---
@@ -987,10 +915,10 @@
             // --- 預設設定 ---
             const userDefaultLayout = {
                 "transforms": {
-                    "calendar-container": { "visible": true, "width": 500, "height": 460, "left": 310, "top": 80, "scale": 1 },
-                    "moon-phase-container": { "visible": false, "width": 500, "height": 460, "left": 10, "top": 80, "scale": 1 },
-                    "led-clock-container": { "visible": true, "width": 300, "height": 160, "left": 10, "top": 80, "scale": 1 },
-                    "analog-clock-container": { "visible": true, "width": 300, "height": 300, "left": 10, "top": 220, "scale": 1 },
+                    "calendar-container": { "visible": true, "width": 500, "height": 400, "left": 310, "top": 80, "scale": 1 },
+                    "moon-phase-container": { "visible": false, "width": 500, "height": 400, "left": 10, "top": 80, "scale": 1 },
+                    "led-clock-container": { "visible": true, "width": 300, "height": 98, "left": 10, "top": 80, "scale": 1 },
+                    "analog-clock-container": { "visible": true, "width": 300, "height": 300, "left": 10, "top": 170, "scale": 1 },
                     "marquee-container-0": { "visible": true, "width": 800, "height": 80, "left": 10, "top": 10, "scale": 1 }
                 },
                 "settings": {
@@ -1002,12 +930,13 @@
                         { "text": "%YYYY%/%ROC_YY%年%MM%月%DD%日%br%%W_SHORT%%ap_c%%hh%%C(#00FF00, :)%%mm%%br%%C(#FFFF00, 農曆)%%LM_C%%LD_C%%SHICHEN_NAME%%L_GZ%%L_SX%%MOON_ICON%%br%%WEATHER_LOC%%WEATHER_DESC%%TEMP%°C%br%日出%SUNRISE%%br%日落%SUNSET%", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }
                     ],
                     "marqueeGlobal": { "useLedFont": true },
-                    "location": "taiwan",
+                    "location": "banqiao",
                     "timedEffect": { "enabled": true, "intervalSeconds": 10 }
                 }
             };
             // ===================================================================
             // LED 時鐘模組
+            // 說明: 負責繪製和更新 LED 七段顯示器風格的數位時鐘。
             // ===================================================================
             const LedClock = {
                 svg: document.getElementById('led-clock-svg'), digits: {}, colons: {}, periodTextElement: null,
@@ -1068,7 +997,9 @@
                 },
             };
             // ===================================================================
-            // 月曆與月相曆模組 (工廠模式重構)
+            // 月曆與月相曆模組 (工廠模式)
+            // 說明: 透過一個共用的工廠函式 `createCalendarWidget` 來產生月曆和月相曆。
+            // 這樣可以重用大部分的渲染邏輯 (如月份切換、標題更新)，僅需傳入不同的 `onCellRender` 函式來客製化日期的顯示內容。
             // ===================================================================
             function createCalendarWidget(options) {
                 const { bodyId, yearHeaderId, backgroundMonthId, prevBtnId, nextBtnId, todayBtnId, onCellRender, onHeaderClick, getSetting } = options;
@@ -1145,6 +1076,7 @@
             };
             // ===================================================================
             // 指針時鐘模組
+            // 說明: 負責繪製和更新指針時鐘，包括時針、分針、秒針、刻度及數字。
             // ===================================================================
             const AnalogClock = {
                 hourHand: document.querySelector('#analog-clock-container .hour-hand'),
@@ -1195,6 +1127,7 @@
             };
             // ===================================================================
             // LED 數字 SVG 產生器
+            // 說明: 一個通用函式，可以將數字或時間字串轉換為 LED 風格的 SVG 圖形。
             // ===================================================================
             function generateLedSvg(text, config = {}) {
                 const { height = 24, color = '#FFFFFF', letterSpacing = 16 } = config;
@@ -1238,6 +1171,7 @@
             }
             // ===================================================================
             // 跑馬燈模組 (Class)
+            // 說明: 處理所有跑馬燈的邏輯，包括解析參數、產生內容、控制動畫。
             // ===================================================================
             class MarqueeInstance {
                 constructor(containerId, index) {
@@ -1250,6 +1184,7 @@
                     this.rebuildTimeout = null;
                     this.isScrolling = false;
                 }
+                // 取得所有可用的參數及其對應的即時數值
                 getReplacements() {
                     const now = new Date(); const year = now.getFullYear(); const month = now.getMonth() + 1; const day = now.getDate(); const hours = now.getHours(); const minutes = now.getMinutes(); const seconds = now.getSeconds(); const dayOfWeek = now.getDay(); const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']; const dayOfWeekChars = ['日', '一', '二', '三', '四', '五', '六']; const amPm = hours >= 12 ? 'PM' : 'AM'; const h12 = hours % 12 || 12; const lunar = getLunarDate(now); const moonDetails = lunar ? (moonPhaseData[lunar.day] || { n: '未知', a: '' }) : { n: '', a: '' }; const moonName = moonDetails.a ? `${moonDetails.n}(${moonDetails.a})` : moonDetails.n; const yearGZ = tiangan.charAt((lunar.year - 4) % 10) + dizhi.charAt((lunar.year - 4) % 12); const yearSX = shengxiao.charAt((lunar.year - 4) % 12); const pad = (num) => String(num).padStart(2, '0'); const periodText = TimeHelper.getPeriodText(hours);
                     const shichen = ShichenHelper.getData(now);
@@ -1257,6 +1192,7 @@
                     if (Weather.data) { const formatTime = (dateStr) => dateStr ? new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'N/A'; weatherReplacements = { '%WEATHER_LOC%': Weather.getChineseLocationName(settingsState.location), '%WEATHER_DESC%': Weather.getWeatherDescription(Weather.data.current.weather_code), '%TEMP%': Math.round(Weather.data.current.temperature_2m), '%SUNRISE%': formatTime(Weather.data.daily.sunrise[0]), '%SUNSET%': formatTime(Weather.data.daily.sunset[0]), }; }
                     return { '%YYYY%': year, '%ROC_YY%': year - 1911, '%YY%': String(year).slice(-2), '%MM%': pad(month), '%M%': month, '%DD%': pad(day), '%D%': day, '%WEEKDAY%': weekdays[dayOfWeek], '%W_NUM%': dayOfWeek, '%W_SHORT%': `週${dayOfWeekChars[dayOfWeek]}`, '%W_CHAR%': dayOfWeekChars[dayOfWeek], '%L_GZ%': yearGZ, '%L_SX%': yearSX, '%LM_C%': lunar ? lunar.toString.split(/月/)[0] + '月' : '', '%LD_C%': lunar ? lunar.dayString : '', '%HH%': pad(hours), '%H%': hours, '%hh%': pad(h12), '%h%': h12, '%mm%': pad(minutes), '%m%': minutes, '%ss%': pad(seconds), '%s%': seconds, '%AP%': amPm, '%ap%': amPm.toLowerCase(), '%ap_c%': periodText, ...weatherReplacements, '%MOON_PHASE%': moonName, '%MOON_ICON%': lunar ? MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '1em', `marquee-${this.index}`) : '', '%MOON_DAY%': lunar ? lunar.day : '', '%SHICHEN_GZ%': shichen.gz, '%SHICHEN_NAME%': shichen.name, '%SHICHEN_CHAR%': shichen.char };
                 }
+                // 根據設定的文字內容，建立初始的 HTML 結構
                 buildInitialHTML(text) {
                     const settings = settingsState.marquees[this.index];
                     const isVertical = settings.vertical;
@@ -1302,6 +1238,7 @@
                     if (lastIndex < text.length) resultHTML += `<span class="marquee-plain-text" style="color:${defaultColor}">${text.substring(lastIndex).replace(/ /g, '\u00A0')}</span>`;
                     return isVertical ? `<div>${resultHTML}</div>` : resultHTML;
                 }
+                // 每秒更新跑馬燈中會變動的內容 (如時間、天氣)
                 updateContent() {
                     const replacements = this.getReplacements();
                     this.innerDiv.querySelectorAll('[data-time-key]').forEach(span => {
@@ -1325,6 +1262,7 @@
                         }
                     });
                 }
+                // 重新計算並建立跑馬燈動畫 (當內容、速度、方向改變時觸發)
                 rebuildAnimation() {
                     clearTimeout(this.rebuildTimeout);
                     this.innerDiv.style.animation = '';
@@ -1383,19 +1321,8 @@
             }
             const MarqueeManager = {
                 instances: [],
-                init() {
-                    this.syncInstances();
-                    setInterval(() => this.updateAllContent(), 1000);
-                },
-                syncInstances() {
-                    this.instances.forEach(inst => {
-                        if (inst.animationStyleTag) inst.animationStyleTag.remove();
-                    });
-                    this.instances = [];
-                    document.querySelectorAll('.marquee-widget').forEach((el, i) => {
-                        this.instances.push(new MarqueeInstance(el.id, i));
-                    });
-                },
+                init() { this.syncInstances(); setInterval(() => this.updateAllContent(), 1000); },
+                syncInstances() { this.instances.forEach(inst => { if (inst.animationStyleTag) inst.animationStyleTag.remove(); }); this.instances = []; document.querySelectorAll('.marquee-widget').forEach((el, i) => { this.instances.push(new MarqueeInstance(el.id, i)); }); },
                 updateAllContent() { this.instances.forEach(inst => inst.updateContent()); },
                 rebuildAllAnimations() { this.instances.forEach(inst => inst.rebuildAnimation()); },
                 rebuildAnimationByIndex(index) { if (this.instances[index]) this.instances[index].rebuildAnimation(); },
@@ -1403,6 +1330,7 @@
             };
             // ===================================================================
             // 天氣模組
+            // 說明: 透過 Open-Meteo API 取得天氣資訊。
             // ===================================================================
             const Weather = {
                 data: null, init() { this.updateWeather(); setInterval(() => this.updateWeather(), 15 * 60 * 1000); },
@@ -1427,7 +1355,8 @@
                 }
             };
             // ===================================================================
-            // 月相 SVG 產生器 (從 Widget 獨立出來)
+            // 月相 SVG 產生器
+            // 說明: 根據農曆日期計算月相，並動態產生對應的 SVG 圖形。
             // ===================================================================
             function getMoonPhaseSVG(lunarDay, size = '100px', context = 'widget') {
                 const phase = (lunarDay - 1) / 29.53, r = 50, cx = 50, cy = 50;
@@ -1440,7 +1369,8 @@
                 return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" style="filter: drop-shadow(0 0 10px ${light}33);"><defs><clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${r}" /></clipPath></defs><g clip-path="url(#${id})">${base}${terminator}</g></svg>`;
             }
             // ===================================================================
-            // Modal 和 UI 互動
+            // Modal 彈出視窗與 UI 互動
+            // 說明: 統一管理所有的彈出視窗，包括日期詳情、設定面板、提示訊息等。
             // ===================================================================
             function showModal(modalId) { document.getElementById(modalId).classList.add('show'); }
             function hideModal(modalId) { document.getElementById(modalId).classList.remove('show'); }
@@ -1468,9 +1398,7 @@
                 promptCancelBtn.style.display = 'inline-block';
                 promptOkBtn.textContent = '確認';
                 promptCancelBtn.textContent = '取消';
-                promptCallback = (result) => {
-                    callback(result !== null);
-                };
+                promptCallback = (result) => { callback(result !== null); };
                 showModal('modal-backdrop-prompt');
             }
             promptOkBtn.addEventListener('click',()=>{if(promptCallback)promptCallback(promptInput.value);hideModal('modal-backdrop-prompt')});
@@ -1576,19 +1504,15 @@
                         const defaultState = userDefaultLayout.transforms[widgetId];
                         if (transformStates[widgetId] && defaultState) {
                             const state = transformStates[widgetId];
-                            
                             const currentWidth = state.width * state.scale;
                             const currentHeight = state.height * state.scale;
                             const centerX = state.left + currentWidth / 2;
                             const centerY = state.top + currentHeight / 2;
-
                             state.width = defaultState.width;
                             state.height = defaultState.height;
                             state.scale = 1;
-
                             state.left = centerX - (state.width / 2);
                             state.top = centerY - (state.height / 2);
-                            
                             checkAndClampWidgetBounds(state);
                             applyTransform(widgetEl, state);
                             saveCurrentSettings();
@@ -1605,6 +1529,7 @@
             document.addEventListener('fullscreenchange',()=>{const isFullscreen=!!document.fullscreenElement;document.getElementById('fullscreen-enter-icon').classList.toggle('display-none',isFullscreen);document.getElementById('fullscreen-exit-icon').classList.toggle('display-none',!isFullscreen)});
             // ===================================================================
             // 設定、顏色與儲存
+            // 說明: 處理所有設定的載入、套用和儲存邏輯。
             // ===================================================================
             function applyDefaultSettings() { applyLayout(JSON.parse(JSON.stringify(userDefaultLayout))); saveCurrentSettings(); Weather.updateWeather(); }
             function applyAllSettings() {
@@ -1723,6 +1648,7 @@
             document.getElementById('default-settings-btn').addEventListener('click', applyDefaultSettings);
             // ===================================================================
             // 編輯模式與拖曳縮放
+            // 說明: 處理編輯模式下的所有互動，包括拖曳、縮放、還原尺寸等。
             // ===================================================================
             document.getElementById('edit-layout-btn').addEventListener('click', () => {
                 isEditMode = !isEditMode;
@@ -1798,12 +1724,12 @@
                 targetWidget.style.transition = 'none';
                 activeWidget = { el: targetWidget, state: transformStates[targetWidget.id], originalTransition: originalTransition };
                 const handle = e.target.closest('.control-handle');
-                if (handle && !handle.classList.contains('reset-handle')) { // 確保重設按鈕不會觸發拖曳
+                if (handle && !handle.classList.contains('reset-handle')) {
                     if (handle.classList.contains('move-handle')) activeHandle = 'move';
                     else if (handle.classList.contains('resize-handle-w')) activeHandle = 'resize-w';
                     else if (handle.classList.contains('resize-handle-h')) activeHandle = 'resize-h';
                 } else if (!handle) { activeHandle = 'scale'; }
-                if (!activeHandle) return; // 如果點擊的是重設按鈕, 則不進行後續拖曳邏輯
+                if (!activeHandle) return;
                 document.body.style.userSelect = 'none';
                 startX = (e.touches ? e.touches[0] : e).clientX; startY = (e.touches ? e.touches[0] : e).clientY;
                 initialTransformState = { ...activeWidget.state };
@@ -1866,7 +1792,6 @@
             toolbarTitle.addEventListener('mousedown', handleToolbarDragStart); toolbarTitle.addEventListener('touchstart', handleToolbarDragStart, { passive: false });
             document.addEventListener('mousemove', handleToolbarDragMove); document.addEventListener('touchmove', handleToolbarDragMove, { passive: false });
             document.addEventListener('mouseup', handleToolbarDragEnd); document.addEventListener('touchend', handleToolbarDragEnd);
-            
             const layoutSelector = document.getElementById('layout-selector');
             function updateLayoutSelector() {
                 const currentVal = layoutSelector.value;
@@ -1890,7 +1815,6 @@
                 document.getElementById('load-layout-btn').disabled = layouts.length === 0;
                 document.getElementById('export-layout-btn').disabled = layouts.length === 0;
             }
-
             document.getElementById('save-layout-btn').addEventListener('click', () => {
                 const defaultName = `版面 ${new Date().toLocaleString('sv').replace(' ', '_')}`;
                 showPrompt("新增版面存檔", "請輸入備註:", defaultName, (name) => {
@@ -1901,10 +1825,8 @@
                     localStorage.setItem('widgets_layouts_v2', JSON.stringify(layouts));
                     updateLayoutSelector();
                     layoutSelector.value = layouts.length - 1;
-                    // showAlert("成功", `版面 "${layout.name}" 已新增。`);
                 });
             });
-
             document.getElementById('delete-layout-btn').addEventListener('click', () => {
                 const index = parseInt(layoutSelector.value, 10);
                 if (index < 0 || index >= layouts.length) return;
@@ -1918,18 +1840,15 @@
                     }
                 });
             });
-            
             document.getElementById('load-layout-btn').addEventListener('click',()=>{
                 const index = parseInt(layoutSelector.value, 10);
                 if (index >= 0 && layouts[index]) {
                     applyLayout(JSON.parse(JSON.stringify(layouts[index])));
                     saveCurrentSettings();
-                    // showAlert('成功', `已載入版面 "${layouts[index].name}"。`);
                 } else {
                     showAlert('提示','此欄位沒有儲存設定。');
                 }
             });
-
             document.getElementById('export-layout-btn').addEventListener('click', () => {
                 if (layouts.length === 0) return showAlert("提示", "沒有可導出的設定！");
                 try {
@@ -1942,7 +1861,6 @@
                     showAlert("錯誤", "導出設定時發生錯誤。");
                 }
             });
-
             document.getElementById('import-layout-btn').addEventListener('click', () => {
                 const input = document.createElement('input');
                 input.type = 'file';
@@ -1957,7 +1875,6 @@
                             if (!Array.isArray(importedLayouts)) throw new Error('檔案格式無效');
                             const validLayouts = importedLayouts.filter(l => l && l.name && l.transforms && l.settings);
                             if (validLayouts.length === 0) throw new Error('檔案中未找到有效的版面設定');
-                            
                             showConfirm('導入設定', `此檔案包含 ${validLayouts.length} 組設定。確定要導入並覆蓋所有現有存檔嗎？`, (confirmed) => {
                                if (confirmed) {
                                    layouts = validLayouts;
@@ -1974,7 +1891,6 @@
                 };
                 input.click();
             });
-
             // ===================================================================
             // 地區選擇器
             // ===================================================================
@@ -2002,54 +1918,32 @@
             // ===================================================================
             function createMarqueeElement(index) {
                 const template = document.getElementById('marquee-container-0');
-                if (!template) {
-                    console.error("跑馬燈模板 'marquee-container-0' 找不到!");
-                    return null;
-                }
+                if (!template) { console.error("跑馬燈模板 'marquee-container-0' 找不到!"); return null; }
                 const newMarquee = template.cloneNode(true);
                 newMarquee.id = `marquee-container-${index}`;
-                newMarquee.style.display = 'none'; // 初始隱藏，由 transform state 控制
+                newMarquee.style.display = 'none';
                 newMarquee.querySelector('.marquee-edit-indicator').textContent = index + 1;
                 document.body.appendChild(newMarquee);
                 return newMarquee;
             }
-
             function syncMarqueeDOMElements() {
                 const desiredCount = settingsState.marquees.length;
                 const existingWidgets = document.querySelectorAll('.marquee-widget');
                 let currentCount = existingWidgets.length;
-
-                // 新增不足的元件
-                while (currentCount < desiredCount) {
-                    createMarqueeElement(currentCount);
-                    currentCount++;
-                }
-
-                // 移除多餘的元件
-                if (currentCount > desiredCount) {
-                    for (let i = desiredCount; i < currentCount; i++) {
-                        const elToRemove = document.getElementById(`marquee-container-${i}`);
-                        if (elToRemove) elToRemove.remove();
-                    }
-                }
+                while (currentCount < desiredCount) { createMarqueeElement(currentCount); currentCount++; }
+                if (currentCount > desiredCount) { for (let i = desiredCount; i < currentCount; i++) { const elToRemove = document.getElementById(`marquee-container-${i}`); if (elToRemove) elToRemove.remove(); } }
             }
-
             document.getElementById('add-marquee-btn').addEventListener('click', () => {
                 const selectedIndex = parseInt(marqueeSelector.value, 10) || 0;
                 const newIndex = settingsState.marquees.length;
-
                 const sourceSettings = settingsState.marquees[selectedIndex];
                 const sourceTransform = transformStates[`marquee-container-${selectedIndex}`];
-
                 const newSettings = JSON.parse(JSON.stringify(sourceSettings));
                 const newTransform = JSON.parse(JSON.stringify(sourceTransform));
-
                 newTransform.top += (sourceTransform.height * sourceTransform.scale) + 10;
                 newTransform.visible = true;
-
                 settingsState.marquees.push(newSettings);
                 transformStates[`marquee-container-${newIndex}`] = newTransform;
-
                 const newElement = createMarqueeElement(newIndex);
                 MarqueeManager.syncInstances();
                 updateMarqueeSelectorUI();
@@ -2057,47 +1951,42 @@
                 loadMarqueeSettingsToUI(newIndex);
                 applyTransform(newElement, newTransform);
                 MarqueeManager.rebuildAnimationByIndex(newIndex);
-
                 saveCurrentSettings();
                 showAlert('成功', `已新增跑馬燈組別 ${newIndex + 1}。`);
             });
-
             document.getElementById('remove-marquee-btn').addEventListener('click', () => {
                 const selectedIndex = parseInt(marqueeSelector.value, 10);
-
-                if (selectedIndex === 0 || settingsState.marquees.length <= 1) {
-                    showAlert('提示', '無法刪除預設的跑馬燈組別。');
-                    return;
-                }
-
+                if (selectedIndex === 0 || settingsState.marquees.length <= 1) { showAlert('提示', '無法刪除預設的跑馬燈組別。'); return; }
                 settingsState.marquees.splice(selectedIndex, 1);
-                for (let i = selectedIndex; i < settingsState.marquees.length; i++) {
-                    transformStates[`marquee-container-${i}`] = transformStates[`marquee-container-${i + 1}`];
-                }
+                for (let i = selectedIndex; i < settingsState.marquees.length; i++) { transformStates[`marquee-container-${i}`] = transformStates[`marquee-container-${i + 1}`]; }
                 delete transformStates[`marquee-container-${settingsState.marquees.length}`];
-
                 syncMarqueeDOMElements();
-                document.querySelectorAll('.marquee-widget').forEach((el, i) => {
-                     el.id = `marquee-container-${i}`;
-                     el.querySelector('.marquee-edit-indicator').textContent = i + 1;
-                });
-
+                document.querySelectorAll('.marquee-widget').forEach((el, i) => { el.id = `marquee-container-${i}`; el.querySelector('.marquee-edit-indicator').textContent = i + 1; });
                 MarqueeManager.syncInstances();
                 MarqueeManager.rebuildAllAnimations();
-
                 const newIndex = Math.max(0, selectedIndex - 1);
                 marqueeSelector.value = newIndex;
                 updateMarqueeSelectorUI();
                 marqueeSelector.value = newIndex;
                 loadMarqueeSettingsToUI(newIndex);
-                
                 saveCurrentSettings();
                 showAlert('成功', `已刪除跑馬燈組別 ${selectedIndex + 1}。`);
             });
-
             // ===================================================================
             // 應用程式初始化
             // ===================================================================
+            function initializeWidgetControls() {
+                const resetHandleHTML = `<div class="reset-handle control-handle" title="還原尺寸與比例"><svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-reset-size"></use></svg></div>`;
+                const moveHandleHTML = `<div class="move-handle control-handle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="width-full height-full"><use href="#icon-move"></use></svg></div>`;
+                const resizeHandlesHTML = `<div class="resize-handle-w control-handle"></div><div class="resize-handle-h control-handle"></div>`;
+                document.querySelectorAll('.widget-container').forEach(widgetEl => {
+                    widgetEl.insertAdjacentHTML('beforeend', resetHandleHTML);
+                    widgetEl.insertAdjacentHTML('beforeend', moveHandleHTML);
+                    if (widgetEl.id !== 'analog-clock-container') {
+                        widgetEl.insertAdjacentHTML('beforeend', resizeHandlesHTML);
+                    }
+                });
+            }
             const Calendar = createCalendarWidget({
                 bodyId: 'calendar-body', yearHeaderId: 'year-header', backgroundMonthId: 'background-month',
                 prevBtnId: 'prev-month', nextBtnId: 'next-month', todayBtnId: 'back-to-today',
@@ -2110,8 +1999,7 @@
                 onCellRender: moonPhaseCellRenderer, onHeaderClick: openPickerFor,
                 getSetting: () => settingsState.moonPhase
             });
-            MoonPhaseWidget.getMoonPhaseSVG = getMoonPhaseSVG; // 掛載SVG產生器，供其他模組使用
-
+            MoonPhaseWidget.getMoonPhaseSVG = getMoonPhaseSVG;
             (function initializeApp() {
                 const autoSavedLayout = localStorage.getItem('widgets_autosave');
                 if (autoSavedLayout) {
@@ -2119,26 +2007,20 @@
                 } else {
                     applyLayout(JSON.parse(JSON.stringify(userDefaultLayout)));
                 }
-
                 const savedLayouts = localStorage.getItem('widgets_layouts_v2');
                 if (savedLayouts) {
-                    try {
-                        layouts = JSON.parse(savedLayouts);
-                    } catch (e) {
-                        console.error("無法從 localStorage 解析版面設定", e);
-                        layouts = [];
-                    }
+                    try { layouts = JSON.parse(savedLayouts); } catch (e) { console.error("無法從 localStorage 解析版面設定", e); layouts = []; }
                 }
-                
-                Calendar.init(); 
-                MoonPhaseWidget.init(); 
-                LedClock.init(); 
-                AnalogClock.init(); 
+                initializeWidgetControls();
+                Calendar.init();
+                MoonPhaseWidget.init();
+                LedClock.init();
+                AnalogClock.init();
                 Weather.init();
                 MarqueeManager.init()
-                setupTimedEffectControls(); 
-                resetActivityTimeout(); 
-                updateLayoutSelector(); 
+                setupTimedEffectControls();
+                resetActivityTimeout();
+                updateLayoutSelector();
                 saveCurrentSettings();
                 window.addEventListener('resize', () => { ensureWidgetsInBounds(); MarqueeManager.rebuildAllAnimations(); saveCurrentSettings(); });
                 document.fonts.ready.then(() => { ensureWidgetsInBounds(); MarqueeManager.rebuildAllAnimations(); });
