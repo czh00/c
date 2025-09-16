@@ -596,6 +596,12 @@
                                 <span>月曆</span>
                             </h4>
                             <div class="space-y-3">
+                                <div class="p0">
+                                    <input type="checkbox" id="calendar-use-led-font-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="calendar" data-key="useLedFont">
+                                    <label for="calendar-use-led-font-toggle" class="cursor-pointer">LED 字型</label>
+                                    <input type="checkbox" id="calendar-show-moon-icon-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="calendar" data-key="showMoonIcon">
+                                    <label for="calendar-show-moon-icon-toggle" class="cursor-pointer">顯示月相</label>
+                                </div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>背景</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--bg-primary"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>年</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--year-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>月</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--month-color"></div>
@@ -605,12 +611,6 @@
                                 <div class="display-flex justify-content-space-between align-items-center"><label>節日</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--holiday-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>節氣</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--solarterm-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center">
-                                    <label for="calendar-show-moon-icon-toggle" class="cursor-pointer">顯示月相</label>
-                                    <input type="checkbox" id="calendar-show-moon-icon-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="calendar" data-key="showMoonIcon">
-                                </div>
-                                <div class="display-flex justify-content-space-between align-items-center">
-                                    <label for="calendar-use-led-font-toggle" class="cursor-pointer">使用 LED 字型</label>
-                                    <input type="checkbox" id="calendar-use-led-font-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="calendar" data-key="useLedFont">
                                 </div>
                             </div>
                         </div>
@@ -620,14 +620,14 @@
                                 <span>月相月曆</span>
                             </h4>
                             <div class="space-y-3">
+                                    <input type="checkbox" id="moon-phase-use-led-font-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="moonPhase" data-key="useLedFont">
+                                    <label for="moon-phase-use-led-font-toggle" class="cursor-pointer">LED 字型</label>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>亮部</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-light-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>暗部</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-dark-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>標題</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-header-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>描述</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-desc-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>高亮</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-highlight-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center">
-                                    <label for="moon-phase-use-led-font-toggle" class="cursor-pointer">使用 LED 字型</label>
-                                    <input type="checkbox" id="moon-phase-use-led-font-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="moonPhase" data-key="useLedFont">
                                 </div>
                             </div>
                         </div>
@@ -640,11 +640,14 @@
                                 <div class="display-flex justify-content-space-between align-items-center"><label>時</label><input type="color" class="color-picker" data-setting-type="color" data-widget="ledClock" data-var="--led-hour-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>分</label><input type="color" class="color-picker" data-setting-type="color" data-widget="ledClock" data-var="--led-minute-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>秒</label><input type="color" class="color-picker" data-setting-type="color" data-widget="ledClock" data-var="--led-second-color"></div>
-                                <div class="display-flex justify-content-space-between align-items-center"><label>冒號</label><input type="color" class="color-picker" data-setting-type="color" data-widget="ledClock" data-var="--led-colon-color"></div>
+                                <div class="display-flex justify-content-space-between align-items-center"><label>冒號</label>
+                                <div class="p0">
+                                    <input type="checkbox" id="led-clock-colon-blink-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="ledClock" data-key="colonBlink">
+                                    <label for="led-clock-colon-blink-toggle" class="cursor-pointer">閃爍</label>
+                                <input type="color" class="color-picker" data-setting-type="color" data-widget="ledClock" data-var="--led-colon-color"></div>
+                                </div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>時段</label><input type="color" class="color-picker" data-setting-type="color" data-widget="ledClock" data-var="--led-period-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center">
-                                    <label for="led-clock-colon-blink-toggle" class="cursor-pointer">冒號閃爍</label>
-                                    <input type="checkbox" id="led-clock-colon-blink-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="ledClock" data-key="colonBlink">
                                 </div>
                             </div>
                         </div>
@@ -654,13 +657,13 @@
                                 <span>指針時鐘</span>
                             </h4>
                             <div class="space-y-3">
+                                    <input type="checkbox" id="analog-clock-use-led-font-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="analogClock" data-key="useLedFont">
+                                    <label for="analog-clock-use-led-font-toggle" class="cursor-pointer">LED 字型</label>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>指針</label><input type="color" class="color-picker" data-setting-type="color" data-widget="analogClock" data-var="--analog-hand-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>秒針</label><input type="color" class="color-picker" data-setting-type="color" data-widget="analogClock" data-var="--analog-second-hand-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>刻度</label><input type="color" class="color-picker" data-setting-type="color" data-widget="analogClock" data-var="--analog-tick-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>數字</label><input type="color" class="color-picker" data-setting-type="color" data-widget="analogClock" data-var="--analog-number-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center">
-                                    <label for="analog-clock-use-led-font-toggle" class="cursor-pointer">使用 LED 字型</label>
-                                    <input type="checkbox" id="analog-clock-use-led-font-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="analogClock" data-key="useLedFont">
                                 </div>
                             </div>
                         </div>
@@ -922,7 +925,7 @@
                     "marquee-container-0": { "visible": true, "width": 800, "height": 80, "left": 10, "top": 10, "scale": 1 }
                 },
                 "settings": {
-                    "calendar": { "visible": true, "showMoonIcon": true, "useLedFont": true, "colors": { "--bg-primary": "#000000", "--year-color": "#FF3333", "--month-color": "#3070a0", "--week-color": "#cccccc", "--day-color": "#ffffff", "--lunar-color": "#9CA3AF", "--bg-secondary": "transparent", "--bg-hover": "rgba(55, 65, 81, 0.5)", "--border-color": "#374151", "--text-primary": "#F3F4F6", "--text-secondary": "#9CA3AF", "--text-muted": "#6B7280", "--today-bg": "transparent", "--today-border": "#6366f1", "--holiday-color": "#6ee7b7", "--solarterm-color": "#fcd34d", "--yi-color": "#34D399", "--ji-color": "#F87171" } },
+                    "calendar": { "visible": true, "showMoonIcon": true, "useLedFont": true, "colors": { "--bg-primary": "#000000", "--year-color": "#FF7000", "--month-color": "#3070a0", "--week-color": "#8830d0", "--day-color": "#ffffff", "--lunar-color": "#FFFF00", "--bg-secondary": "transparent", "--bg-hover": "rgba(55, 65, 81, 0.5)", "--border-color": "#374151", "--text-primary": "#F3F4F6", "--text-secondary": "#9CA3AF", "--text-muted": "#6B7280", "--today-bg": "transparent", "--today-border": "#ff0000", "--holiday-color": "#6ee7b7", "--solarterm-color": "#fcd34d", "--yi-color": "#34D399", "--ji-color": "#F87171" } },
                     "ledClock": { "visible": true, "colonBlink": true, "colors": { "--led-hour-color": "#00ff00", "--led-minute-color": "#00ff00", "--led-second-color": "#00ff00", "--led-colon-color": "#00ff00", "--led-period-color": "#00ff00" } },
                     "analogClock": { "visible": true, "useLedFont": true, "colors": { "--analog-face-color": "transparent", "--analog-hand-color": "#ffffff", "--analog-second-hand-color": "#ff3333", "--analog-tick-color": "#cccccc", "--analog-number-color": "#ffffff" } },
                     "moonPhase": { "visible": false, "useLedFont": true, "colors": { "--moon-light-color": "#f0e68c", "--moon-dark-color": "#222222", "--moon-header-color": "#a78bfa", "--moon-desc-color": "#d1d5db", "--moon-highlight-color": "#fcd34d" } },
