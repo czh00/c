@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>多功能桌面小工具</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;7-00&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         html, body {
             overflow: hidden;
@@ -19,7 +19,6 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
-
         /* --- 通用 Widget 容器樣式 --- */
         .widget-container {
             position: absolute;
@@ -49,7 +48,6 @@
             flex-direction: column;
             min-height: 0;
         }
-
         /* --- 月曆 spezifische樣式 --- */
         .calendar-header {
             display: flex;
@@ -81,15 +79,13 @@
             padding: 0; margin: 0;
             flex-shrink: 0;
         }
-        .calendar-nav-arrow {
+        button.calendar-nav-arrow,
+        button.calendar-nav-today {
             padding: 0; margin: 0;
             transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
         }
         .calendar-nav-today {
             font-weight: 700;
-            align-items: center;
-            padding: 0; margin: 0;
-            transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
         }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; }
         .calendar-day { padding: 0.25rem; margin: 0; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; font-size: 0.9em; border: 1px solid #555; cursor: pointer; transition: background-color 0.3s, opacity 0.3s; background-color: transparent !important; z-index: 1; position: relative; overflow: hidden; }
@@ -110,8 +106,8 @@
             flex-shrink: 0;
             margin-left: 0.25rem;
         }
-        .day-header { border: 1px solid #555; background-color: var(--bg-secondary); color: var(--week-color); font-size: 0.9em; padding: 0.25rem; text-align: center; font-weight: 600; }
-        .today { background-color: var(--today-bg); color: white; box-shadow: 0 0 10px 1px var(--today-border); border-radius: 0.5em; }
+        .day-header { border: 1px solid #555; background-color: var(--bg-secondary); color: var(--week-color); font-size: 1.2em; padding: 0; text-align: center; font-weight: 600; }
+        .today { background-color: var(--today-bg); color: white; box-shadow: 0 0 10px 1px #FF0000; border-radius: 0.5em; }
         .other-month { color: var(--text-muted); opacity: 0.4; }
         .day-number-wrapper { margin-bottom: 2px; }
         .lunar-date { font-size: 1.2em; color: var(--lunar-color); line-height: 1; }
@@ -156,7 +152,6 @@
         .countdown-text-container svg {
              vertical-align: middle;
         }
-
         /* --- LED 時鐘 spezifische樣式 --- */
         #led-clock-container svg { width: 100%; height: 100%; overflow: visible; }
         #led-clock-container .segment { transition: opacity 0.2s ease-in-out; }
@@ -166,7 +161,6 @@
         #led-clock-container .colon { fill: var(--led-colon-color); }
         #led-clock-container .period-text { fill: var(--led-period-color); font-size: 50px; }
         .period-text { position: absolute; top: 0; right: -10vw; }
-
         /* --- 指針時鐘 spezifische樣式 --- */
         #analog-clock-container { border-radius: 50%; }
         #analog-clock-container .resize-handle-w, #analog-clock-container .resize-handle-h { display: none !important; }
@@ -198,7 +192,6 @@
             align-items: center;
             justify-content: center;
         }
-
         /* --- 跑馬燈 spezifische樣式 --- */
         .marquee-widget main { display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 100%; overflow: hidden; transform: translateZ(0); -webkit-transform: translateZ(0); }
         .marquee-edit-indicator {
@@ -230,12 +223,10 @@
             vertical-align: middle;
             transform: translateY(-7%);
         }
-
         /* --- 月相Widget樣式 --- */
         #moon-phase-container .calendar-day.selected { border-color: var(--moon-highlight-color); box-shadow: 0 0 5px var(--moon-highlight-color); border-radius: 0.375rem; }
         .moon-icon-small svg { width: 100%; height: auto; max-width: 28px; margin: 0 auto; }
         #moon-detail-icon svg { width: 120px; height: 120px; }
-
         /* --- 控制點樣式 --- */
         .control-handle { position: absolute; background-color: rgba(79, 70, 229, 0.8); border-radius: 50%; display: none; z-index: 100; }
         .widget-container.edit-mode .control-handle { display: block; }
@@ -259,7 +250,6 @@
         .widget-container.edit-mode .reset-handle { display: flex; }
         .resize-handle-w { width: 8px; height: 50px; top: 50%; right: -4px; transform: translateY(-50%); border-radius: 4px; cursor: ew-resize; }
         .resize-handle-h { width: 50px; height: 8px; bottom: -4px; left: 50%; transform: translateX(-50%); border-radius: 4px; cursor: ns-resize; }
-
         /* --- Modal 彈出視窗樣式 --- */
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); display: flex; justify-content: center; align-items: center; z-index: 1050; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
         .modal-backdrop.show { opacity: 1; visibility: visible; }
@@ -278,10 +268,10 @@
         #month-year-picker { max-width: 320px; }
         #month-year-picker .year-nav { display: flex; justify-content: space-between; align-items: center; }
         #month-year-picker .month-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        #month-year-picker .month-cell { padding: 8px; text-align: center; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
+        #month-year-picker .month-cell { padding: 8px; text-align: center; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; display: flex; align-items: center; justify-content: center; gap: 2px; }
         #month-year-picker .month-cell:hover { background-color: var(--bg-hover); }
         #month-year-picker .month-cell.selected { background-color: #4f46e5; color: white; }
-
+        #month-year-picker .month-cell.selected * { color: white !important; fill: white !important; }
         /* --- UI 按鈕與工具列 --- */
         .action-buttons { position: fixed; bottom: 1rem; right: 1rem; display: flex; gap: 0.5rem; z-index: 1000; opacity: 1; transition: opacity 0.5s ease-in-out; }
         .action-buttons.hidden { opacity: 0; pointer-events: none; }
@@ -300,14 +290,12 @@
         .form-checkbox:checked { background-color: #4f46e5; border-color: #4f46e5; }
         .form-checkbox:checked::after { content: '✓'; color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.9em; }
         .form-checkbox:disabled { cursor: not-allowed; background-color: #374151; opacity: 0.6; }
-
         /* --- 編輯模式網格 --- */
         #edit-mode-grid { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-image: linear-gradient(to bottom, transparent 24px, rgba(0, 255, 255, 0.2) 24px, rgba(0, 255, 255, 0.2) 25px, transparent 25px), linear-gradient(to right, transparent 24px, rgba(0, 255, 255, 0.2) 24px, rgba(0, 255, 255, 0.2) 25px, transparent 25px); background-size: 50px 50px; background-position: center center; z-index: 9; pointer-events: none; }
         #edit-mode-grid::before, #edit-mode-grid::after { content: ''; position: absolute; background-color: rgba(255, 0, 255, 0.5); z-index: 9; }
         #edit-mode-grid::before { top: 0; left: 50%; width: 1px; height: 100%; transform: translateX(-50%); }
         #edit-mode-grid::after { top: 50%; left: 0; width: 100%; height: 1px; transform: translateY(-50%); }
         body.edit-mode #edit-mode-grid { display: block; }
-
         /* --- 由 Tailwind 轉換的語意化 CSS (部分保留) --- */
         .display-flex { display: flex; }
         .align-items-center { align-items: center; }
@@ -402,7 +390,6 @@
         .overflow-hidden { overflow: hidden; }
         .overflow-y-auto { overflow-y: auto; }
         .position-relative { position: relative; }
-
         /* --- 全域按鈕樣式重置 --- */
         /* 此區塊用來統一所有按鈕的基礎外觀，移除瀏覽器預設樣式，確保視覺一致性 */
         #calendar-container button, #moon-phase-container button,
@@ -435,7 +422,6 @@
             padding: 0;
             margin: 0;
         }
-
         @media (min-width: 768px) {
             .md-grid-columns-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .md-grid-columns-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -459,9 +445,7 @@
             </symbol>
         </defs>
     </svg>
-
     <div id="edit-mode-grid"></div>
-
     <div id="calendar-container" class="widget-container">
         <div class="widget-content-wrapper">
             <div id="background-month" class="background-month"></div>
@@ -485,7 +469,6 @@
             </main>
         </div>
     </div>
-
     <div id="led-clock-container" class="widget-container">
         <div class="widget-content-wrapper">
             <main>
@@ -493,7 +476,6 @@
             </main>
         </div>
     </div>
-
     <div id="analog-clock-container" class="widget-container">
         <div class="widget-content-wrapper">
             <main class="analog-clock-face">
@@ -505,12 +487,10 @@
             </main>
         </div>
     </div>
-
     <div id="marquee-container-0" class="widget-container marquee-widget">
         <div class="marquee-edit-indicator">1</div>
         <div class="widget-content-wrapper"><main><div class="marquee-inner"></div></main></div>
     </div>
-
     <div id="moon-phase-container" class="widget-container">
         <div class="widget-content-wrapper">
             <div id="moon-background-month" class="background-month"></div>
@@ -530,7 +510,6 @@
             </main>
         </div>
     </div>
-
     <div id="action-buttons" class="action-buttons">
         <button id="edit-layout-btn" class="action-button" title="編輯版面">
             <svg id="edit-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
@@ -544,7 +523,6 @@
             <svg id="fullscreen-exit-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="display-none"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></svg>
         </button>
     </div>
-
     <div id="edit-toolbar">
         <span id="toolbar-title" title="按住拖曳">☰</span>
         <select id="layout-selector"></select>
@@ -554,8 +532,7 @@
         <button id="export-layout-btn" class="toolbar-btn">導出</button>
         <button id="import-layout-btn" class="toolbar-btn">導入</button>
     </div>
-
-    <div id="modal-backdrop-day" class="modal-backdrop"><div class="modal-content max-width-md"><div class="padding-6"><div class="display-flex justify-content-space-between align-items-flex-start margin-bottom-4"><div><h2 id="modal-gregorian-date" class="font-size-xl font-weight-bold color-white"></h2><p id="modal-lunar-date" class="font-size-md color-indigo-300"></p><p id="modal-holiday" class="font-size-md holiday-text margin-top-1 cursor-help"></p><p id="modal-solarterm" class="font-size-md solarterm-text cursor-help"></p></div><button data-close-modal="modal-backdrop-day" class="color-gray-400 hover-color-white font-size-3xl line-height-none">&times;</button></div><div class="margin-bottom-4 padding-3 bg-gray-800 border-radius-lg space-y-2 text-align-center"><p id="countdown-holiday-text" class="font-size-sm color-gray-300"></p><p id="countdown-solarterm-text" class="font-size-sm color-gray-300"></p></div>
+    <div id="modal-backdrop-day" class="modal-backdrop"><div class="modal-content max-width-md"><div class="padding-6"><div class="display-flex justify-content-space-between align-items-flex-start margin-bottom-4"><div><h2 id="modal-gregorian-date" class="font-size-xl font-weight-bold color-white"></h2><p id="modal-lunar-date" class="font-size-md color-indigo-300"></p><p id="modal-constellation" class="font-size-md color-gray-400 margin-top-1"></p><p id="modal-holiday" class="font-size-md holiday-text margin-top-1 cursor-help"></p><p id="modal-solarterm" class="font-size-md solarterm-text cursor-help"></p></div><button data-close-modal="modal-backdrop-day" class="color-gray-400 hover-color-white font-size-3xl line-height-none">&times;</button></div><div class="margin-bottom-4 padding-3 bg-gray-800 border-radius-lg space-y-2 text-align-center"><p id="countdown-holiday-text" class="font-size-sm color-gray-300"></p><p id="countdown-solarterm-text" class="font-size-sm color-gray-300"></p></div>
 <div id="modal-day-details-grid" class="margin-top-4 display-grid grid-columns-2 gap-4 text-align-center">
     <div>
         <p class="font-size-sm color-gray-400">日出</p>
@@ -570,6 +547,7 @@
          <div>
             <p class="font-size-sm color-gray-400">當日月相</p>
             <p id="modal-moon-phase-name" class="font-size-lg font-weight-semibold color-white"></p>
+            <p id="modal-moon-phase-desc" class="font-size-sm color-gray-300 margin-top-1"></p>
          </div>
     </div>
 </div>
@@ -610,8 +588,6 @@
                                 <div class="display-flex justify-content-space-between align-items-center"><label>農曆</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--lunar-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>節日</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--holiday-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>節氣</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--solarterm-color"></div>
-                                <div class="display-flex justify-content-space-between align-items-center">
-                                </div>
                             </div>
                         </div>
                         <div>
@@ -620,15 +596,13 @@
                                 <span>月相月曆</span>
                             </h4>
                             <div class="space-y-3">
-                                    <input type="checkbox" id="moon-phase-use-led-font-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="moonPhase" data-key="useLedFont">
-                                    <label for="moon-phase-use-led-font-toggle" class="cursor-pointer">LED 字型</label>
+                                <input type="checkbox" id="moon-phase-use-led-font-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="moonPhase" data-key="useLedFont">
+                                <label for="moon-phase-use-led-font-toggle" class="cursor-pointer">LED 字型</label>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>亮部</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-light-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>暗部</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-dark-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>標題</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-header-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>描述</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-desc-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>高亮</label><input type="color" class="color-picker" data-setting-type="color" data-widget="moonPhase" data-var="--moon-highlight-color"></div>
-                                <div class="display-flex justify-content-space-between align-items-center">
-                                </div>
                             </div>
                         </div>
                         <div>
@@ -647,8 +621,6 @@
                                 <input type="color" class="color-picker" data-setting-type="color" data-widget="ledClock" data-var="--led-colon-color"></div>
                                 </div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>時段</label><input type="color" class="color-picker" data-setting-type="color" data-widget="ledClock" data-var="--led-period-color"></div>
-                                <div class="display-flex justify-content-space-between align-items-center">
-                                </div>
                             </div>
                         </div>
                         <div>
@@ -663,8 +635,6 @@
                                 <div class="display-flex justify-content-space-between align-items-center"><label>秒針</label><input type="color" class="color-picker" data-setting-type="color" data-widget="analogClock" data-var="--analog-second-hand-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>刻度</label><input type="color" class="color-picker" data-setting-type="color" data-widget="analogClock" data-var="--analog-tick-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>數字</label><input type="color" class="color-picker" data-setting-type="color" data-widget="analogClock" data-var="--analog-number-color"></div>
-                                <div class="display-flex justify-content-space-between align-items-center">
-                                </div>
                             </div>
                         </div>
                         <div class="grid-column-span-2 md-grid-column-span-4">
@@ -740,7 +710,6 @@
             </div>
         </div>
     </div>
-
     <div id="modal-backdrop-explanation" class="modal-backdrop"><div class="modal-content max-width-sm"><div class="padding-6"><div class="display-flex justify-content-space-between align-items-center margin-bottom-3"><h3 id="explanation-title" class="font-size-xl font-weight-bold color-indigo-300"></h3><button data-close-modal="modal-backdrop-explanation" class="color-gray-400 hover-color-white font-size-3xl line-height-none">&times;</button></div><p id="explanation-content" class="color-gray-300 line-height-relaxed"></p></div></div></div>
     <div id="modal-backdrop-prompt" class="modal-backdrop"><div class="modal-content max-width-sm"><div class="padding-6"><h3 id="prompt-title" class="font-size-xl font-weight-bold color-indigo-300 margin-bottom-4"></h3><p id="prompt-message" class="color-gray-300 margin-bottom-4"></p><input id="prompt-input" type="text" class="width-full margin-bottom-4"><div class="display-flex justify-content-flex-end gap-2"><button id="prompt-cancel-btn" class="toolbar-btn">取消</button><button id="prompt-ok-btn" class="toolbar-btn">確定</button></div></div></div></div>
     <div id="modal-backdrop-marquee-params" class="modal-backdrop">
@@ -767,6 +736,7 @@
                     <li class="param-item"><strong>%W_SHORT%</strong>: 星期簡稱 (例如: 週日)</li>
                     <li class="param-item"><strong>%W_CHAR%</strong>: 星期單字 (例如: 日)</li>
                     <li class="param-item"><strong>%W_NUM%</strong>: 星期數字 (0 為星期日)</li>
+                    <li class="param-item"><strong>%CONSTELLATION%</strong>: 當日星座 (例如: 處女座)</li>
                     <li class="param-item"><strong>%HH%</strong>: 24小時制，兩位數 (例如: 23)</li>
                     <li class="param-item"><strong>%H%</strong>: 24小時制，無前導零 (例如: 23)</li>
                     <li class="param-item"><strong>%hh%</strong>: 12小時制，兩位數 (例如: 11)</li>
@@ -801,9 +771,10 @@
             </div>
         </div>
     </div>
-
     <script>
-        // --- 全域變數 ---
+        // --- 全域變數與常數 ---
+        const STORAGE_AUTOSAVE_KEY = 'widgets_autosave';
+        const STORAGE_LAYOUTS_KEY = 'widgets_layouts_v2';
         let weatherDataLoaded = false;
         let layouts = [];
 
@@ -874,6 +845,26 @@
                 const dayStemIndex = (6 + positiveOffset) % 10;
                 return { stemIndex: dayStemIndex };
             }
+            // --- 星座計算 ---
+            function getConstellation(date) {
+                const m = date.getMonth() + 1;
+                const d = date.getDate();
+                const signs = [
+                    { sign: "摩羯座", m: 1, d: 20, range: "12/22 - 1/19" }, { sign: "水瓶座", m: 2, d: 19, range: "1/20 - 2/18" },
+                    { sign: "雙魚座", m: 3, d: 21, range: "2/19 - 3/20" }, { sign: "牡羊座", m: 4, d: 20, range: "3/21 - 4/19" },
+                    { sign: "金牛座", m: 5, d: 21, range: "4/20 - 5/20" }, { sign: "雙子座", m: 6, d: 22, range: "5/21 - 6/21" },
+                    { sign: "巨蟹座", m: 7, d: 23, range: "6/22 - 7/22" }, { sign: "獅子座", m: 8, d: 23, range: "7/23 - 8/22" },
+                    { sign: "處女座", m: 9, d: 23, range: "8/23 - 9/22" }, { sign: "天秤座", m: 10, d: 24, range: "9/23 - 10/23" },
+                    { sign: "天蠍座", m: 11, d: 23, range: "10/24 - 11/22" }, { sign: "射手座", m: 12, d: 22, range: "11/23 - 12/21" },
+                    { sign: "摩羯座", m: 13, d: 32, range: "12/22 - 1/19" } // 處理跨年
+                ];
+                for (let i = 0; i < signs.length; i++) {
+                    if (m < signs[i].m || (m === signs[i].m && d < signs[i].d)) {
+                        return signs[i];
+                    }
+                }
+                return signs[0]; // 預設
+            }
             // --- 時間輔助工具 ---
             const ShichenHelper = {
                 hourStemStart: [0, 2, 4, 6, 8, 0, 2, 4, 6, 8],
@@ -892,7 +883,6 @@
                 timeRanges: [{h:23,p:'深夜'},{h:19,p:'夜晚'},{h:17,p:'傍晚'},{h:13,p:'下午'},{h:12,p:'中午'},{h:9,p:'上午'},{h:5,p:'清晨'},{h:0,p:'凌晨'}],
                 getPeriodText(hour) { return this.timeRanges.find(range => hour >= range.h)?.p || ''; },
             };
-
             // --- 全局 DOM 元素與狀態 ---
             const allWidgetContainers = () => document.querySelectorAll('.widget-container');
             const actionButtons = document.getElementById('action-buttons');
@@ -902,7 +892,6 @@
             let transformStates = {}; // 儲存所有 widget 的位置、大小、縮放、可見度
             let settingsState = {};   // 儲存所有 widget 的外觀設定 (顏色、開關等)
             let isWidgetAnimating = {};
-
             // --- 跑馬燈參數與顏色變數的映射表 ---
             const marqueeParamColorMap = {
                 '%YYYY%': '--year-color', '%ROC_YY%': '--year-color', '%MM%': '--month-color', '%DD%': '--day-color',
@@ -911,10 +900,9 @@
                 '%L_SX%': '--lunar-color', '%LM_C%': '--lunar-color', '%LD_C%': '--lunar-color', '%WEATHER_LOC%': '--holiday-color',
                 '%WEATHER_DESC%': '--holiday-color', '%TEMP%': '--holiday-color', '%SUNRISE%': '--solarterm-color',
                 '%SUNSET%': '--solarterm-color', '%MOON_PHASE%': '--moon-header-color', '%MOON_ICON%': '--moon-header-color',
-                '%MOON_DAY%': '--moon-header-color',
+                '%MOON_DAY%': '--moon-header-color', '%CONSTELLATION%': '--solarterm-color',
                 '%SHICHEN_GZ%': '--lunar-color', '%SHICHEN_NAME%': '--lunar-color', '%SHICHEN_CHAR%': '--lunar-color'
             };
-
             // --- 預設設定 ---
             const userDefaultLayout = {
                 "transforms": {
@@ -925,12 +913,12 @@
                     "marquee-container-0": { "visible": true, "width": 800, "height": 80, "left": 10, "top": 10, "scale": 1 }
                 },
                 "settings": {
-                    "calendar": { "visible": true, "showMoonIcon": true, "useLedFont": true, "colors": { "--bg-primary": "#000000", "--year-color": "#FF7000", "--month-color": "#3070a0", "--week-color": "#8830d0", "--day-color": "#ffffff", "--lunar-color": "#FFFF00", "--bg-secondary": "transparent", "--bg-hover": "rgba(55, 65, 81, 0.5)", "--border-color": "#374151", "--text-primary": "#F3F4F6", "--text-secondary": "#9CA3AF", "--text-muted": "#6B7280", "--today-bg": "transparent", "--today-border": "#ff0000", "--holiday-color": "#6ee7b7", "--solarterm-color": "#fcd34d", "--yi-color": "#34D399", "--ji-color": "#F87171" } },
+                    "calendar": { "visible": true, "showMoonIcon": true, "useLedFont": true, "colors": { "--bg-primary": "#000000", "--year-color": "#FF7000", "--month-color": "#3070a0", "--week-color": "#8830d0", "--day-color": "#ffffff", "--lunar-color": "#FFFF00", "--bg-secondary": "transparent", "--bg-hover": "rgba(55, 65, 81, 0.5)", "--border-color": "#374151", "--text-primary": "#F3F4F6", "--text-secondary": "#9CA3AF", "--text-muted": "#6B7280", "--today-bg": "transparent", "--holiday-color": "#6ee7b7", "--solarterm-color": "#fcd34d", "--yi-color": "#34D399", "--ji-color": "#F87171" } },
                     "ledClock": { "visible": true, "colonBlink": true, "colors": { "--led-hour-color": "#00ff00", "--led-minute-color": "#00ff00", "--led-second-color": "#00ff00", "--led-colon-color": "#00ff00", "--led-period-color": "#00ff00" } },
                     "analogClock": { "visible": true, "useLedFont": true, "colors": { "--analog-face-color": "transparent", "--analog-hand-color": "#ffffff", "--analog-second-hand-color": "#ff3333", "--analog-tick-color": "#cccccc", "--analog-number-color": "#ffffff" } },
                     "moonPhase": { "visible": false, "useLedFont": true, "colors": { "--moon-light-color": "#f0e68c", "--moon-dark-color": "#222222", "--moon-header-color": "#a78bfa", "--moon-desc-color": "#d1d5db", "--moon-highlight-color": "#fcd34d" } },
                     "marquees": [
-                        { "text": "%YYYY%/%ROC_YY%年%MM%月%DD%日%br%%W_SHORT%%ap_c%%hh%%C(#00FF00, :)%%mm%%br%%C(#FFFF00, 農曆)%%LM_C%%LD_C%%SHICHEN_NAME%%L_GZ%%L_SX%%MOON_ICON%%br%%WEATHER_LOC%%WEATHER_DESC%%TEMP%°C%br%日出%SUNRISE%%br%日落%SUNSET%", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }
+                        { "text": "%YYYY%/%ROC_YY%年%MM%月%DD%日 %CONSTELLATION% %W_SHORT%%ap_c%%hh%%C(#00FF00, :)%%mm%%br%%C(#FFFF00, 農曆)%%LM_C%%LD_C%%SHICHEN_NAME%%L_GZ%%L_SX%%MOON_ICON%%br%%WEATHER_LOC%%WEATHER_DESC%%TEMP%°C%br%日出%SUNRISE%%br%日落%SUNSET%", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }
                     ],
                     "marqueeGlobal": { "useLedFont": true },
                     "location": "banqiao",
@@ -1010,6 +998,7 @@
                 const yearHeader = document.getElementById(yearHeaderId);
                 const backgroundMonth = document.getElementById(backgroundMonthId);
                 const widget = {
+                    body: body,
                     currentDate: new Date(),
                     init() {
                         document.getElementById(prevBtnId).addEventListener('click', () => { if (!isEditMode) { this.currentDate.setMonth(this.currentDate.getMonth() - 1); this.render(); } });
@@ -1024,9 +1013,16 @@
                         const month = this.currentDate.getMonth();
                         const widgetSettings = getSetting() || {};
                         const useLedHeader = widgetSettings.useLedFont ?? true;
-                        const yearColor = getComputedStyle(document.documentElement).getPropertyValue('--year-color').trim() || '#FF3333';
+                        const yearColor = getComputedStyle(document.documentElement).getPropertyValue('--year-color').trim() || '#FF7000';
                         renderCalendarTitle(yearHeader, year, useLedHeader, 26, yearColor, '26px', yearColor);
-                        backgroundMonth.textContent = month + 1;
+                        const widgetId = body.closest('.widget-container').id;
+                        const widgetState = transformStates[widgetId];
+                        if (useLedHeader && widgetState) {
+                             const monthColor = getComputedStyle(document.documentElement).getPropertyValue('--month-color').trim() || '#3070a0';
+                             backgroundMonth.innerHTML = generateLedSvg(String(month + 1), { height: widgetState.height * 0.7, color: monthColor });
+                        } else {
+                             backgroundMonth.textContent = month + 1;
+                        }
                         const firstDayOfMonth = new Date(year, month, 1);
                         const startDayOfWeek = firstDayOfMonth.getDay();
                         const startDate = new Date(year, month, 1 - startDayOfWeek);
@@ -1056,7 +1052,6 @@
                     ${holiday ? `<div class="holiday-text truncate" data-key="${holiday}">${holiday}</div>` : ''}`;
                 const dayColor = getComputedStyle(document.documentElement).getPropertyValue('--day-color').trim();
                 const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvg(String(day), {height: 20, color: dayColor})}</div>` : `<div class="day-number-wrapper" style="font-size: 1.5em; line-height: 1.2; color: ${dayColor}; display: flex; align-items: center; justify-content: center; height: 20px; font-weight: 700;">${day}</div>`;
-
                 if (showMoonIcon) {
                     cell.classList.add('with-moon-icon');
                     cell.innerHTML = `<div class="day-text-content">${dayNumberHTML}<div class="space-y-px">${textDetailsHTML}</div></div><div class="day-moon-container">${MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '28px', `main-cal-${Math.random()}`)}</div>`;
@@ -1156,13 +1151,71 @@
                     } else if (char === ':') {
                         svgContent += `<g transform="translate(${currentX}, 0)"><use href="#${colonId}" transform="translate(0, 60)" /><use href="#${colonId}" transform="translate(0, 180)" /></g>`;
                         currentX += colonBaseWidth + letterSpacing;
+                    } else if (['/', '-', '.'].includes(char)) {
+                        const separatorWidth = 60;
+                        const entity = { '/': '/', '-': '—', '.': '.' }[char];
+                        svgContent += `<text x="${currentX + separatorWidth / 2}" y="${digitBaseHeight / 2}" text-anchor="middle" dominant-baseline="central" font-size="${digitBaseHeight * 0.9}" font-family="'Courier New', Courier, monospace" font-weight="bold">${entity}</text>`;
+                        currentX += separatorWidth + letterSpacing;
                     }
                 }
                 const totalWidth = currentX > 0 ? currentX - letterSpacing : 0;
                 if (totalWidth === 0) return '';
                 const padding = 16;
                 const finalWidth = ((totalWidth + padding * 2) / digitBaseHeight) * height;
-                return `<svg viewBox="-${padding} 0 ${totalWidth + padding * 2} ${digitBaseHeight}" data-text="${text}" height="${height}px" width="${finalWidth}px" fill="${color}" style="vertical-align: middle;"><defs><polygon id="${segmentId}" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="${colonId}" x="-16" y="0" width="32" height="32" rx="5" ry="5" /></defs>${svgContent}</svg>`.replace(/\n\s*/g, '');
+                return `<svg viewBox="-${padding} 0 ${totalWidth + padding * 2} ${digitBaseHeight}" data-text="${text}" height="${height}px" width="${finalWidth}px" fill="${color}" style="vertical-align: middle; display: inline-block;"><defs><polygon id="${segmentId}" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="${colonId}" x="-16" y="0" width="32" height="32" rx="5" ry="5" /></defs>${svgContent}</svg>`.replace(/\n\s*/g, '');
+            }
+            function getLedHTML(text, useLed, options = {}) {
+                if (!useLed) return String(text).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                const { color = '#FFFFFF', fontSize = 16, heightMultiplier = 1.1, defaultSpan = true } = options;
+                let resultHTML = '';
+                const parts = String(text).split(/(\d+[\d:./-]*)/);
+                parts.forEach(part => {
+                    if (/^\d+[\d:./-]*$/.test(part) && part.trim() !== '') {
+                        resultHTML += generateLedSvg(part, { height: fontSize * heightMultiplier, color: color });
+                    } else if (part) {
+                        const escapedPart = part.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                        resultHTML += defaultSpan ? `<span style="color:${color};">${escapedPart}</span>` : escapedPart;
+                    }
+                });
+                return resultHTML;
+            }
+            function applyLedToStaticContent(containerElement) {
+                if (containerElement.dataset.ledProcessed) return;
+                const walker = document.createTreeWalker(containerElement, NodeFilter.SHOW_TEXT, null, false);
+                const nodesToProcess = [];
+                let node;
+                while (node = walker.nextNode()) {
+                    if (node.parentElement.closest('script, style, svg, [data-led-processed]')) continue;
+                    if (/\d/.test(node.nodeValue)) nodesToProcess.push(node);
+                }
+                nodesToProcess.forEach(node => {
+                    const parent = node.parentNode;
+                    if (!parent) return;
+                    const parts = node.nodeValue.split(/(\d+[\d:./-]*)/);
+                    if (parts.length <= 1) return;
+                    const fragment = document.createDocumentFragment();
+                    parts.forEach(part => {
+                        if (/^\d+[\d:./-]*$/.test(part) && part.trim() !== '') {
+                            const color = getComputedStyle(parent).color || '#FFFFFF';
+                            const fontSize = parseFloat(getComputedStyle(parent).fontSize) || 16;
+                            const template = document.createElement('template');
+                            const svgHTML = generateLedSvg(part, { height: fontSize * 1.1, color: color }).trim();
+                            if (svgHTML) {
+                                template.innerHTML = svgHTML;
+                                if (template.content.firstChild) {
+                                    template.content.firstChild.dataset.ledProcessed = 'true';
+                                    fragment.appendChild(template.content.firstChild);
+                                }
+                            } else {
+                                fragment.appendChild(document.createTextNode(part));
+                            }
+                        } else if (part) {
+                            fragment.appendChild(document.createTextNode(part));
+                        }
+                    });
+                    parent.replaceChild(fragment, node);
+                });
+                containerElement.dataset.ledProcessed = 'true';
             }
             // ===================================================================
             // 統一的日曆標題渲染函數
@@ -1193,23 +1246,41 @@
                     const shichen = ShichenHelper.getData(now);
                     let weatherReplacements = { '%WEATHER_LOC%': Weather.getChineseLocationName(settingsState.location), '%WEATHER_DESC%': '讀取中', '%TEMP%': '...', '%SUNRISE%': '...', '%SUNSET%': '...' };
                     if (Weather.data) { const formatTime = (dateStr) => dateStr ? new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'N/A'; weatherReplacements = { '%WEATHER_LOC%': Weather.getChineseLocationName(settingsState.location), '%WEATHER_DESC%': Weather.getWeatherDescription(Weather.data.current.weather_code), '%TEMP%': Math.round(Weather.data.current.temperature_2m), '%SUNRISE%': formatTime(Weather.data.daily.sunrise[0]), '%SUNSET%': formatTime(Weather.data.daily.sunset[0]), }; }
-                    return { '%YYYY%': year, '%ROC_YY%': year - 1911, '%YY%': String(year).slice(-2), '%MM%': pad(month), '%M%': month, '%DD%': pad(day), '%D%': day, '%WEEKDAY%': weekdays[dayOfWeek], '%W_NUM%': dayOfWeek, '%W_SHORT%': `週${dayOfWeekChars[dayOfWeek]}`, '%W_CHAR%': dayOfWeekChars[dayOfWeek], '%L_GZ%': yearGZ, '%L_SX%': yearSX, '%LM_C%': lunar ? lunar.toString.split(/月/)[0] + '月' : '', '%LD_C%': lunar ? lunar.dayString : '', '%HH%': pad(hours), '%H%': hours, '%hh%': pad(h12), '%h%': h12, '%mm%': pad(minutes), '%m%': minutes, '%ss%': pad(seconds), '%s%': seconds, '%AP%': amPm, '%ap%': amPm.toLowerCase(), '%ap_c%': periodText, ...weatherReplacements, '%MOON_PHASE%': moonName, '%MOON_ICON%': lunar ? MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '1em', `marquee-${this.index}`) : '', '%MOON_DAY%': lunar ? lunar.day : '', '%SHICHEN_GZ%': shichen.gz, '%SHICHEN_NAME%': shichen.name, '%SHICHEN_CHAR%': shichen.char };
+                    const constellationInfo = getConstellation(now);
+                    return { '%YYYY%': year, '%ROC_YY%': year - 1911, '%YY%': String(year).slice(-2), '%MM%': pad(month), '%M%': month, '%DD%': pad(day), '%D%': day, '%WEEKDAY%': weekdays[dayOfWeek], '%W_NUM%': dayOfWeek, '%W_SHORT%': `週${dayOfWeekChars[dayOfWeek]}`, '%W_CHAR%': dayOfWeekChars[dayOfWeek], '%L_GZ%': yearGZ, '%L_SX%': yearSX, '%LM_C%': lunar ? lunar.toString.split(/月/)[0] + '月' : '', '%LD_C%': lunar ? lunar.dayString : '', '%HH%': pad(hours), '%H%': hours, '%hh%': pad(h12), '%h%': h12, '%mm%': pad(minutes), '%m%': minutes, '%ss%': pad(seconds), '%s%': seconds, '%AP%': amPm, '%ap%': amPm.toLowerCase(), '%ap_c%': periodText, ...weatherReplacements, '%MOON_PHASE%': moonName, '%MOON_ICON%': lunar ? MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '1em', `marquee-${this.index}`) : '', '%MOON_DAY%': lunar ? lunar.day : '', '%SHICHEN_GZ%': shichen.gz, '%SHICHEN_NAME%': shichen.name, '%SHICHEN_CHAR%': shichen.char, '%CONSTELLATION%': constellationInfo ? constellationInfo.sign : '' };
                 }
                 // 根據設定的文字內容，建立初始的 HTML 結構
                 buildInitialHTML(text) {
                     const settings = settingsState.marquees[this.index];
                     const isVertical = settings.vertical;
+                    const useLedGlobal = settingsState.marqueeGlobal?.useLedFont ?? true;
                     const defaultColor = (settings.colors && settings.colors.default) ? settings.colors.default : '#FFFFFF';
+                    const processMarqueeChunk = (chunk) => {
+                        if (!useLedGlobal) {
+                            return `<span class="marquee-plain-text" style="color:${defaultColor}">${chunk.replace(/ /g, '\u00A0')}</span>`;
+                        }
+                        let processedHTML = '';
+                        const parts = chunk.split(/(\d+[\d:.]*)/);
+                        for (const part of parts) {
+                            if (/^\d+[\d:.]*$/.test(part) && part.trim() !== '') {
+                                const widgetState = transformStates[this.container.id];
+                                const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
+                                processedHTML += generateLedSvg(part, { height: svgHeight, color: defaultColor });
+                            } else if (part) {
+                                processedHTML += `<span class="marquee-plain-text" style="color:${defaultColor}">${part.replace(/ /g, '\u00A0')}</span>`;
+                            }
+                        }
+                        return processedHTML;
+                    };
                     const replacements = this.getReplacements();
                     const paramRegex = new RegExp(`%C\\(#([0-9a-fA-F]{6}),\\s*([^%)]+)\\)%|${Object.keys(replacements).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')}|%br%`, 'g');
                     let resultHTML = '';
                     let lastIndex = 0;
                     let match;
-                    const useLedGlobal = settingsState.marqueeGlobal?.useLedFont ?? true;
                     const ledParams = ['%HH%', '%H%', '%hh%', '%h%', '%mm%', '%m%', '%ss%', '%s%', '%ROC_YY%', '%YYYY%', '%YY%', '%MM%', '%M%', '%DD%', '%D%', '%TEMP%', '%SUNRISE%', '%SUNSET%'];
                     while ((match = paramRegex.exec(text)) !== null) {
                         if (match.index > lastIndex) {
-                            resultHTML += `<span class="marquee-plain-text" style="color:${defaultColor}">${text.substring(lastIndex, match.index).replace(/ /g, '\u00A0')}</span>`;
+                            resultHTML += processMarqueeChunk(text.substring(lastIndex, match.index));
                         }
                         const param = match[0], colorHex = match[1], colorText = match[2];
                         if (colorHex && colorText) {
@@ -1238,7 +1309,9 @@
                         }
                         lastIndex = paramRegex.lastIndex;
                     }
-                    if (lastIndex < text.length) resultHTML += `<span class="marquee-plain-text" style="color:${defaultColor}">${text.substring(lastIndex).replace(/ /g, '\u00A0')}</span>`;
+                    if (lastIndex < text.length) {
+                         resultHTML += processMarqueeChunk(text.substring(lastIndex));
+                    }
                     return isVertical ? `<div>${resultHTML}</div>` : resultHTML;
                 }
                 // 每秒更新跑馬燈中會變動的內容 (如時間、天氣)
@@ -1375,19 +1448,42 @@
             // Modal 彈出視窗與 UI 互動
             // 說明: 統一管理所有的彈出視窗，包括日期詳情、設定面板、提示訊息等。
             // ===================================================================
-            function showModal(modalId) { document.getElementById(modalId).classList.add('show'); }
+            function showModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modalId === 'modal-backdrop-marquee-params' || modalId === 'modal-backdrop-explanation') {
+                    const useLed = modalId === 'modal-backdrop-marquee-params'
+                        ? (settingsState.marqueeGlobal?.useLedFont ?? true)
+                        : (settingsState.calendar?.useLedFont ?? true);
+                    if (useLed) {
+                        applyLedToStaticContent(modal.querySelector('.modal-content'));
+                    }
+                }
+                modal.classList.add('show');
+            }
             function hideModal(modalId) { document.getElementById(modalId).classList.remove('show'); }
             const promptModal=document.getElementById('modal-backdrop-prompt'),promptTitle=document.getElementById('prompt-title'),promptMessage=document.getElementById('prompt-message'),promptInput=document.getElementById('prompt-input'),promptOkBtn=document.getElementById('prompt-ok-btn'),promptCancelBtn=document.getElementById('prompt-cancel-btn');
             let promptCallback=null;
+            function _setPromptMessage(message) {
+                const el = promptMessage;
+                const useLed = true;
+                el.innerHTML = getLedHTML(message, useLed, {
+                    fontSize: parseFloat(getComputedStyle(el).fontSize) || 16,
+                    color: getComputedStyle(el).color || '#d1d5db',
+                    defaultSpan: false
+                });
+                el.style.display = message ? 'block' : 'none';
+            }
             function showAlert(title, message) {
-                promptTitle.textContent = title; promptMessage.textContent = message;
-                promptMessage.style.display = 'block'; promptInput.style.display = 'none'; promptCancelBtn.style.display = 'none';
+                promptTitle.textContent = title;
+                _setPromptMessage(message);
+                promptInput.style.display = 'none'; promptCancelBtn.style.display = 'none';
                 promptOkBtn.textContent = '確定';
                 promptCallback = null; showModal('modal-backdrop-prompt');
             }
             function showPrompt(title, message, defaultValue, callback) {
-                promptTitle.textContent = title; promptMessage.textContent = message;
-                promptMessage.style.display = message ? 'block' : 'none'; promptInput.style.display = 'block';
+                promptTitle.textContent = title;
+                _setPromptMessage(message);
+                promptInput.style.display = 'block';
                 promptCancelBtn.style.display = 'inline-block'; promptInput.value = defaultValue;
                 promptOkBtn.textContent = '確定'; promptCancelBtn.textContent = '取消';
                 promptCallback = callback; showModal('modal-backdrop-prompt');
@@ -1395,8 +1491,7 @@
             }
             function showConfirm(title, message, callback) {
                 promptTitle.textContent = title;
-                promptMessage.textContent = message;
-                promptMessage.style.display = 'block';
+                _setPromptMessage(message);
                 promptInput.style.display = 'none';
                 promptCancelBtn.style.display = 'inline-block';
                 promptOkBtn.textContent = '確認';
@@ -1412,6 +1507,7 @@
                 const lunar=getLunarDate(date);
                 const holiday=getHoliday(date);
                 const solarTerm=getSolarTerm(date.getFullYear(),date.getMonth()+1,date.getDate());
+                const constellationInfo = getConstellation(date);
                 const useLed = settingsState.calendar?.useLedFont ?? true;
                 if (useLed) {
                     const yearSVG = generateLedSvg(String(date.getFullYear()), {height: 22, color: 'white'});
@@ -1424,6 +1520,16 @@
                 const rocYear = date.getFullYear()-1911;
                 const rocYearHTML = useLed ? generateLedSvg(String(rocYear), {height: 20, color: '#a5b4fc'}) : rocYear;
                 document.getElementById('modal-lunar-date').innerHTML = `民國 ${rocYearHTML} 年 / 農曆 ${lunar.toString}`;
+                const modalConstellationEl = document.getElementById('modal-constellation');
+                if (constellationInfo) {
+                    const text = `星座 ${constellationInfo.sign} (${constellationInfo.range})`;
+                    const fontSize = parseFloat(getComputedStyle(modalConstellationEl).fontSize) || 16;
+                    const color = getComputedStyle(modalConstellationEl).color || 'white';
+                    modalConstellationEl.innerHTML = getLedHTML(text, useLed, { fontSize, color, defaultSpan: false });
+                    modalConstellationEl.style.display = 'block';
+                } else {
+                    modalConstellationEl.style.display = 'none';
+                }
                 const modalHolidayEl=document.getElementById('modal-holiday');
                 modalHolidayEl.textContent=holiday||''; modalHolidayEl.style.display=holiday?'block':'none';
                 if(holiday)modalHolidayEl.dataset.key=holiday;
@@ -1436,10 +1542,19 @@
                 const isTimeFormat = (str) => /^[\d:]+$/.test(str);
                 document.getElementById('modal-sunrise-time').innerHTML = useLed && isTimeFormat(sunriseTime) ? generateLedSvg(sunriseTime, {height: 26, color: 'white'}) : sunriseTime;
                 document.getElementById('modal-sunset-time').innerHTML = useLed && isTimeFormat(sunsetTime) ? generateLedSvg(sunsetTime, {height: 26, color: 'white'}) : sunsetTime;
-                const moonDetails = moonPhaseData[lunar.day] || { n: '未知', a: '' };
+                const moonDetails = moonPhaseData[lunar.day] || { n: '未知', a: '', d: '' };
                 const moonName = moonDetails.a ? `${moonDetails.n}(${moonDetails.a})` : moonDetails.n;
                 document.getElementById('modal-moon-icon').innerHTML = getMoonPhaseSVG(lunar.day, '64px', 'day-detail');
                 document.getElementById('modal-moon-phase-name').textContent = moonName;
+                const moonDescEl = document.getElementById('modal-moon-phase-desc');
+                if (moonDetails.d) {
+                    const fontSize = parseFloat(getComputedStyle(moonDescEl).fontSize) || 16;
+                    const color = getComputedStyle(moonDescEl).color || 'white';
+                    moonDescEl.innerHTML = getLedHTML(moonDetails.d, useLed, { fontSize, color, defaultSpan: false });
+                    moonDescEl.style.display = 'block';
+                } else {
+                    moonDescEl.style.display = 'none';
+                }
                 updateCountdowns(date);
                 showModal('modal-backdrop-day')
             }
@@ -1481,10 +1596,33 @@
             let pickerYear=new Date().getFullYear();
             let pickerTarget = null;
             function renderPicker(year, month, targetDate) {
-                pickerYear = year; pickerYearEl.textContent = year; pickerMonthGridEl.innerHTML = '';
+                pickerYear = year;
+                let useLed = false;
+                if (pickerTarget) {
+                    const widgetId = pickerTarget.body.closest('.widget-container').id;
+                    const widgetKey = (widgetId === 'calendar-container' ? 'calendar' : (widgetId === 'moon-phase-container' ? 'moonPhase' : null));
+                    if (widgetKey) {
+                        useLed = settingsState[widgetKey]?.useLedFont ?? true;
+                    }
+                }
+                if (useLed) {
+                    const yearColor = getComputedStyle(document.documentElement).getPropertyValue('--year-color').trim() || '#a5b4fc';
+                    pickerYearEl.innerHTML = generateLedSvg(String(year), { height: 28, color: yearColor });
+                } else {
+                    pickerYearEl.textContent = year;
+                }
+                pickerMonthGridEl.innerHTML = '';
                 for (let i = 0; i < 12; i++) {
                     const cell = document.createElement('div');
-                    cell.textContent = `${i + 1}月`;
+                    const monthNumber = String(i + 1);
+                    const monthText = '月';
+                    if (useLed) {
+                        const pickerColor = getComputedStyle(document.documentElement).getPropertyValue('--month-color').trim() || '#a5b4fc';
+                        const numberHTML = generateLedSvg(monthNumber, { height: 20, color: pickerColor });
+                        cell.innerHTML = `${numberHTML}<span style="color:${pickerColor};">${monthText}</span>`;
+                    } else {
+                        cell.textContent = monthNumber + monthText;
+                    }
                     cell.classList.add('month-cell');
                     if (i === month && year === targetDate.getFullYear()) cell.classList.add('selected');
                     cell.dataset.month = i; pickerMonthGridEl.appendChild(cell);
@@ -1546,7 +1684,7 @@
                 AnalogClock.init();
                 MarqueeManager.rebuildAllAnimations();
             }
-            function saveCurrentSettings() { localStorage.setItem('widgets_autosave', JSON.stringify({ transforms: transformStates, settings: settingsState })); }
+            function saveCurrentSettings() { localStorage.setItem(STORAGE_AUTOSAVE_KEY, JSON.stringify({ transforms: transformStates, settings: settingsState })); }
             function updateSettingsUIFromState() {
                 document.querySelectorAll('#modal-backdrop-settings input[data-setting-type="color"]').forEach(picker => {
                     const widget = picker.dataset.widget, cssVar = picker.dataset.var;
@@ -1564,7 +1702,6 @@
                 if (teSettings) { document.getElementById('timed-effect-enabled-toggle').checked = teSettings.enabled; document.getElementById('timed-effect-interval-seconds').value = teSettings.intervalSeconds; }
             }
             const marqueeSelector = document.getElementById('marquee-selector'), marqueeTextInput = document.getElementById('marquee-text-input'), marqueeSpeedInput = document.getElementById('marquee-speed-input'), marqueeVerticalToggle = document.getElementById('marquee-vertical-toggle'), marqueeEnabledToggle = document.getElementById('marquee-enabled-toggle'), marqueeColorInput = document.getElementById('marquee-default-color'), marqueeDirectionSelect = document.getElementById('marquee-direction-select');
-
             function updateMarqueeSelectorUI() {
                 const currentVal = marqueeSelector.value;
                 marqueeSelector.innerHTML = '';
@@ -1825,7 +1962,7 @@
                     const layout = getCurrentLayout();
                     layout.name = name.trim();
                     layouts.push(layout);
-                    localStorage.setItem('widgets_layouts_v2', JSON.stringify(layouts));
+                    localStorage.setItem(STORAGE_LAYOUTS_KEY, JSON.stringify(layouts));
                     updateLayoutSelector();
                     layoutSelector.value = layouts.length - 1;
                 });
@@ -1837,7 +1974,7 @@
                 showConfirm("確認刪除", `您確定要刪除存檔 "${layoutName}" 嗎？`, (confirmed) => {
                     if (confirmed) {
                         layouts.splice(index, 1);
-                        localStorage.setItem('widgets_layouts_v2', JSON.stringify(layouts));
+                        localStorage.setItem(STORAGE_LAYOUTS_KEY, JSON.stringify(layouts));
                         updateLayoutSelector();
                         showAlert("成功", `存檔 "${layoutName}" 已被刪除。`);
                     }
@@ -1881,7 +2018,7 @@
                             showConfirm('導入設定', `此檔案包含 ${validLayouts.length} 組設定。確定要導入並覆蓋所有現有存檔嗎？`, (confirmed) => {
                                if (confirmed) {
                                    layouts = validLayouts;
-                                   localStorage.setItem('widgets_layouts_v2', JSON.stringify(layouts));
+                                   localStorage.setItem(STORAGE_LAYOUTS_KEY, JSON.stringify(layouts));
                                    updateLayoutSelector();
                                    showAlert("成功", `已成功導入 ${layouts.length} 組設定！`);
                                }
