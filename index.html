@@ -28,7 +28,8 @@
             display: flex; flex-direction: column;
             background-color: transparent; z-index: 10;
             padding: 0;
-            transform-origin: top left;
+            /* [MOD] 2025-09-18: 旋轉基準點改為中心，確保所有變換 (旋轉、縮放) 都以此為基準 */
+            transform-origin: center;
         }
         .widget-container.edit-mode:not(:has(.control-handle:hover)) { cursor: zoom-in; }
         .widget-container.edit-mode:not(:has(.control-handle:hover)):active { cursor: zoom-out; }
@@ -81,7 +82,12 @@
         }
         button.calendar-nav-arrow,
         button.calendar-nav-today {
-            padding: 0; margin: 0;
+            display: inline-flex;   /* 使用 flex 來垂直置中內容 */
+            align-items: center;     /* 垂直置中 */
+            justify-content: center; /* 水平置中 */
+            height: 1.5rem;          /* 設定固定高度，與 SVG 圖示相同 (height-6) */
+            padding: 0 0.25rem;      /* 加上一些左右內距，避免文字或圖示太貼邊 */
+            margin: 0;
             transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
         }
         .calendar-nav-today {
@@ -194,34 +200,23 @@
         }
         /* --- 跑馬燈 spezifische樣式 --- */
         .marquee-widget main { display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 100%; overflow: hidden; transform: translateZ(0); -webkit-transform: translateZ(0); }
-        .marquee-edit-indicator {
-            position: absolute;
-            top: -10px;
-            left: -10px;
-            background-color: rgba(0, 255, 255, 0.8);
-            color: black;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: bold;
-            z-index: 101;
-            transform-origin: center;
-        }
-        .widget-container.edit-mode .marquee-edit-indicator {
-            display: flex;
-        }
         .marquee-inner { display: flex; width: fit-content; height: fit-content; will-change: transform; transform: translateZ(0); font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; -webkit-backface-visibility: hidden; backface-visibility: hidden; perspective: 1000px; margin-right: auto; }
-        .marquee-text-instance { white-space: nowrap; flex-shrink: 0; line-height: 1; }
+        .marquee-text-instance {
+            white-space: nowrap;
+            flex-shrink: 0;
+            line-height: 1;
+            /* [MOD] 2025-09-18: 改用 inline-flex 搭配 align-items: center。
+               這是更現代且可靠的垂直置中對齊方式，能確保文字與不同尺寸的SVG圖示完美對齊，解決圖示跑位問題。 */
+            display: inline-flex;
+            align-items: center;
+        }
         .marquee-text-instance > span {
             vertical-align: middle;
         }
         .marquee-text-instance svg {
             vertical-align: middle;
-            transform: translateY(-7%);
+            /* [MOD] 2025-09-18: 移除固定的 transform 百分比位移。
+               這個寫法會導致不同高度的圖示產生不同的偏移量，是造成定位不一致的主因。 */
         }
         /* --- 月相Widget樣式 --- */
         #moon-phase-container .calendar-day.selected { border-color: var(--moon-highlight-color); box-shadow: 0 0 5px var(--moon-highlight-color); border-radius: 0.375rem; }
@@ -250,11 +245,32 @@
         .widget-container.edit-mode .reset-handle { display: flex; }
         .resize-handle-w { width: 8px; height: 50px; top: 50%; right: -4px; transform: translateY(-50%); border-radius: 4px; cursor: ew-resize; }
         .resize-handle-h { width: 50px; height: 8px; bottom: -4px; left: 50%; transform: translateX(-50%); border-radius: 4px; cursor: ns-resize; }
+        .rotate-handle {
+            width: 24px;
+            height: 24px;
+            position: absolute;
+            bottom: -12px;
+            right: -12px;
+            cursor: alias;
+            padding: 4px;
+            transform-origin: center;
+            /* [MOD] 2025-09-19: 移除 display 屬性，交由 edit-mode 控制，解決非編輯模式下圖示仍顯示的問題 */
+        }
+        /* [ADD] 2025-09-19: 在編輯模式下使用 flex 佈局，以完美置中圖示 */
+        .widget-container.edit-mode .rotate-handle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .group-select-handle { position: absolute; top: 8px; left: 8px; width: 24px; height: 24px; cursor: pointer; z-index: 101; display: none; background-color: rgba(0, 255, 255, 0.5); border-radius: 4px; padding: 2px; transform-origin: top left; }
+        .widget-container.edit-mode .group-select-handle { display: block; }
+        .widget-container.selected-for-group { border-color: rgba(255, 255, 0, 0.8) !important; box-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
+        .widget-container.selected-for-group .rotate-handle { display: none !important; }
+        #group-move-handle { position: absolute; width: 32px; height: 32px; z-index: 200; cursor: move; background-color: rgba(255, 255, 0, 0.8); border-radius: 6px; padding: 4px; display: flex; align-items: center; justify-content: center; }
+        #group-rotate-handle { position: absolute; width: 28px; height: 28px; z-index: 200; cursor: alias; background-color: rgba(255, 255, 0, 0.8); border-radius: 50%; padding: 4px; display: flex; align-items: center; justify-content: center; }
         /* --- Modal 彈出視窗樣式 --- */
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); display: flex; justify-content: center; align-items: center; z-index: 1050; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
         .modal-backdrop.show { opacity: 1; visibility: visible; }
-        .modal-content { background-color: #1F2937; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 90%; transform: scale(0.95); transition: transform 0.3s ease; display: flex; flex-direction: column; }
-        .modal-backdrop.show .modal-content { transform: scale(1); }
         .yi-tag { background-color: var(--yi-color); color: var(--bg-primary); }
         .ji-tag { background-color: var(--ji-color); color: white; }
         .yi-text, .ji-text { font-size: 0.8em; padding: 0; border-radius: 0; cursor: help; }
@@ -433,7 +449,6 @@
     </style>
 </head>
 <body class="antialiased">
-    <!-- SVG 圖示定義區 -->
     <svg style="display: none;">
         <defs>
             <symbol id="icon-move" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -442,6 +457,17 @@
             <symbol id="icon-reset-size" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <text x="5" y="17" font-size="12" font-weight="bold" fill="currentColor" stroke="none">1x</text>
                 <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+            </symbol>
+            <symbol id="icon-rotate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 4v6h-6"></path>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </symbol>
+            <symbol id="icon-checkbox-unchecked" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            </symbol>
+            <symbol id="icon-checkbox-checked" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <path d="M9 12l2 2 4-4"></path>
             </symbol>
         </defs>
     </svg>
@@ -488,7 +514,6 @@
         </div>
     </div>
     <div id="marquee-container-0" class="widget-container marquee-widget">
-        <div class="marquee-edit-indicator">1</div>
         <div class="widget-content-wrapper"><main><div class="marquee-inner"></div></main></div>
     </div>
     <div id="moon-phase-container" class="widget-container">
@@ -555,7 +580,7 @@
     <div id="modal-backdrop-picker" class="modal-backdrop"><div id="month-year-picker" class="modal-content"><div class="padding-5"><div class="year-nav margin-bottom-4"><button id="picker-prev-year" class="calendar-nav-arrow">&lt;</button><span id="picker-year" class="font-size-xl font-weight-bold">2024</span><button id="picker-next-year" class="calendar-nav-arrow">&gt;</button></div><div id="picker-month-grid" class="month-grid"></div></div></div></div>
     <div id="modal-backdrop-settings" class="modal-backdrop">
         <div class="modal-content max-width-5xl max-height-90vh display-flex flex-direction-column">
-            <div class="padding-horizontal-5 padding-vertical-2 bg-gray-800" style="position: sticky; top: 0; z-index: 1;">
+            <div class="p0" style="position: sticky; top: 0; z-index: 1;">
                 <div class="display-flex justify-content-space-between align-items-center">
                     <h3 class="font-size-xl font-weight-bold color-indigo-300 p0">設定</h3>
                     <div class="display-flex align-items-center gap-3">
@@ -779,6 +804,700 @@
         let layouts = [];
 
         document.addEventListener('DOMContentLoaded', function () {
+            // ===================================================================
+            // 設定、顏色與儲存
+            // 說明: 處理所有設定的載入、套用和儲存邏輯。
+            // ===================================================================
+            function applyDefaultSettings() { applyLayout(JSON.parse(JSON.stringify(userDefaultLayout))); saveCurrentSettings(); Weather.updateWeather(); }
+            function applyAllSettings() {
+                Object.values(settingsState).forEach(widgetState => {
+                    if (widgetState && widgetState.colors) Object.entries(widgetState.colors).forEach(([key, value]) => document.documentElement.style.setProperty(key, value));
+                });
+                applyAllTransforms();
+                updateSettingsUIFromState();
+                Calendar.render();
+                MoonPhaseWidget.render();
+                AnalogClock.init();
+                MarqueeManager.rebuildAllAnimations();
+            }
+            function saveCurrentSettings() { localStorage.setItem(STORAGE_AUTOSAVE_KEY, JSON.stringify({ transforms: transformStates, settings: settingsState })); }
+            function updateSettingsUIFromState() {
+                document.querySelectorAll('#modal-backdrop-settings input[data-setting-type="color"]').forEach(picker => {
+                    const widget = picker.dataset.widget, cssVar = picker.dataset.var;
+                    picker.value = settingsState[widget]?.colors?.[cssVar] || getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() || '#ffffff';
+                });
+                document.querySelectorAll('input[data-widget-toggle]').forEach(toggle => { toggle.checked = transformStates[toggle.dataset.widgetToggle]?.visible ?? false; });
+                document.querySelectorAll('#modal-backdrop-settings input[data-setting-type="toggle"]').forEach(toggle => {
+                    const widget = toggle.dataset.widget, key = toggle.dataset.key;
+                    if (settingsState[widget] && typeof settingsState[widget][key] !== 'undefined') toggle.checked = settingsState[widget][key];
+                });
+                updateLocationSelectors();
+                updateMarqueeSelectorUI();
+                loadMarqueeSettingsToUI(document.getElementById('marquee-selector').value);
+                const teSettings = settingsState.timedEffect;
+                if (teSettings) { document.getElementById('timed-effect-enabled-toggle').checked = teSettings.enabled; document.getElementById('timed-effect-interval-seconds').value = teSettings.intervalSeconds; }
+            }
+            const marqueeSelector = document.getElementById('marquee-selector'), marqueeTextInput = document.getElementById('marquee-text-input'), marqueeSpeedInput = document.getElementById('marquee-speed-input'), marqueeVerticalToggle = document.getElementById('marquee-vertical-toggle'), marqueeEnabledToggle = document.getElementById('marquee-enabled-toggle'), marqueeColorInput = document.getElementById('marquee-default-color'), marqueeDirectionSelect = document.getElementById('marquee-direction-select');
+            function updateMarqueeSelectorUI() {
+                const currentVal = marqueeSelector.value;
+                marqueeSelector.innerHTML = '';
+                for (let i = 0; i < settingsState.marquees.length; i++) {
+                    marqueeSelector.add(new Option(`${i + 1}`, i));
+                }
+                if (document.querySelector(`#marquee-selector option[value="${currentVal}"]`)) {
+                    marqueeSelector.value = currentVal;
+                }
+                document.getElementById('remove-marquee-btn').disabled = marqueeSelector.value === '0' || settingsState.marquees.length <= 1;
+            }
+            ['left', 'right', 'up', 'down'].forEach(dir => marqueeDirectionSelect.add(new Option({'left':'左','right':'右','up':'上','down':'下'}[dir], dir)));
+            function updateDirectionOptions(isVertical) {
+                for (const option of marqueeDirectionSelect.options) {
+                    const isVerticalOption = ['up', 'down'].includes(option.value);
+                    option.disabled = isVertical ? !isVerticalOption : isVerticalOption;
+                }
+            }
+            function loadMarqueeSettingsToUI(index) {
+                const settings = settingsState.marquees[index]; if (!settings) return;
+                marqueeTextInput.value = settings.text; marqueeSpeedInput.value = settings.speed;
+                marqueeVerticalToggle.checked = settings.vertical; marqueeEnabledToggle.checked = transformStates[`marquee-container-${index}`]?.visible ?? false;
+                marqueeDirectionSelect.value = settings.direction || (settings.vertical ? 'up' : 'left');
+                marqueeColorInput.value = settings.colors?.default || '#FFFFFF';
+                updateDirectionOptions(settings.vertical);
+            }
+            marqueeSelector.addEventListener('change', (e) => {
+                loadMarqueeSettingsToUI(e.target.value);
+                document.getElementById('remove-marquee-btn').disabled = e.target.value === '0' || settingsState.marquees.length <= 1;
+            });
+            function updateMarqueeSettingFromUI() {
+                const index = marqueeSelector.value; if (!settingsState.marquees[index]) return;
+                const s = settingsState.marquees[index];
+                s.text = marqueeTextInput.value; s.speed = marqueeSpeedInput.value; s.vertical = marqueeVerticalToggle.checked;
+                s.direction = marqueeDirectionSelect.value;
+                if (!s.colors) s.colors = {};
+                s.colors['default'] = marqueeColorInput.value;
+                MarqueeManager.rebuildAnimationByIndex(index); saveCurrentSettings();
+            }
+            marqueeVerticalToggle.addEventListener('change', e => { const isVertical = e.target.checked; updateDirectionOptions(isVertical); marqueeDirectionSelect.value = isVertical ? 'up' : 'left'; updateMarqueeSettingFromUI(); });
+            marqueeEnabledToggle.addEventListener('change', e => {
+                const widgetId = `marquee-container-${marqueeSelector.value}`, isVisible = e.target.checked;
+                if (transformStates[widgetId]) {
+                    transformStates[widgetId].visible = isVisible;
+                    document.getElementById(widgetId).style.display = isVisible ? 'flex' : 'none';
+                    const mainToggle = document.querySelector(`input[data-widget-toggle="${widgetId}"]`);
+                    if (mainToggle) mainToggle.checked = isVisible;
+                    saveCurrentSettings();
+                }
+            });
+            ['input', 'change'].forEach(evt => { ['marquee-text-input', 'marquee-speed-input', 'marquee-default-color', 'marquee-direction-select'].forEach(id => document.getElementById(id).addEventListener(evt, updateMarqueeSettingFromUI)); });
+            document.getElementById('settings-btn').addEventListener('click', () => { updateSettingsUIFromState(); showModal('modal-backdrop-settings'); });
+            document.querySelector('#modal-backdrop-settings').addEventListener('input', e => {
+                if (e.target.dataset.settingType === 'color') {
+                    const widget = e.target.dataset.widget, cssVar = e.target.dataset.var, color = e.target.value;
+                    document.documentElement.style.setProperty(cssVar, color);
+                    if (settingsState[widget]?.colors) settingsState[widget].colors[cssVar] = color;
+                    if (widget === 'moonPhase') MoonPhaseWidget.render(); if (widget === 'calendar') Calendar.render(); if (widget === 'analogClock') AnalogClock.init();
+                    MarqueeManager.rebuildAllAnimations(); saveCurrentSettings();
+                }
+            });
+            document.querySelector('#modal-backdrop-settings').addEventListener('change', e => {
+                const toggle = e.target.closest('input[data-widget-toggle]');
+                if (toggle) {
+                    const widgetId = toggle.dataset.widgetToggle, widgetEl = document.getElementById(widgetId);
+                    if (widgetEl && transformStates[widgetId]) {
+                        transformStates[widgetId].visible = toggle.checked; widgetEl.style.display = toggle.checked ? 'flex' : 'none';
+                        if (widgetId.startsWith('marquee-container-') && widgetId === `marquee-container-${marqueeSelector.value}`) marqueeEnabledToggle.checked = toggle.checked;
+                        saveCurrentSettings();
+                    }
+                }
+                const settingToggle = e.target.closest('input[data-setting-type="toggle"]');
+                if (settingToggle) {
+                    const widget = settingToggle.dataset.widget, key = settingToggle.dataset.key;
+                    if (settingsState[widget]) {
+                        settingsState[widget][key] = settingToggle.checked; saveCurrentSettings();
+                        if (widget === 'calendar') Calendar.render(); if (widget === 'analogClock') AnalogClock.init(); if (widget === 'moonPhase') MoonPhaseWidget.render(); if (widget === 'marqueeGlobal') MarqueeManager.rebuildAllAnimations();
+                    }
+                }
+            });
+            function getRandomHexColor() { return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'); }
+            function applyRandomColors() { document.querySelectorAll('#modal-backdrop-settings .color-picker').forEach(p => { p.value = getRandomHexColor(); p.dispatchEvent(new Event('input', { bubbles: true })); }); }
+            document.getElementById('random-colors-btn').addEventListener('click', applyRandomColors);
+            document.getElementById('default-settings-btn').addEventListener('click', applyDefaultSettings);
+            // ===================================================================
+            // 編輯模式與拖曳縮放
+            // 說明: 處理編輯模式下的所有互動，包括拖曳、縮放、還原尺寸等。
+            // ===================================================================
+            document.getElementById('edit-layout-btn').addEventListener('click', () => {
+                isEditMode = !isEditMode;
+                const timedEffectToggle = document.getElementById('timed-effect-enabled-toggle');
+                const timedEffectInterval = document.getElementById('timed-effect-interval-seconds');
+                if (isEditMode) {
+                    MarqueeManager.setPlayState(false);
+                    timedEffectToggle.disabled = true; timedEffectInterval.disabled = true;
+                } else {
+                    clearGroupSelection();
+                    MarqueeManager.setPlayState(true); saveCurrentSettings();
+                    editToolbar.style.left = '50%'; editToolbar.style.top = 'auto'; editToolbar.style.bottom = ''; editToolbar.style.transform = 'translateX(-50%)';
+                    timedEffectToggle.disabled = false; timedEffectInterval.disabled = false;
+                }
+                document.body.classList.toggle('edit-mode', isEditMode);
+                allWidgetContainers().forEach(c => c.classList.toggle('edit-mode', isEditMode));
+                document.getElementById('edit-icon').classList.toggle('display-none', isEditMode);
+                document.getElementById('edit-exit-icon').classList.toggle('display-none', !isEditMode);
+                editToolbar.classList.toggle('show', isEditMode);
+                document.querySelectorAll('.calendar-day').forEach(d => d.classList.toggle('edit-mode-active', isEditMode));
+                resetActivityTimeout();
+            });
+            let activeHandle = null, startX, startY, initialTransformState, scaleCenterX, scaleCenterY, initialDist, activeWidget;
+            const applyTransform = (widgetEl, state) => {
+                if (!widgetEl || !state) return;
+                const { left, top, width, height, scale, visible, rotation = 0 } = state;
+                widgetEl.style.left = `${left}px`; widgetEl.style.top = `${top}px`;
+                widgetEl.style.width = `${width}px`; widgetEl.style.height = `${height}px`;
+                widgetEl.style.transform = `scale(${scale}) rotate(${rotation}deg)`;
+                widgetEl.style.display = visible ? 'flex' : 'none';
+                if ((widgetEl.id === 'calendar-container' || widgetEl.id === 'moon-phase-container') && state.height > 0) {
+                    widgetEl.querySelector('.background-month').style.fontSize = `${state.height * 0.7}px`;
+                    widgetEl.style.fontSize = `${state.height / 40}px`;
+                    const titleElement = widgetEl.querySelector('.calendar-title'), headerContainer = widgetEl.querySelector('.calendar-header'), navElement = widgetEl.querySelector('.calendar-nav');
+                    if (titleElement && headerContainer && navElement) {
+                        headerContainer.getBoundingClientRect();
+                        const availableWidth = headerContainer.clientWidth - navElement.offsetWidth - 16;
+                        if (titleElement.scrollWidth > availableWidth && availableWidth > 0) widgetEl.style.fontSize = `${parseFloat(getComputedStyle(widgetEl).fontSize) * (availableWidth / titleElement.scrollWidth)}px`;
+                    }
+                } else if (widgetEl.id === 'analog-clock-container') {
+                    widgetEl.style.fontSize = `${state.width / 20}px`;
+                } else if (widgetEl.classList.contains('marquee-widget')) {
+                    widgetEl.style.fontSize = `${state.height * 0.75}px`;
+                    MarqueeManager.rebuildAnimationByIndex(parseInt(widgetEl.id.split('-')[2]));
+                }
+                const inverseScale = 1 / scale;
+                widgetEl.querySelectorAll('.control-handle, .group-select-handle').forEach(h => {
+                    if (h.classList.contains('move-handle')) h.style.transform = `translate(-50%, -50%) scale(${inverseScale})`;
+                    else if (h.classList.contains('reset-handle')) h.style.transform = `scale(${inverseScale})`;
+                    else if (h.classList.contains('resize-handle-w')) h.style.transform = `translateY(-50%) scale(${inverseScale})`;
+                    else if (h.classList.contains('resize-handle-h')) h.style.transform = `translateX(-50%) scale(${inverseScale})`;
+                    else if (h.classList.contains('rotate-handle')) h.style.transform = `scale(${inverseScale})`;
+                    else if (h.classList.contains('group-select-handle')) h.style.transform = `scale(${inverseScale})`;
+                });
+                widgetEl.style.borderWidth = `${2 * inverseScale}px`;
+            };
+            const applyAllTransforms = () => { Object.keys(transformStates).forEach(id => applyTransform(document.getElementById(id), transformStates[id])); };
+            function checkAndClampWidgetBounds(state) {
+                if (!state || !state.visible) return;
+                const winW = window.innerWidth, winH = window.innerHeight;
+                const renderedWidth = state.width * state.scale;
+                const renderedHeight = state.height * state.scale;
+
+                // [MOD] 因為 transform-origin: center，所以 rendered box 的左上角相對於 layout box 的左上角有偏移
+                const offsetX = (state.width - renderedWidth) / 2;
+                const offsetY = (state.height - renderedHeight) / 2;
+
+                // [MOD] 計算 rendered box (視覺上) 當前的 left 和 top
+                const renderedLeft = state.left + offsetX;
+                const renderedTop = state.top + offsetY;
+
+                // 設定一點邊界緩衝，允許物件稍微超出螢幕
+                const marginW = renderedWidth * 0.05;
+                const marginH = renderedHeight * 0.05;
+
+                // [MOD] 將 rendered box 的位置限制在螢幕邊界內
+                const clampedRenderedLeft = Math.max(-marginW, Math.min(renderedLeft, winW - renderedWidth + marginW));
+                const clampedRenderedTop = Math.max(-marginH, Math.min(renderedTop, winH - renderedHeight + marginH));
+
+                // [MOD] 根據被限制後的 rendered box 位置，反推回 layout box 應該設定的 left 和 top
+                state.left = clampedRenderedLeft - offsetX;
+                state.top = clampedRenderedTop - offsetY;
+            }
+            const ensureWidgetsInBounds = () => { Object.values(transformStates).forEach(checkAndClampWidgetBounds); applyAllTransforms(); };
+            const onDragStart = (e) => {
+                if (!isEditMode) return;
+                const isGroupMoveHandle = e.target.closest('#group-move-handle');
+                const isGroupRotateHandle = e.target.closest('#group-rotate-handle');
+                const targetWidget = e.target.closest('.widget-container');
+                if (!targetWidget && !isGroupMoveHandle && !isGroupRotateHandle) return;
+                if (isGroupMoveHandle) {
+                    e.preventDefault(); e.stopPropagation();
+                    activeHandle = 'group-move';
+                } else if (isGroupRotateHandle) {
+                    e.preventDefault(); e.stopPropagation();
+                    activeHandle = 'group-rotate';
+                } else if (targetWidget) {
+                    allWidgetContainers().forEach(w => w.style.zIndex = '10');
+                    targetWidget.style.zIndex = '100';
+                    e.preventDefault(); e.stopPropagation();
+                    const originalTransition = targetWidget.style.transition;
+                    targetWidget.style.transition = 'none';
+                    activeWidget = { el: targetWidget, state: transformStates[targetWidget.id], originalTransition: originalTransition };
+                    const handle = e.target.closest('.control-handle');
+                    const isPartOfGroup = selectedWidgets.has(targetWidget.id) && selectedWidgets.size >= 2;
+                    if (handle && !handle.classList.contains('reset-handle')) {
+                        if (handle.classList.contains('move-handle')) activeHandle = 'move';
+                        else if (handle.classList.contains('resize-handle-w')) activeHandle = 'resize-w';
+                        else if (handle.classList.contains('resize-handle-h')) activeHandle = 'resize-h';
+                        else if (handle.classList.contains('rotate-handle')) {
+                            activeHandle = isPartOfGroup ? 'group-rotate' : 'rotate';
+                        }
+                    } else if (!handle) {
+                        activeHandle = isPartOfGroup ? 'group-scale' : 'scale';
+                    }
+                }
+                if (!activeHandle) return;
+                document.body.style.userSelect = 'none';
+                startX = (e.touches ? e.touches[0] : e).clientX;
+                startY = (e.touches ? e.touches[0] : e).clientY;
+                if (activeHandle.startsWith('group')) {
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    selectedWidgets.forEach(id => {
+                        const state = transformStates[id]; if (!state || !state.visible) return;
+                        const renderedWidth = state.width * state.scale;
+                        const renderedHeight = state.height * state.scale;
+                        const offsetX = (state.width - renderedWidth) / 2;
+                        const offsetY = (state.height - renderedHeight) / 2;
+                        const renderedLeft = state.left + offsetX;
+                        const renderedTop = state.top + offsetY;
+                        minX = Math.min(minX, renderedLeft);
+                        minY = Math.min(minY, renderedTop);
+                        maxX = Math.max(maxX, renderedLeft + renderedWidth);
+                        maxY = Math.max(maxY, renderedTop + renderedHeight);
+                    });
+                    scaleCenterX = minX + (maxX - minX) / 2;
+                    scaleCenterY = minY + (maxY - minY) / 2;
+                    initialGroupTransforms = {};
+                    selectedWidgets.forEach(id => { initialGroupTransforms[id] = { ...transformStates[id] }; });
+                    if (activeHandle === 'group-scale') {
+                        initialDist = Math.hypot(startX - scaleCenterX, startY - scaleCenterY);
+                    } else if (activeHandle === 'group-rotate') {
+                        initialGroupTransforms.startAngle = Math.atan2(startY - scaleCenterY, startX - scaleCenterX);
+                        // [修改] 儲存控制圖示的初始位置，以便後續計算旋轉
+                        if (groupMoveHandle) {
+                            initialGroupTransforms.moveHandle = { left: groupMoveHandle.offsetLeft, top: groupMoveHandle.offsetTop };
+                        }
+                        if (groupRotateHandle) {
+                            initialGroupTransforms.rotateHandle = { left: groupRotateHandle.offsetLeft, top: groupRotateHandle.offsetTop };
+                        }
+                    }
+                } else {
+                    initialTransformState = { ...activeWidget.state };
+                    if (activeHandle === 'scale' || activeHandle === 'rotate') {
+                        const rect = activeWidget.el.getBoundingClientRect();
+                        scaleCenterX = rect.left + rect.width / 2;
+                        scaleCenterY = rect.top + rect.height / 2;
+                        if (activeHandle === 'scale') {
+                            initialDist = Math.hypot(startX - scaleCenterX, startY - scaleCenterY);
+                        } else { // 'rotate'
+                            const startAngle = Math.atan2(startY - scaleCenterY, startX - scaleCenterX) * (180 / Math.PI);
+                            initialTransformState.startAngle = startAngle;
+                        }
+                    }
+                }
+                window.addEventListener('mousemove', onDragMove); window.addEventListener('touchmove', onDragMove, { passive: false });
+                window.addEventListener('mouseup', onDragEnd); window.addEventListener('touchend', onDragEnd);
+            };
+            const onDragMove = (e) => {
+                if (!activeHandle) return;
+                const currentX = (e.touches ? e.touches[0] : e).clientX, currentY = (e.touches ? e.touches[0] : e).clientY;
+                const dx = currentX - startX, dy = currentY - startY;
+                if (activeHandle === 'group-move') {
+                    document.body.style.cursor = 'grabbing';
+                    selectedWidgets.forEach(id => {
+                        const widgetEl = document.getElementById(id); const initialState = initialGroupTransforms[id]; const state = transformStates[id];
+                        state.left = initialState.left + dx; state.top = initialState.top + dy;
+                        applyTransform(widgetEl, state);
+                    });
+                    if (groupMoveHandle) groupMoveHandle.style.transform = `translate(${dx}px, ${dy}px)`;
+                    if (groupRotateHandle) groupRotateHandle.style.transform = `translate(${dx}px, ${dy}px)`;
+                    return;
+                }
+                if (activeHandle === 'group-scale') {
+                    const currentDist = Math.hypot(currentX - scaleCenterX, currentY - scaleCenterY);
+                    const scaleFactor = initialDist > 0 ? (currentDist / initialDist) : 1;
+                    selectedWidgets.forEach(id => {
+                        const widgetEl = document.getElementById(id);
+                        const initialState = initialGroupTransforms[id];
+                        const state = transformStates[id];
+                        let newScale = initialState.scale * scaleFactor;
+                        newScale = Math.max(0.1, Math.min(newScale, 10));
+                        state.scale = newScale;
+                        const initialWidgetLayoutCenterX = initialState.left + initialState.width / 2;
+                        const initialWidgetLayoutCenterY = initialState.top + initialState.height / 2;
+                        const newWidgetLayoutCenterX = scaleCenterX + (initialWidgetLayoutCenterX - scaleCenterX) * scaleFactor;
+                        const newWidgetLayoutCenterY = scaleCenterY + (initialWidgetLayoutCenterY - scaleCenterY) * scaleFactor;
+                        state.left = newWidgetLayoutCenterX - state.width / 2;
+                        state.top = newWidgetLayoutCenterY - state.height / 2;
+                        applyTransform(widgetEl, state);
+                    });
+                    document.body.style.cursor = currentDist > initialDist ? 'zoom-in' : 'zoom-out';
+                    updateGroupControls(); // [優化] 在縮放過程中即時更新控制圖示位置
+                    return;
+                }
+                if (activeHandle === 'group-rotate') {
+                    document.body.style.cursor = 'alias';
+                    const currentAngle = Math.atan2(currentY - scaleCenterY, currentX - scaleCenterX);
+                    const angleDelta = currentAngle - initialGroupTransforms.startAngle;
+                    const cosA = Math.cos(angleDelta);
+                    const sinA = Math.sin(angleDelta);
+
+                    selectedWidgets.forEach(id => {
+                        const widgetEl = document.getElementById(id);
+                        const initialState = initialGroupTransforms[id];
+                        const state = transformStates[id];
+                        const initialWidgetCenterX = initialState.left + (initialState.width / 2);
+                        const initialWidgetCenterY = initialState.top + (initialState.height / 2);
+                        const vecX = initialWidgetCenterX - scaleCenterX;
+                        const vecY = initialWidgetCenterY - scaleCenterY;
+                        const rotatedVecX = vecX * cosA - vecY * sinA;
+                        const rotatedVecY = vecX * sinA + vecY * cosA;
+                        state.left = (scaleCenterX + rotatedVecX) - (state.width / 2);
+                        state.top = (scaleCenterY + rotatedVecY) - (state.height / 2);
+                        state.rotation = (initialState.rotation || 0) + (angleDelta * 180 / Math.PI);
+                        applyTransform(widgetEl, state);
+                    });
+
+                    // [修改] 新增邏輯：同步旋轉移動和旋轉圖示
+                    const rotateHandle = (handle, initialPos) => {
+                        if (!handle || !initialPos) return;
+                        const initialHandleCenterX = initialPos.left + handle.offsetWidth / 2;
+                        const initialHandleCenterY = initialPos.top + handle.offsetHeight / 2;
+                        const vecX = initialHandleCenterX - scaleCenterX;
+                        const vecY = initialHandleCenterY - scaleCenterY;
+                        const rotatedVecX = vecX * cosA - vecY * sinA;
+                        const rotatedVecY = vecX * sinA + vecY * cosA;
+                        handle.style.left = `${(scaleCenterX + rotatedVecX) - handle.offsetWidth / 2}px`;
+                        handle.style.top = `${(scaleCenterY + rotatedVecY) - handle.offsetHeight / 2}px`;
+                    };
+                    rotateHandle(groupMoveHandle, initialGroupTransforms.moveHandle);
+                    rotateHandle(groupRotateHandle, initialGroupTransforms.rotateHandle);
+                    return;
+                }
+
+                if (!activeWidget) return; e.preventDefault();
+                switch (activeHandle) {
+                    case 'move': document.body.style.cursor = 'grabbing'; activeWidget.state.left = initialTransformState.left + dx; activeWidget.state.top = initialTransformState.top + dy; break;
+                    case 'resize-w': document.body.style.cursor = 'ew-resize'; activeWidget.state.width = Math.max(50, initialTransformState.width + dx); if (activeWidget.el.id === 'analog-clock-container') activeWidget.state.height = activeWidget.state.width; else if (activeWidget.el.id === 'led-clock-container' && LedClock.aspectRatio > 0) activeWidget.state.height = activeWidget.state.width / LedClock.aspectRatio; break;
+                    case 'resize-h': document.body.style.cursor = 'ns-resize'; activeWidget.state.height = Math.max(50, initialTransformState.height + dy); if (activeWidget.el.id === 'analog-clock-container') activeWidget.state.width = activeWidget.state.height; else if (activeWidget.el.id === 'led-clock-container' && LedClock.aspectRatio > 0) activeWidget.state.width = activeWidget.state.height * LedClock.aspectRatio; break;
+                    case 'scale': {
+                        const currentDist = Math.hypot(currentX - scaleCenterX, currentY - scaleCenterY);
+                        const oldScale = initialTransformState.scale;
+                        let newScale = initialDist > 0 ? (oldScale * (currentDist / initialDist)) : oldScale;
+                        newScale = Math.max(0.2, Math.min(newScale, 5));
+                        const deltaWidth = (initialTransformState.width * newScale) - (initialTransformState.width * oldScale);
+                        const deltaHeight = (initialTransformState.height * newScale) - (initialTransformState.height * oldScale);
+                        activeWidget.state.scale = newScale;
+                        activeWidget.state.left = initialTransformState.left - deltaWidth / 2;
+                        activeWidget.state.top = initialTransformState.top - deltaHeight / 2;
+                        document.body.style.cursor = currentDist > initialDist ? 'zoom-in' : 'zoom-out';
+                        break;
+                    }
+                    case 'rotate':
+                        document.body.style.cursor = 'alias';
+                        const angle = Math.atan2(currentY - scaleCenterY, currentX - scaleCenterX) * (180 / Math.PI);
+                        const rotationDelta = angle - initialTransformState.startAngle;
+                        activeWidget.state.rotation = (initialTransformState.rotation || 0) + rotationDelta;
+                        break;
+                }
+                checkAndClampWidgetBounds(activeWidget.state); applyTransform(activeWidget.el, activeWidget.state);
+            };
+
+            const onDragEnd = () => {
+                if (!activeHandle) return;
+                if (activeHandle.startsWith('group')) {
+                    if (groupMoveHandle) groupMoveHandle.style.transform = '';
+                    if (groupRotateHandle) groupRotateHandle.style.transform = ''; // [修改] 新增此行，在拖曳結束後重置旋轉圖示的 transform 樣式
+                    selectedWidgets.forEach(id => checkAndClampWidgetBounds(transformStates[id]));
+                    applyAllTransforms();
+                    updateGroupControls();
+                } else if (activeWidget?.el) {
+                    activeWidget.el.style.transition = activeWidget.originalTransition;
+                    ensureWidgetsInBounds();
+                }
+                document.body.style.cursor = 'default'; document.body.style.userSelect = 'auto'; activeHandle = null; activeWidget = null;
+                window.removeEventListener('mousemove', onDragMove); window.removeEventListener('touchmove', onDragMove);
+                window.removeEventListener('mouseup', onDragEnd); window.removeEventListener('touchend', onDragEnd);
+                saveCurrentSettings();
+            };
+            document.body.addEventListener('mousedown', onDragStart); document.body.addEventListener('touchstart', onDragStart, { passive: false });
+            // ===================================================================
+            // 群組功能相關函式
+            // ===================================================================
+            function toggleWidgetSelection(widgetEl) {
+                const widgetId = widgetEl.id, uncheckedIcon = widgetEl.querySelector('.group-select-handle .unchecked'), checkedIcon = widgetEl.querySelector('.group-select-handle .checked');
+                if (selectedWidgets.has(widgetId)) {
+                    selectedWidgets.delete(widgetId); widgetEl.classList.remove('selected-for-group');
+                    uncheckedIcon.style.display = 'block'; checkedIcon.style.display = 'none';
+                } else {
+                    selectedWidgets.add(widgetId); widgetEl.classList.add('selected-for-group');
+                    uncheckedIcon.style.display = 'none'; checkedIcon.style.display = 'block';
+                }
+                updateGroupControls();
+            }
+            function updateGroupControls() {
+                if (selectedWidgets.size < 2) {
+                    if (groupMoveHandle) { groupMoveHandle.remove(); groupMoveHandle = null; }
+                    if (groupRotateHandle) { groupRotateHandle.remove(); groupRotateHandle = null; }
+                    allWidgetContainers().forEach(el => { 
+                        const moveHandle = el.querySelector('.move-handle'); 
+                        if (moveHandle) moveHandle.style.display = ''; 
+                        const rotateHandle = el.querySelector('.rotate-handle');
+                        if (rotateHandle) rotateHandle.style.display = 'flex';
+                    });
+                    return;
+                }
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                selectedWidgets.forEach(id => {
+                    const state = transformStates[id]; if (!state || !state.visible) return;
+                    const renderedWidth = state.width * state.scale, renderedHeight = state.height * state.scale;
+                    const offsetX = (state.width - renderedWidth) / 2, offsetY = (state.height - renderedHeight) / 2;
+                    const renderedLeft = state.left + offsetX, renderedTop = state.top + offsetY;
+                    minX = Math.min(minX, renderedLeft); minY = Math.min(minY, renderedTop);
+                    maxX = Math.max(maxX, renderedLeft + renderedWidth); maxY = Math.max(maxY, renderedTop + renderedHeight);
+                });
+                if (!isFinite(minX)) return;
+                const groupCenterX = minX + (maxX - minX) / 2, groupCenterY = minY + (maxY - minY) / 2;
+                if (!groupMoveHandle) {
+                    groupMoveHandle = document.createElement('div');
+                    groupMoveHandle.id = 'group-move-handle';
+                    groupMoveHandle.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="width-full height-full"><use href="#icon-move"></use></svg>`;
+                    document.body.appendChild(groupMoveHandle);
+                }
+                 if (!groupRotateHandle) {
+                    groupRotateHandle = document.createElement('div');
+                    groupRotateHandle.id = 'group-rotate-handle';
+                    groupRotateHandle.innerHTML = `<svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-rotate" stroke="black" stroke-width="1.5"></use></svg>`;
+                    document.body.appendChild(groupRotateHandle);
+                }
+                groupMoveHandle.style.left = `${groupCenterX - groupMoveHandle.offsetWidth / 2}px`;
+                groupMoveHandle.style.top = `${groupCenterY - groupMoveHandle.offsetHeight / 2}px`;
+                groupRotateHandle.style.left = `${maxX - groupRotateHandle.offsetWidth / 2}px`;
+                groupRotateHandle.style.top = `${maxY - groupRotateHandle.offsetHeight / 2}px`;
+                selectedWidgets.forEach(id => { 
+                    const el = document.getElementById(id); 
+                    const moveHandle = el.querySelector('.move-handle'); if (moveHandle) moveHandle.style.display = 'none'; 
+                });
+            }
+            function clearGroupSelection() {
+                if (groupMoveHandle) { groupMoveHandle.remove(); groupMoveHandle = null; }
+                if (groupRotateHandle) { groupRotateHandle.remove(); groupRotateHandle = null; }
+                selectedWidgets.forEach(id => {
+                    const widgetEl = document.getElementById(id); if (!widgetEl) return;
+                    widgetEl.classList.remove('selected-for-group');
+                    const uncheckedIcon = widgetEl.querySelector('.group-select-handle .unchecked'), checkedIcon = widgetEl.querySelector('.group-select-handle .checked');
+                    if (uncheckedIcon) uncheckedIcon.style.display = 'block';
+                    if (checkedIcon) checkedIcon.style.display = 'none';
+                });
+                selectedWidgets.clear();
+                allWidgetContainers().forEach(el => { 
+                    const moveHandle = el.querySelector('.move-handle'); if (moveHandle) moveHandle.style.display = '';
+                    const rotateHandle = el.querySelector('.rotate-handle'); if (rotateHandle) rotateHandle.style.display = 'flex';
+                });
+            }
+            // ===================================================================
+            // 版面配置儲存/載入
+            // ===================================================================
+            const getCurrentLayout = () => ({ transforms: transformStates, settings: settingsState });
+            const applyLayout = (layout) => {
+                if (layout.transforms) transformStates = { ...transformStates, ...layout.transforms };
+                if (layout.settings) {
+                    Object.keys(layout.settings).forEach(key => {
+                        if (key === 'marquees' && Array.isArray(layout.settings[key])) {
+                            settingsState[key] = layout.settings[key].map(m => (typeof m.color === 'string' && !m.colors) ? { ...m, colors: { default: m.color }, color: undefined } : m);
+                        } else if (typeof layout.settings[key] === 'object' && !Array.isArray(layout.settings[key]) && layout.settings[key] !== null) {
+                            settingsState[key] = { ...(settingsState[key] || {}), ...layout.settings[key] };
+                        } else {
+                            settingsState[key] = layout.settings[key];
+                        }
+                    });
+                }
+                syncMarqueeDOMElements();
+                MarqueeManager.syncInstances();
+                applyAllSettings();
+            };
+            const toolbarTitle = document.getElementById('toolbar-title');
+            let toolbarMoving = false, toolbarOffsetX, toolbarOffsetY;
+            const handleToolbarDragStart = (e) => { e.preventDefault(); toolbarMoving = true; const rect = editToolbar.getBoundingClientRect(); const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY; toolbarOffsetX = clientX - rect.left; toolbarOffsetY = clientY - rect.top; editToolbar.style.transition = 'none'; };
+            const handleToolbarDragMove = (e) => { if (!toolbarMoving) return; const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY; let x = clientX - toolbarOffsetX, y = clientY - toolbarOffsetY; const rect = editToolbar.getBoundingClientRect(); x = Math.max(0, Math.min(x, window.innerWidth - rect.width)); y = Math.max(0, Math.min(y, window.innerHeight - rect.height)); editToolbar.style.left = `${x}px`; editToolbar.style.top = `${y}px`; editToolbar.style.bottom = 'auto'; editToolbar.style.transform = 'none'; };
+            const handleToolbarDragEnd = () => { if (toolbarMoving) { toolbarMoving = false; editToolbar.style.transition = 'bottom 0.3s ease-in-out'; } };
+            toolbarTitle.addEventListener('mousedown', handleToolbarDragStart); toolbarTitle.addEventListener('touchstart', handleToolbarDragStart, { passive: false });
+            document.addEventListener('mousemove', handleToolbarDragMove); document.addEventListener('touchmove', handleToolbarDragMove, { passive: false });
+            document.addEventListener('mouseup', handleToolbarDragEnd); document.addEventListener('touchend', handleToolbarDragEnd);
+            const layoutSelector = document.getElementById('layout-selector');
+            function updateLayoutSelector() {
+                const currentVal = layoutSelector.value;
+                layoutSelector.innerHTML = '';
+                if (layouts.length === 0) {
+                    layoutSelector.add(new Option('(無存檔)', -1));
+                    layoutSelector.disabled = true;
+                } else {
+                    layouts.forEach((layout, index) => {
+                        const option = document.createElement('option');
+                        option.value = index;
+                        option.textContent = `${index + 1}. ${layout.name || '(未命名)'}`;
+                        layoutSelector.appendChild(option);
+                    });
+                    layoutSelector.disabled = false;
+                }
+                if (layoutSelector.querySelector(`option[value="${currentVal}"]`)) {
+                    layoutSelector.value = currentVal;
+                }
+                document.getElementById('delete-layout-btn').disabled = layouts.length === 0;
+                document.getElementById('load-layout-btn').disabled = layouts.length === 0;
+                document.getElementById('export-layout-btn').disabled = layouts.length === 0;
+            }
+            document.getElementById('save-layout-btn').addEventListener('click', () => {
+                const defaultName = `版面 ${new Date().toLocaleString('sv').replace(' ', '_')}`;
+                showPrompt("新增版面存檔", "請輸入備註:", defaultName, (name) => {
+                    if (name === null || name.trim() === '') return;
+                    const layout = getCurrentLayout();
+                    layout.name = name.trim();
+                    layouts.push(layout);
+                    localStorage.setItem(STORAGE_LAYOUTS_KEY, JSON.stringify(layouts));
+                    updateLayoutSelector();
+                    layoutSelector.value = layouts.length - 1;
+                });
+            });
+            document.getElementById('delete-layout-btn').addEventListener('click', () => {
+                const index = parseInt(layoutSelector.value, 10);
+                if (index < 0 || index >= layouts.length) return;
+                const layoutName = layouts[index].name;
+                showConfirm("確認刪除", `您確定要刪除存檔 "${layoutName}" 嗎？`, (confirmed) => {
+                    if (confirmed) {
+                        layouts.splice(index, 1);
+                        localStorage.setItem(STORAGE_LAYOUTS_KEY, JSON.stringify(layouts));
+                        updateLayoutSelector();
+                        showAlert("成功", `存檔 "${layoutName}" 已被刪除。`);
+                    }
+                });
+            });
+            document.getElementById('load-layout-btn').addEventListener('click',()=>{
+                const index = parseInt(layoutSelector.value, 10);
+                if (index >= 0 && layouts[index]) {
+                    applyLayout(JSON.parse(JSON.stringify(layouts[index])));
+                    saveCurrentSettings();
+                } else {
+                    showAlert('提示','此欄位沒有儲存設定。');
+                }
+            });
+            document.getElementById('export-layout-btn').addEventListener('click', () => {
+                if (layouts.length === 0) return showAlert("提示", "沒有可導出的設定！");
+                try {
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(new Blob([JSON.stringify(layouts, null, 2)], { type: 'application/json' }));
+                    a.download = `widgets_settings_${new Date().toISOString().slice(0, 10)}.json`;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                } catch (error) {
+                    showAlert("錯誤", "導出設定時發生錯誤。");
+                }
+            });
+            document.getElementById('import-layout-btn').addEventListener('click', () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = e => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        try {
+                            const importedLayouts = JSON.parse(e.target.result);
+                            if (!Array.isArray(importedLayouts)) throw new Error('檔案格式無效');
+                            const validLayouts = importedLayouts.filter(l => l && l.name && l.transforms && l.settings);
+                            if (validLayouts.length === 0) throw new Error('檔案中未找到有效的版面設定');
+                            showConfirm('導入設定', `此檔案包含 ${validLayouts.length} 組設定。確定要導入並覆蓋所有現有存檔嗎？`, (confirmed) => {
+                               if (confirmed) {
+                                   layouts = validLayouts;
+                                   localStorage.setItem(STORAGE_LAYOUTS_KEY, JSON.stringify(layouts));
+                                   updateLayoutSelector();
+                                   showAlert("成功", `已成功導入 ${layouts.length} 組設定！`);
+                               }
+                            });
+                        } catch (err) {
+                            showAlert('錯誤', '導入失敗，檔案格式錯誤或內容無效！');
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+                input.click();
+            });
+            // ===================================================================
+            // 地區選擇器
+            // ===================================================================
+            const countySelect = document.getElementById('countySelect'), districtSelect = document.getElementById('districtSelect'), manualLocationInput = document.getElementById('manualLocationInput');
+            Object.keys(taiwanLocations).forEach(county => countySelect.add(new Option(county, county)));
+            function updateDistrictOptions() { districtSelect.innerHTML = ''; const districts = taiwanLocations[countySelect.value]?.districts || {}; Object.keys(districts).forEach(dist => districtSelect.add(new Option(dist, dist))); }
+            function updateLocationSelectors() { const loc = settingsState.location; manualLocationInput.value = loc; for (const county in taiwanLocations) { for (const district in taiwanLocations[county].districts) { if (taiwanLocations[county].districts[district].toLowerCase() === loc.toLowerCase()) { countySelect.value = county; updateDistrictOptions(); districtSelect.value = district; return; } } } countySelect.selectedIndex = 0; updateDistrictOptions(); }
+            function handleLocationChange(newLocation) { settingsState.location = newLocation; manualLocationInput.value = newLocation; Weather.updateWeather(); saveCurrentSettings(); }
+            countySelect.addEventListener('change', () => { updateDistrictOptions(); handleLocationChange(taiwanLocations[countySelect.value].districts[districtSelect.value]); });
+            districtSelect.addEventListener('change', () => handleLocationChange(taiwanLocations[countySelect.value].districts[districtSelect.value]));
+            manualLocationInput.addEventListener('change', () => handleLocationChange(manualLocationInput.value.trim()));
+            document.getElementById('useCurrentLocationBtn').addEventListener('click', () => { if (navigator.geolocation) navigator.geolocation.getCurrentPosition(pos => { fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&localityLanguage=en`).then(r=>r.json()).then(geo=>{const city=geo.locality||geo.city;if(city){handleLocationChange(city);updateLocationSelectors()}}) }); });
+            // ===================================================================
+            // 定時特效設定
+            // ===================================================================
+            function setupTimedEffectControls() {
+                const effectEnabled = document.getElementById('timed-effect-enabled-toggle');
+                const effectInterval = document.getElementById('timed-effect-interval-seconds');
+                [10, 15, 20, 30, 60].forEach(val => effectInterval.add(new Option(String(val), val)));
+                const updateSetting = () => { if (!settingsState.timedEffect) settingsState.timedEffect = JSON.parse(JSON.stringify(userDefaultLayout.settings.timedEffect)); settingsState.timedEffect.enabled = effectEnabled.checked; settingsState.timedEffect.intervalSeconds = parseInt(effectInterval.value, 10); saveCurrentSettings(); };
+                effectEnabled.addEventListener('change', updateSetting); effectInterval.addEventListener('change', updateSetting);
+            }
+            // ===================================================================
+            // 動態跑馬燈相關函式
+            // ===================================================================
+            function createMarqueeElement(index) {
+                const template = document.getElementById('marquee-container-0');
+                if (!template) { console.error("跑馬燈模板 'marquee-container-0' 找不到!"); return null; }
+                const newMarquee = template.cloneNode(true);
+                newMarquee.id = `marquee-container-${index}`;
+                newMarquee.style.display = 'none';
+                document.body.appendChild(newMarquee);
+                return newMarquee;
+            }
+            function syncMarqueeDOMElements() {
+                const desiredCount = settingsState.marquees.length;
+                const existingWidgets = document.querySelectorAll('.marquee-widget');
+                let currentCount = existingWidgets.length;
+                while (currentCount < desiredCount) { createMarqueeElement(currentCount); currentCount++; }
+                if (currentCount > desiredCount) { for (let i = desiredCount; i < currentCount; i++) { const elToRemove = document.getElementById(`marquee-container-${i}`); if (elToRemove) elToRemove.remove(); } }
+            }
+            document.getElementById('add-marquee-btn').addEventListener('click', () => {
+                const selectedIndex = parseInt(marqueeSelector.value, 10) || 0;
+                const newIndex = settingsState.marquees.length;
+                const sourceSettings = settingsState.marquees[selectedIndex];
+                const sourceTransform = transformStates[`marquee-container-${selectedIndex}`];
+                const newSettings = JSON.parse(JSON.stringify(sourceSettings));
+                const newTransform = JSON.parse(JSON.stringify(sourceTransform));
+                newTransform.top += (sourceTransform.height * sourceTransform.scale) + 10;
+                newTransform.visible = true;
+                settingsState.marquees.push(newSettings);
+                transformStates[`marquee-container-${newIndex}`] = newTransform;
+                const newElement = createMarqueeElement(newIndex);
+                MarqueeManager.syncInstances();
+                updateMarqueeSelectorUI();
+                marqueeSelector.value = newIndex;
+                loadMarqueeSettingsToUI(newIndex);
+                applyTransform(newElement, newTransform);
+                MarqueeManager.rebuildAnimationByIndex(newIndex);
+                saveCurrentSettings();
+                showAlert('成功', `已新增跑馬燈組別 ${newIndex + 1}。`);
+            });
+            document.getElementById('remove-marquee-btn').addEventListener('click', () => {
+                const selectedIndex = parseInt(marqueeSelector.value, 10);
+                if (selectedIndex === 0 || settingsState.marquees.length <= 1) { showAlert('提示', '無法刪除預設的跑馬燈組別。'); return; }
+                settingsState.marquees.splice(selectedIndex, 1);
+                for (let i = selectedIndex; i < settingsState.marquees.length; i++) { transformStates[`marquee-container-${i}`] = transformStates[`marquee-container-${i + 1}`]; }
+                delete transformStates[`marquee-container-${settingsState.marquees.length}`];
+                syncMarqueeDOMElements();
+                document.querySelectorAll('.marquee-widget').forEach((el, i) => { el.id = `marquee-container-${i}`; });
+                MarqueeManager.syncInstances();
+                MarqueeManager.rebuildAllAnimations();
+                const newIndex = Math.max(0, selectedIndex - 1);
+                marqueeSelector.value = newIndex;
+                updateMarqueeSelectorUI();
+                marqueeSelector.value = newIndex;
+                loadMarqueeSettingsToUI(newIndex);
+                saveCurrentSettings();
+                showAlert('成功', `已刪除跑馬燈組別 ${selectedIndex + 1}。`);
+            });
             // --- 農曆轉換核心演算法 ---
             // 說明: 這部分是高效率的農曆計算函式，包含從西元日期取得農曆日期、天干地支、節氣等。
             // 為了效能，它使用了預先計算的資料陣列 (lunarInfo) 並搭配位元運算來快速查詢。
@@ -849,15 +1568,6 @@
             function getConstellation(date) {
                 const m = date.getMonth() + 1;
                 const d = date.getDate();
-                const signs = [
-                    { sign: "摩羯座", m: 1, d: 20, range: "12/22 - 1/19" }, { sign: "水瓶座", m: 2, d: 19, range: "1/20 - 2/18" },
-                    { sign: "雙魚座", m: 3, d: 21, range: "2/19 - 3/20" }, { sign: "牡羊座", m: 4, d: 20, range: "3/21 - 4/19" },
-                    { sign: "金牛座", m: 5, d: 21, range: "4/20 - 5/20" }, { sign: "雙子座", m: 6, d: 22, range: "5/21 - 6/21" },
-                    { sign: "巨蟹座", m: 7, d: 23, range: "6/22 - 7/22" }, { sign: "獅子座", m: 8, d: 23, range: "7/23 - 8/22" },
-                    { sign: "處女座", m: 9, d: 23, range: "8/23 - 9/22" }, { sign: "天秤座", m: 10, d: 24, range: "9/23 - 10/23" },
-                    { sign: "天蠍座", m: 11, d: 23, range: "10/24 - 11/22" }, { sign: "射手座", m: 12, d: 22, range: "11/23 - 12/21" },
-                    { sign: "摩羯座", m: 13, d: 32, range: "12/22 - 1/19" } // 處理跨年
-                ];
                 for (let i = 0; i < signs.length; i++) {
                     if (m < signs[i].m || (m === signs[i].m && d < signs[i].d)) {
                         return signs[i];
@@ -892,6 +1602,10 @@
             let transformStates = {}; // 儲存所有 widget 的位置、大小、縮放、可見度
             let settingsState = {};   // 儲存所有 widget 的外觀設定 (顏色、開關等)
             let isWidgetAnimating = {};
+            let selectedWidgets = new Set();
+            let groupMoveHandle = null;
+            let groupRotateHandle = null;
+            let initialGroupTransforms = {};
             // --- 跑馬燈參數與顏色變數的映射表 ---
             const marqueeParamColorMap = {
                 '%YYYY%': '--year-color', '%ROC_YY%': '--year-color', '%MM%': '--month-color', '%DD%': '--day-color',
@@ -906,11 +1620,11 @@
             // --- 預設設定 ---
             const userDefaultLayout = {
                 "transforms": {
-                    "calendar-container": { "visible": true, "width": 500, "height": 400, "left": 310, "top": 80, "scale": 1 },
-                    "moon-phase-container": { "visible": false, "width": 500, "height": 400, "left": 10, "top": 80, "scale": 1 },
-                    "led-clock-container": { "visible": true, "width": 300, "height": 98, "left": 10, "top": 80, "scale": 1 },
-                    "analog-clock-container": { "visible": true, "width": 300, "height": 300, "left": 10, "top": 170, "scale": 1 },
-                    "marquee-container-0": { "visible": true, "width": 800, "height": 80, "left": 10, "top": 10, "scale": 1 }
+                    "calendar-container": { "visible": true, "width": 500, "height": 400, "left": 310, "top": 80, "scale": 1, "rotation": 0 },
+                    "moon-phase-container": { "visible": false, "width": 500, "height": 400, "left": 10, "top": 80, "scale": 1, "rotation": 0 },
+                    "led-clock-container": { "visible": true, "width": 300, "height": 98, "left": 10, "top": 80, "scale": 1, "rotation": 0 },
+                    "analog-clock-container": { "visible": true, "width": 300, "height": 300, "left": 10, "top": 170, "scale": 1, "rotation": 0 },
+                    "marquee-container-0": { "visible": true, "width": 800, "height": 80, "left": 10, "top": 10, "scale": 1, "rotation": 0 }
                 },
                 "settings": {
                     "calendar": { "visible": true, "showMoonIcon": true, "useLedFont": true, "colors": { "--bg-primary": "#000000", "--year-color": "#FF7000", "--month-color": "#3070a0", "--week-color": "#8830d0", "--day-color": "#ffffff", "--lunar-color": "#FFFF00", "--bg-secondary": "transparent", "--bg-hover": "rgba(55, 65, 81, 0.5)", "--border-color": "#374151", "--text-primary": "#F3F4F6", "--text-secondary": "#9CA3AF", "--text-muted": "#6B7280", "--today-bg": "transparent", "--holiday-color": "#6ee7b7", "--solarterm-color": "#fcd34d", "--yi-color": "#34D399", "--ji-color": "#F87171" } },
@@ -1363,6 +2077,13 @@
                         instance1.className = 'marquee-text-instance';
                         instance1.style.whiteSpace = isVertical ? 'normal' : 'nowrap';
                         instance1.style.textAlign = isVertical ? 'center' : 'left';
+                        
+                        // [MOD] 針對直向跑馬燈，覆寫 display 屬性為 block，
+                        // 這樣由 %br% 產生的多個 <div> 才能正確地垂直堆疊換行。
+                        if (isVertical) {
+                            instance1.style.display = 'block';
+                        }
+
                         instance1.innerHTML = this.buildInitialHTML(text);
                         this.innerDiv.appendChild(instance1);
                         instance1.getBoundingClientRect();
@@ -1636,6 +2357,13 @@
                 if (cell && pickerTarget) { pickerTarget.currentDate = new Date(pickerYear, cell.dataset.month, 1); pickerTarget.render(); hideModal('modal-backdrop-picker'); }
             });
             document.body.addEventListener('click',(e)=>{
+                const selectHandle = e.target.closest('.group-select-handle');
+                if (isEditMode && selectHandle) {
+                    e.stopPropagation();
+                    const widget = selectHandle.closest('.widget-container');
+                    if (widget) toggleWidgetSelection(widget);
+                    return;
+                }
                 const resetHandle = e.target.closest('.reset-handle');
                 if (isEditMode && resetHandle) {
                     e.stopPropagation();
@@ -1652,6 +2380,7 @@
                             state.width = defaultState.width;
                             state.height = defaultState.height;
                             state.scale = 1;
+                            state.rotation = 0;
                             state.left = centerX - (state.width / 2);
                             state.top = centerY - (state.height / 2);
                             checkAndClampWidgetBounds(state);
@@ -1669,459 +2398,19 @@
             document.getElementById('fullscreen-btn').addEventListener('click',()=>{if(!document.fullscreenElement){document.documentElement.requestFullscreen()}else{document.exitFullscreen()}});
             document.addEventListener('fullscreenchange',()=>{const isFullscreen=!!document.fullscreenElement;document.getElementById('fullscreen-enter-icon').classList.toggle('display-none',isFullscreen);document.getElementById('fullscreen-exit-icon').classList.toggle('display-none',!isFullscreen)});
             // ===================================================================
-            // 設定、顏色與儲存
-            // 說明: 處理所有設定的載入、套用和儲存邏輯。
-            // ===================================================================
-            function applyDefaultSettings() { applyLayout(JSON.parse(JSON.stringify(userDefaultLayout))); saveCurrentSettings(); Weather.updateWeather(); }
-            function applyAllSettings() {
-                Object.values(settingsState).forEach(widgetState => {
-                    if (widgetState && widgetState.colors) Object.entries(widgetState.colors).forEach(([key, value]) => document.documentElement.style.setProperty(key, value));
-                });
-                applyAllTransforms();
-                updateSettingsUIFromState();
-                Calendar.render();
-                MoonPhaseWidget.render();
-                AnalogClock.init();
-                MarqueeManager.rebuildAllAnimations();
-            }
-            function saveCurrentSettings() { localStorage.setItem(STORAGE_AUTOSAVE_KEY, JSON.stringify({ transforms: transformStates, settings: settingsState })); }
-            function updateSettingsUIFromState() {
-                document.querySelectorAll('#modal-backdrop-settings input[data-setting-type="color"]').forEach(picker => {
-                    const widget = picker.dataset.widget, cssVar = picker.dataset.var;
-                    picker.value = settingsState[widget]?.colors?.[cssVar] || getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() || '#ffffff';
-                });
-                document.querySelectorAll('input[data-widget-toggle]').forEach(toggle => { toggle.checked = transformStates[toggle.dataset.widgetToggle]?.visible ?? false; });
-                document.querySelectorAll('#modal-backdrop-settings input[data-setting-type="toggle"]').forEach(toggle => {
-                    const widget = toggle.dataset.widget, key = toggle.dataset.key;
-                    if (settingsState[widget] && typeof settingsState[widget][key] !== 'undefined') toggle.checked = settingsState[widget][key];
-                });
-                updateLocationSelectors();
-                updateMarqueeSelectorUI();
-                loadMarqueeSettingsToUI(document.getElementById('marquee-selector').value);
-                const teSettings = settingsState.timedEffect;
-                if (teSettings) { document.getElementById('timed-effect-enabled-toggle').checked = teSettings.enabled; document.getElementById('timed-effect-interval-seconds').value = teSettings.intervalSeconds; }
-            }
-            const marqueeSelector = document.getElementById('marquee-selector'), marqueeTextInput = document.getElementById('marquee-text-input'), marqueeSpeedInput = document.getElementById('marquee-speed-input'), marqueeVerticalToggle = document.getElementById('marquee-vertical-toggle'), marqueeEnabledToggle = document.getElementById('marquee-enabled-toggle'), marqueeColorInput = document.getElementById('marquee-default-color'), marqueeDirectionSelect = document.getElementById('marquee-direction-select');
-            function updateMarqueeSelectorUI() {
-                const currentVal = marqueeSelector.value;
-                marqueeSelector.innerHTML = '';
-                for (let i = 0; i < settingsState.marquees.length; i++) {
-                    marqueeSelector.add(new Option(`${i + 1}`, i));
-                }
-                if (document.querySelector(`#marquee-selector option[value="${currentVal}"]`)) {
-                    marqueeSelector.value = currentVal;
-                }
-                document.getElementById('remove-marquee-btn').disabled = marqueeSelector.value === '0' || settingsState.marquees.length <= 1;
-            }
-            ['left', 'right', 'up', 'down'].forEach(dir => marqueeDirectionSelect.add(new Option({'left':'左','right':'右','up':'上','down':'下'}[dir], dir)));
-            function updateDirectionOptions(isVertical) {
-                for (const option of marqueeDirectionSelect.options) {
-                    const isVerticalOption = ['up', 'down'].includes(option.value);
-                    option.disabled = isVertical ? !isVerticalOption : isVerticalOption;
-                }
-            }
-            function loadMarqueeSettingsToUI(index) {
-                const settings = settingsState.marquees[index]; if (!settings) return;
-                marqueeTextInput.value = settings.text; marqueeSpeedInput.value = settings.speed;
-                marqueeVerticalToggle.checked = settings.vertical; marqueeEnabledToggle.checked = transformStates[`marquee-container-${index}`]?.visible ?? false;
-                marqueeDirectionSelect.value = settings.direction || (settings.vertical ? 'up' : 'left');
-                marqueeColorInput.value = settings.colors?.default || '#FFFFFF';
-                updateDirectionOptions(settings.vertical);
-            }
-            marqueeSelector.addEventListener('change', (e) => {
-                loadMarqueeSettingsToUI(e.target.value);
-                document.getElementById('remove-marquee-btn').disabled = e.target.value === '0' || settingsState.marquees.length <= 1;
-            });
-            function updateMarqueeSettingFromUI() {
-                const index = marqueeSelector.value; if (!settingsState.marquees[index]) return;
-                const s = settingsState.marquees[index];
-                s.text = marqueeTextInput.value; s.speed = marqueeSpeedInput.value; s.vertical = marqueeVerticalToggle.checked;
-                s.direction = marqueeDirectionSelect.value;
-                if (!s.colors) s.colors = {};
-                s.colors['default'] = marqueeColorInput.value;
-                MarqueeManager.rebuildAnimationByIndex(index); saveCurrentSettings();
-            }
-            marqueeVerticalToggle.addEventListener('change', e => { const isVertical = e.target.checked; updateDirectionOptions(isVertical); marqueeDirectionSelect.value = isVertical ? 'up' : 'left'; updateMarqueeSettingFromUI(); });
-            marqueeEnabledToggle.addEventListener('change', e => {
-                const widgetId = `marquee-container-${marqueeSelector.value}`, isVisible = e.target.checked;
-                if (transformStates[widgetId]) {
-                    transformStates[widgetId].visible = isVisible;
-                    document.getElementById(widgetId).style.display = isVisible ? 'flex' : 'none';
-                    const mainToggle = document.querySelector(`input[data-widget-toggle="${widgetId}"]`);
-                    if (mainToggle) mainToggle.checked = isVisible;
-                    saveCurrentSettings();
-                }
-            });
-            ['input', 'change'].forEach(evt => { ['marquee-text-input', 'marquee-speed-input', 'marquee-default-color', 'marquee-direction-select'].forEach(id => document.getElementById(id).addEventListener(evt, updateMarqueeSettingFromUI)); });
-            document.getElementById('settings-btn').addEventListener('click', () => { updateSettingsUIFromState(); showModal('modal-backdrop-settings'); });
-            document.querySelector('#modal-backdrop-settings').addEventListener('input', e => {
-                if (e.target.dataset.settingType === 'color') {
-                    const widget = e.target.dataset.widget, cssVar = e.target.dataset.var, color = e.target.value;
-                    document.documentElement.style.setProperty(cssVar, color);
-                    if (settingsState[widget]?.colors) settingsState[widget].colors[cssVar] = color;
-                    if (widget === 'moonPhase') MoonPhaseWidget.render(); if (widget === 'calendar') Calendar.render(); if (widget === 'analogClock') AnalogClock.init();
-                    MarqueeManager.rebuildAllAnimations(); saveCurrentSettings();
-                }
-            });
-            document.querySelector('#modal-backdrop-settings').addEventListener('change', e => {
-                const toggle = e.target.closest('input[data-widget-toggle]');
-                if (toggle) {
-                    const widgetId = toggle.dataset.widgetToggle, widgetEl = document.getElementById(widgetId);
-                    if (widgetEl && transformStates[widgetId]) {
-                        transformStates[widgetId].visible = toggle.checked; widgetEl.style.display = toggle.checked ? 'flex' : 'none';
-                        if (widgetId.startsWith('marquee-container-') && widgetId === `marquee-container-${marqueeSelector.value}`) marqueeEnabledToggle.checked = toggle.checked;
-                        saveCurrentSettings();
-                    }
-                }
-                const settingToggle = e.target.closest('input[data-setting-type="toggle"]');
-                if (settingToggle) {
-                    const widget = settingToggle.dataset.widget, key = settingToggle.dataset.key;
-                    if (settingsState[widget]) {
-                        settingsState[widget][key] = settingToggle.checked; saveCurrentSettings();
-                        if (widget === 'calendar') Calendar.render(); if (widget === 'analogClock') AnalogClock.init(); if (widget === 'moonPhase') MoonPhaseWidget.render(); if (widget === 'marqueeGlobal') MarqueeManager.rebuildAllAnimations();
-                    }
-                }
-            });
-            function getRandomHexColor() { return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'); }
-            function applyRandomColors() { document.querySelectorAll('#modal-backdrop-settings .color-picker').forEach(p => { p.value = getRandomHexColor(); p.dispatchEvent(new Event('input', { bubbles: true })); }); }
-            document.getElementById('random-colors-btn').addEventListener('click', applyRandomColors);
-            document.getElementById('default-settings-btn').addEventListener('click', applyDefaultSettings);
-            // ===================================================================
-            // 編輯模式與拖曳縮放
-            // 說明: 處理編輯模式下的所有互動，包括拖曳、縮放、還原尺寸等。
-            // ===================================================================
-            document.getElementById('edit-layout-btn').addEventListener('click', () => {
-                isEditMode = !isEditMode;
-                const timedEffectToggle = document.getElementById('timed-effect-enabled-toggle');
-                const timedEffectInterval = document.getElementById('timed-effect-interval-seconds');
-                if (isEditMode) {
-                    MarqueeManager.setPlayState(false);
-                    timedEffectToggle.disabled = true; timedEffectInterval.disabled = true;
-                } else {
-                    MarqueeManager.setPlayState(true); saveCurrentSettings();
-                    editToolbar.style.left = '50%'; editToolbar.style.top = 'auto'; editToolbar.style.bottom = ''; editToolbar.style.transform = 'translateX(-50%)';
-                    timedEffectToggle.disabled = false; timedEffectInterval.disabled = false;
-                }
-                document.body.classList.toggle('edit-mode', isEditMode);
-                allWidgetContainers().forEach(c => c.classList.toggle('edit-mode', isEditMode));
-                document.getElementById('edit-icon').classList.toggle('display-none', isEditMode);
-                document.getElementById('edit-exit-icon').classList.toggle('display-none', !isEditMode);
-                editToolbar.classList.toggle('show', isEditMode);
-                document.querySelectorAll('.calendar-day').forEach(d => d.classList.toggle('edit-mode-active', isEditMode));
-                resetActivityTimeout();
-            });
-            let activeHandle = null, startX, startY, initialTransformState, scaleCenterX, scaleCenterY, initialDist, activeWidget;
-            const applyTransform = (widgetEl, state) => {
-                if (!widgetEl || !state) return;
-                const { left, top, width, height, scale, visible } = state;
-                widgetEl.style.left = `${left}px`; widgetEl.style.top = `${top}px`;
-                widgetEl.style.width = `${width}px`; widgetEl.style.height = `${height}px`;
-                widgetEl.style.transform = `scale(${scale})`;
-                widgetEl.style.display = visible ? 'flex' : 'none';
-                if ((widgetEl.id === 'calendar-container' || widgetEl.id === 'moon-phase-container') && state.height > 0) {
-                    widgetEl.querySelector('.background-month').style.fontSize = `${state.height * 0.7}px`;
-                    widgetEl.style.fontSize = `${state.height / 40}px`;
-                    const titleElement = widgetEl.querySelector('.calendar-title'), headerContainer = widgetEl.querySelector('.calendar-header'), navElement = widgetEl.querySelector('.calendar-nav');
-                    if (titleElement && headerContainer && navElement) {
-                        headerContainer.getBoundingClientRect();
-                        const availableWidth = headerContainer.clientWidth - navElement.offsetWidth - 16;
-                        if (titleElement.scrollWidth > availableWidth && availableWidth > 0) widgetEl.style.fontSize = `${parseFloat(getComputedStyle(widgetEl).fontSize) * (availableWidth / titleElement.scrollWidth)}px`;
-                    }
-                } else if (widgetEl.id === 'analog-clock-container') {
-                    widgetEl.style.fontSize = `${state.width / 20}px`;
-                } else if (widgetEl.classList.contains('marquee-widget')) {
-                    widgetEl.style.fontSize = `${state.height * 0.75}px`;
-                    MarqueeManager.rebuildAnimationByIndex(parseInt(widgetEl.id.split('-')[2]));
-                }
-                const inverseScale = 1 / scale;
-                widgetEl.querySelectorAll('.control-handle').forEach(h => {
-                    if (h.classList.contains('move-handle')) h.style.transform = `translate(-50%, -50%) scale(${inverseScale})`;
-                    else if (h.classList.contains('reset-handle')) h.style.transform = `scale(${inverseScale})`;
-                    else if (h.classList.contains('resize-handle-w')) h.style.transform = `translateY(-50%) scale(${inverseScale})`;
-                    else if (h.classList.contains('resize-handle-h')) h.style.transform = `translateX(-50%) scale(${inverseScale})`;
-                });
-                const indicator = widgetEl.querySelector('.marquee-edit-indicator');
-                if (indicator) indicator.style.transform = `scale(${inverseScale})`;
-                widgetEl.style.borderWidth = `${2 * inverseScale}px`;
-            };
-            const applyAllTransforms = () => { Object.keys(transformStates).forEach(id => applyTransform(document.getElementById(id), transformStates[id])); };
-            function checkAndClampWidgetBounds(state) {
-                if (!state || !state.visible) return;
-                const winW = window.innerWidth, winH = window.innerHeight;
-                const renderedWidth = state.width * state.scale, renderedHeight = state.height * state.scale;
-                const marginW = renderedWidth * 0.05, marginH = renderedHeight * 0.05;
-                state.left = Math.max(-marginW, Math.min(state.left, winW - renderedWidth + marginW));
-                state.top = Math.max(-marginH, Math.min(state.top, winH - renderedHeight + marginH));
-            }
-            const ensureWidgetsInBounds = () => { Object.values(transformStates).forEach(checkAndClampWidgetBounds); applyAllTransforms(); };
-            const onDragStart = (e) => {
-                if (!isEditMode) return;
-                const targetWidget = e.target.closest('.widget-container');
-                if (!targetWidget) return;
-                allWidgetContainers().forEach(w => w.style.zIndex = '10');
-                targetWidget.style.zIndex = '100'; e.preventDefault(); e.stopPropagation();
-                const originalTransition = targetWidget.style.transition;
-                targetWidget.style.transition = 'none';
-                activeWidget = { el: targetWidget, state: transformStates[targetWidget.id], originalTransition: originalTransition };
-                const handle = e.target.closest('.control-handle');
-                if (handle && !handle.classList.contains('reset-handle')) {
-                    if (handle.classList.contains('move-handle')) activeHandle = 'move';
-                    else if (handle.classList.contains('resize-handle-w')) activeHandle = 'resize-w';
-                    else if (handle.classList.contains('resize-handle-h')) activeHandle = 'resize-h';
-                } else if (!handle) { activeHandle = 'scale'; }
-                if (!activeHandle) return;
-                document.body.style.userSelect = 'none';
-                startX = (e.touches ? e.touches[0] : e).clientX; startY = (e.touches ? e.touches[0] : e).clientY;
-                initialTransformState = { ...activeWidget.state };
-                if (activeHandle === 'scale') {
-                    const rect = activeWidget.el.getBoundingClientRect();
-                    scaleCenterX = rect.left + rect.width / 2; scaleCenterY = rect.top + rect.height / 2;
-                    initialDist = Math.hypot(startX - scaleCenterX, startY - scaleCenterY);
-                }
-                window.addEventListener('mousemove', onDragMove); window.addEventListener('touchmove', onDragMove, { passive: false });
-                window.addEventListener('mouseup', onDragEnd); window.addEventListener('touchend', onDragEnd);
-            };
-            const onDragMove = (e) => {
-                if (!activeHandle || !activeWidget) return; e.preventDefault();
-                const currentX = (e.touches ? e.touches[0] : e).clientX, currentY = (e.touches ? e.touches[0] : e).clientY;
-                const dx = currentX - startX, dy = currentY - startY;
-                switch (activeHandle) {
-                    case 'move': document.body.style.cursor = 'grabbing'; activeWidget.state.left = initialTransformState.left + dx; activeWidget.state.top = initialTransformState.top + dy; break;
-                    case 'resize-w': document.body.style.cursor = 'ew-resize'; activeWidget.state.width = Math.max(50, initialTransformState.width + dx); if (activeWidget.el.id === 'analog-clock-container') activeWidget.state.height = activeWidget.state.width; else if (activeWidget.el.id === 'led-clock-container' && LedClock.aspectRatio > 0) activeWidget.state.height = activeWidget.state.width / LedClock.aspectRatio; break;
-                    case 'resize-h': document.body.style.cursor = 'ns-resize'; activeWidget.state.height = Math.max(50, initialTransformState.height + dy); if (activeWidget.el.id === 'analog-clock-container') activeWidget.state.width = activeWidget.state.height; else if (activeWidget.el.id === 'led-clock-container' && LedClock.aspectRatio > 0) activeWidget.state.width = activeWidget.state.height * LedClock.aspectRatio; break;
-                    case 'scale':
-                        const currentDist = Math.hypot(currentX - scaleCenterX, currentY - scaleCenterY);
-                        let newScale = initialDist > 0 ? (initialTransformState.scale * (currentDist / initialDist)) : initialTransformState.scale;
-                        newScale = Math.max(0.2, Math.min(newScale, Math.min(window.innerWidth / initialTransformState.width, window.innerHeight / initialTransformState.height, 5)));
-                        const oldW = initialTransformState.width*initialTransformState.scale, newW = initialTransformState.width*newScale;
-                        const oldH = initialTransformState.height*initialTransformState.scale, newH = initialTransformState.height*newScale;
-                        activeWidget.state.left = initialTransformState.left - (newW - oldW) / 2; activeWidget.state.top = initialTransformState.top - (newH - oldH) / 2;
-                        activeWidget.state.scale = newScale;
-                        document.body.style.cursor = currentDist > initialDist ? 'zoom-in' : 'zoom-out'; break;
-                }
-                checkAndClampWidgetBounds(activeWidget.state); applyTransform(activeWidget.el, activeWidget.state);
-            };
-            const onDragEnd = () => { if (!activeHandle) return; if (activeWidget?.el) activeWidget.el.style.transition = activeWidget.originalTransition; ensureWidgetsInBounds(); document.body.style.cursor = 'default'; document.body.style.userSelect = 'auto'; activeHandle = null; activeWidget = null; window.removeEventListener('mousemove', onDragMove); window.removeEventListener('touchmove', onDragMove); window.removeEventListener('mouseup', onDragEnd); window.removeEventListener('touchend', onDragEnd); saveCurrentSettings(); };
-            document.body.addEventListener('mousedown', onDragStart); document.body.addEventListener('touchstart', onDragStart, { passive: false });
-            // ===================================================================
-            // 版面配置儲存/載入
-            // ===================================================================
-            const getCurrentLayout = () => ({ transforms: transformStates, settings: settingsState });
-            const applyLayout = (layout) => {
-                if (layout.transforms) transformStates = { ...transformStates, ...layout.transforms };
-                if (layout.settings) {
-                    Object.keys(layout.settings).forEach(key => {
-                        if (key === 'marquees' && Array.isArray(layout.settings[key])) {
-                            settingsState[key] = layout.settings[key].map(m => (typeof m.color === 'string' && !m.colors) ? { ...m, colors: { default: m.color }, color: undefined } : m);
-                        } else if (typeof layout.settings[key] === 'object' && !Array.isArray(layout.settings[key]) && layout.settings[key] !== null) {
-                            settingsState[key] = { ...(settingsState[key] || {}), ...layout.settings[key] };
-                        } else {
-                            settingsState[key] = layout.settings[key];
-                        }
-                    });
-                }
-                syncMarqueeDOMElements();
-                MarqueeManager.syncInstances();
-                applyAllSettings();
-            };
-            const toolbarTitle = document.getElementById('toolbar-title');
-            let toolbarMoving = false, toolbarOffsetX, toolbarOffsetY;
-            const handleToolbarDragStart = (e) => { e.preventDefault(); toolbarMoving = true; const rect = editToolbar.getBoundingClientRect(); const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY; toolbarOffsetX = clientX - rect.left; toolbarOffsetY = clientY - rect.top; editToolbar.style.transition = 'none'; };
-            const handleToolbarDragMove = (e) => { if (!toolbarMoving) return; const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY; let x = clientX - toolbarOffsetX, y = clientY - toolbarOffsetY; const rect = editToolbar.getBoundingClientRect(); x = Math.max(0, Math.min(x, window.innerWidth - rect.width)); y = Math.max(0, Math.min(y, window.innerHeight - rect.height)); editToolbar.style.left = `${x}px`; editToolbar.style.top = `${y}px`; editToolbar.style.bottom = 'auto'; editToolbar.style.transform = 'none'; };
-            const handleToolbarDragEnd = () => { if (toolbarMoving) { toolbarMoving = false; editToolbar.style.transition = 'bottom 0.3s ease-in-out'; } };
-            toolbarTitle.addEventListener('mousedown', handleToolbarDragStart); toolbarTitle.addEventListener('touchstart', handleToolbarDragStart, { passive: false });
-            document.addEventListener('mousemove', handleToolbarDragMove); document.addEventListener('touchmove', handleToolbarDragMove, { passive: false });
-            document.addEventListener('mouseup', handleToolbarDragEnd); document.addEventListener('touchend', handleToolbarDragEnd);
-            const layoutSelector = document.getElementById('layout-selector');
-            function updateLayoutSelector() {
-                const currentVal = layoutSelector.value;
-                layoutSelector.innerHTML = '';
-                if (layouts.length === 0) {
-                    layoutSelector.add(new Option('(無存檔)', -1));
-                    layoutSelector.disabled = true;
-                } else {
-                    layouts.forEach((layout, index) => {
-                        const option = document.createElement('option');
-                        option.value = index;
-                        option.textContent = `${index + 1}. ${layout.name || '(未命名)'}`;
-                        layoutSelector.appendChild(option);
-                    });
-                    layoutSelector.disabled = false;
-                }
-                if (layoutSelector.querySelector(`option[value="${currentVal}"]`)) {
-                    layoutSelector.value = currentVal;
-                }
-                document.getElementById('delete-layout-btn').disabled = layouts.length === 0;
-                document.getElementById('load-layout-btn').disabled = layouts.length === 0;
-                document.getElementById('export-layout-btn').disabled = layouts.length === 0;
-            }
-            document.getElementById('save-layout-btn').addEventListener('click', () => {
-                const defaultName = `版面 ${new Date().toLocaleString('sv').replace(' ', '_')}`;
-                showPrompt("新增版面存檔", "請輸入備註:", defaultName, (name) => {
-                    if (name === null || name.trim() === '') return;
-                    const layout = getCurrentLayout();
-                    layout.name = name.trim();
-                    layouts.push(layout);
-                    localStorage.setItem(STORAGE_LAYOUTS_KEY, JSON.stringify(layouts));
-                    updateLayoutSelector();
-                    layoutSelector.value = layouts.length - 1;
-                });
-            });
-            document.getElementById('delete-layout-btn').addEventListener('click', () => {
-                const index = parseInt(layoutSelector.value, 10);
-                if (index < 0 || index >= layouts.length) return;
-                const layoutName = layouts[index].name;
-                showConfirm("確認刪除", `您確定要刪除存檔 "${layoutName}" 嗎？`, (confirmed) => {
-                    if (confirmed) {
-                        layouts.splice(index, 1);
-                        localStorage.setItem(STORAGE_LAYOUTS_KEY, JSON.stringify(layouts));
-                        updateLayoutSelector();
-                        showAlert("成功", `存檔 "${layoutName}" 已被刪除。`);
-                    }
-                });
-            });
-            document.getElementById('load-layout-btn').addEventListener('click',()=>{
-                const index = parseInt(layoutSelector.value, 10);
-                if (index >= 0 && layouts[index]) {
-                    applyLayout(JSON.parse(JSON.stringify(layouts[index])));
-                    saveCurrentSettings();
-                } else {
-                    showAlert('提示','此欄位沒有儲存設定。');
-                }
-            });
-            document.getElementById('export-layout-btn').addEventListener('click', () => {
-                if (layouts.length === 0) return showAlert("提示", "沒有可導出的設定！");
-                try {
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(new Blob([JSON.stringify(layouts, null, 2)], { type: 'application/json' }));
-                    a.download = `widgets_settings_${new Date().toISOString().slice(0, 10)}.json`;
-                    a.click();
-                    URL.revokeObjectURL(a.href);
-                } catch (error) {
-                    showAlert("錯誤", "導出設定時發生錯誤。");
-                }
-            });
-            document.getElementById('import-layout-btn').addEventListener('click', () => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = '.json';
-                input.onchange = e => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = e => {
-                        try {
-                            const importedLayouts = JSON.parse(e.target.result);
-                            if (!Array.isArray(importedLayouts)) throw new Error('檔案格式無效');
-                            const validLayouts = importedLayouts.filter(l => l && l.name && l.transforms && l.settings);
-                            if (validLayouts.length === 0) throw new Error('檔案中未找到有效的版面設定');
-                            showConfirm('導入設定', `此檔案包含 ${validLayouts.length} 組設定。確定要導入並覆蓋所有現有存檔嗎？`, (confirmed) => {
-                               if (confirmed) {
-                                   layouts = validLayouts;
-                                   localStorage.setItem(STORAGE_LAYOUTS_KEY, JSON.stringify(layouts));
-                                   updateLayoutSelector();
-                                   showAlert("成功", `已成功導入 ${layouts.length} 組設定！`);
-                               }
-                            });
-                        } catch (err) {
-                            showAlert('錯誤', '導入失敗，檔案格式錯誤或內容無效！');
-                        }
-                    };
-                    reader.readAsText(file);
-                };
-                input.click();
-            });
-            // ===================================================================
-            // 地區選擇器
-            // ===================================================================
-            const countySelect = document.getElementById('countySelect'), districtSelect = document.getElementById('districtSelect'), manualLocationInput = document.getElementById('manualLocationInput');
-            Object.keys(taiwanLocations).forEach(county => countySelect.add(new Option(county, county)));
-            function updateDistrictOptions() { districtSelect.innerHTML = ''; const districts = taiwanLocations[countySelect.value]?.districts || {}; Object.keys(districts).forEach(dist => districtSelect.add(new Option(dist, dist))); }
-            function updateLocationSelectors() { const loc = settingsState.location; manualLocationInput.value = loc; for (const county in taiwanLocations) { for (const district in taiwanLocations[county].districts) { if (taiwanLocations[county].districts[district].toLowerCase() === loc.toLowerCase()) { countySelect.value = county; updateDistrictOptions(); districtSelect.value = district; return; } } } countySelect.selectedIndex = 0; updateDistrictOptions(); }
-            function handleLocationChange(newLocation) { settingsState.location = newLocation; manualLocationInput.value = newLocation; Weather.updateWeather(); saveCurrentSettings(); }
-            countySelect.addEventListener('change', () => { updateDistrictOptions(); handleLocationChange(taiwanLocations[countySelect.value].districts[districtSelect.value]); });
-            districtSelect.addEventListener('change', () => handleLocationChange(taiwanLocations[countySelect.value].districts[districtSelect.value]));
-            manualLocationInput.addEventListener('change', () => handleLocationChange(manualLocationInput.value.trim()));
-            document.getElementById('useCurrentLocationBtn').addEventListener('click', () => { if (navigator.geolocation) navigator.geolocation.getCurrentPosition(pos => { fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&localityLanguage=en`).then(r=>r.json()).then(geo=>{const city=geo.locality||geo.city;if(city){handleLocationChange(city);updateLocationSelectors()}}) }); });
-            // ===================================================================
-            // 定時特效設定
-            // ===================================================================
-            function setupTimedEffectControls() {
-                const effectEnabled = document.getElementById('timed-effect-enabled-toggle');
-                const effectInterval = document.getElementById('timed-effect-interval-seconds');
-                [10, 15, 20, 30, 60].forEach(val => effectInterval.add(new Option(String(val), val)));
-                const updateSetting = () => { if (!settingsState.timedEffect) settingsState.timedEffect = JSON.parse(JSON.stringify(userDefaultLayout.settings.timedEffect)); settingsState.timedEffect.enabled = effectEnabled.checked; settingsState.timedEffect.intervalSeconds = parseInt(effectInterval.value, 10); saveCurrentSettings(); };
-                effectEnabled.addEventListener('change', updateSetting); effectInterval.addEventListener('change', updateSetting);
-            }
-            // ===================================================================
-            // 動態跑馬燈相關函式
-            // ===================================================================
-            function createMarqueeElement(index) {
-                const template = document.getElementById('marquee-container-0');
-                if (!template) { console.error("跑馬燈模板 'marquee-container-0' 找不到!"); return null; }
-                const newMarquee = template.cloneNode(true);
-                newMarquee.id = `marquee-container-${index}`;
-                newMarquee.style.display = 'none';
-                newMarquee.querySelector('.marquee-edit-indicator').textContent = index + 1;
-                document.body.appendChild(newMarquee);
-                return newMarquee;
-            }
-            function syncMarqueeDOMElements() {
-                const desiredCount = settingsState.marquees.length;
-                const existingWidgets = document.querySelectorAll('.marquee-widget');
-                let currentCount = existingWidgets.length;
-                while (currentCount < desiredCount) { createMarqueeElement(currentCount); currentCount++; }
-                if (currentCount > desiredCount) { for (let i = desiredCount; i < currentCount; i++) { const elToRemove = document.getElementById(`marquee-container-${i}`); if (elToRemove) elToRemove.remove(); } }
-            }
-            document.getElementById('add-marquee-btn').addEventListener('click', () => {
-                const selectedIndex = parseInt(marqueeSelector.value, 10) || 0;
-                const newIndex = settingsState.marquees.length;
-                const sourceSettings = settingsState.marquees[selectedIndex];
-                const sourceTransform = transformStates[`marquee-container-${selectedIndex}`];
-                const newSettings = JSON.parse(JSON.stringify(sourceSettings));
-                const newTransform = JSON.parse(JSON.stringify(sourceTransform));
-                newTransform.top += (sourceTransform.height * sourceTransform.scale) + 10;
-                newTransform.visible = true;
-                settingsState.marquees.push(newSettings);
-                transformStates[`marquee-container-${newIndex}`] = newTransform;
-                const newElement = createMarqueeElement(newIndex);
-                MarqueeManager.syncInstances();
-                updateMarqueeSelectorUI();
-                marqueeSelector.value = newIndex;
-                loadMarqueeSettingsToUI(newIndex);
-                applyTransform(newElement, newTransform);
-                MarqueeManager.rebuildAnimationByIndex(newIndex);
-                saveCurrentSettings();
-                showAlert('成功', `已新增跑馬燈組別 ${newIndex + 1}。`);
-            });
-            document.getElementById('remove-marquee-btn').addEventListener('click', () => {
-                const selectedIndex = parseInt(marqueeSelector.value, 10);
-                if (selectedIndex === 0 || settingsState.marquees.length <= 1) { showAlert('提示', '無法刪除預設的跑馬燈組別。'); return; }
-                settingsState.marquees.splice(selectedIndex, 1);
-                for (let i = selectedIndex; i < settingsState.marquees.length; i++) { transformStates[`marquee-container-${i}`] = transformStates[`marquee-container-${i + 1}`]; }
-                delete transformStates[`marquee-container-${settingsState.marquees.length}`];
-                syncMarqueeDOMElements();
-                document.querySelectorAll('.marquee-widget').forEach((el, i) => { el.id = `marquee-container-${i}`; el.querySelector('.marquee-edit-indicator').textContent = i + 1; });
-                MarqueeManager.syncInstances();
-                MarqueeManager.rebuildAllAnimations();
-                const newIndex = Math.max(0, selectedIndex - 1);
-                marqueeSelector.value = newIndex;
-                updateMarqueeSelectorUI();
-                marqueeSelector.value = newIndex;
-                loadMarqueeSettingsToUI(newIndex);
-                saveCurrentSettings();
-                showAlert('成功', `已刪除跑馬燈組別 ${selectedIndex + 1}。`);
-            });
-            // ===================================================================
             // 應用程式初始化
             // ===================================================================
             function initializeWidgetControls() {
-                const resetHandleHTML = `<div class="reset-handle control-handle" title="還原尺寸與比例"><svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-reset-size"></use></svg></div>`;
+                const resetHandleHTML = `<div class="reset-handle control-handle" title="還原尺寸與旋轉"><svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-reset-size"></use></svg></div>`;
                 const moveHandleHTML = `<div class="move-handle control-handle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="width-full height-full"><use href="#icon-move"></use></svg></div>`;
                 const resizeHandlesHTML = `<div class="resize-handle-w control-handle"></div><div class="resize-handle-h control-handle"></div>`;
+                const groupSelectHTML = `<div class="group-select-handle" title="加入/移出群組"><svg class="unchecked" style="display: block;" viewBox="0 0 24 24"><use href="#icon-checkbox-unchecked" stroke="white"></use></svg><svg class="checked" style="display: none;" viewBox="0 0 24 24"><use href="#icon-checkbox-checked" stroke="white"></use></svg></div>`;
+                const rotateHandleHTML = `<div class="rotate-handle control-handle" title="旋轉"><svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-rotate"></use></svg></div>`;
                 document.querySelectorAll('.widget-container').forEach(widgetEl => {
+                    widgetEl.insertAdjacentHTML('afterbegin', groupSelectHTML);
                     widgetEl.insertAdjacentHTML('beforeend', resetHandleHTML);
                     widgetEl.insertAdjacentHTML('beforeend', moveHandleHTML);
+                    widgetEl.insertAdjacentHTML('beforeend', rotateHandleHTML);
                     if (widgetEl.id !== 'analog-clock-container') {
                         widgetEl.insertAdjacentHTML('beforeend', resizeHandlesHTML);
                     }
@@ -2175,6 +2464,15 @@
             const gregorianHolidays = {"1-1":"元旦","2-14":"情人節","2-28":"和平紀念日","3-8":"婦女節","3-12":"植樹節","4-1":"愚人節","4-4":"兒童節","5-1":"勞動節","8-8":"父親節","9-3":"軍人節","9-28":"教師節","10-10":"國慶日","10-25":"台灣光復節","10-31":"萬聖夜","11-12":"國父誕辰","12-24":"平安夜","12-25":"聖誕節","12-31":"跨年夜"};            const solarTermConstants=[["小寒",1,5.4055],["大寒",1,20.12],["立春",2,3.87],["雨水",2,18.73],["驚蟄",3,5.63],["春分",3,20.646],["清明",4,4.81],["穀雨",4,20.1],["立夏",5,5.52],["小滿",5,21.04],["芒種",6,5.678],["夏至",6,21.37],["小暑",7,7.108],["大暑",7,22.83],["立秋",8,7.5],["處暑",8,23.13],["白露",9,7.646],["秋分",9,23.042],["寒露",10,8.318],["霜降",10,23.438],["立冬",11,7.438],["小雪",11,22.36],["大雪",12,7.18],["冬至",12,21.94]];
             const floatingHolidays = {"5-2-0":"母親節","6-3-0":"國際父親節","11-4-4":"感恩節"};
             const taiwanLocations = { "台灣": { "english": "taiwan", "districts": { "台灣": "taiwan" } }, "基隆市": { "english": "keelung", "districts": { "基隆市": "keelung", "仁愛區": "renai", "信義區": "xinyi", "中正區": "zhongzheng", "中山區": "zhongshan", "安樂區": "anle", "暖暖區": "nuannuan", "七堵區": "qidu" } }, "臺北市": { "english": "taipei", "districts": { "臺北市": "taipei", "中正區": "zhongzheng", "大同區": "datong", "中山區": "zhongshan", "松山區": "songshan", "大安區": "da'an", "萬華區": "wanhua", "信義區": "xinyi", "士林區": "shilin", "北投區": "beitou", "內湖區": "neihu", "南港區": "nangang", "文山區": "wenshan" } }, "新北市": { "english": "new taipei", "districts": { "新北市": "new taipei", "板橋區": "banqiao", "三重區": "sanchong", "中和區": "zhonghe", "永和區": "yonghe", "新莊區": "xinzhuang", "新店區": "xindian", "土城區": "tucheng", "蘆洲區": "luzhou", "樹林區": "shulin", "汐止區": "xizhi", "鶯歌區": "yingge", "三峽區": "sanxia", "淡水區": "danshui", "瑞芳區": "ruifang", "五股區": "wugu", "泰山區": "taishan", "林口區": "linkou", "深坑區": "shengkeng", "石碇區": "shiding", "坪林區": "pinglin", "三芝區": "sanzhi", "石門區": "shimen", "八里區": "bali", "平溪區": "pingxi", "雙溪區": "shuangxi", "貢寮區": "gongliao", "金山區": "jinshan", "萬里區": "wanli", "烏來區": "wulai" } }, "桃園市": { "english": "taoyuan", "districts": { "桃園市": "taoyuan", "桃園區": "taoyuan", "中壢區": "zhongli", "平鎮區": "pingzhen", "八德區": "bade", "楊梅區": "yangmei", "蘆竹區": "luzhu", "大溪區": "daxi", "龍潭區": "longtan", "龜山區": "guishan", "大園區": "dayuan", "觀音區": "guanyin", "新屋區": "xinwu", "復興區": "fuxing" } }, "臺中市": { "english": "taichung", "districts": { "臺中市": "taichung", "中區": "central", "東區": "east", "南區": "south", "西區": "west", "北區": "north", "北屯區": "beitun", "西屯區": "xitun", "南屯區": "nantun", "太平區": "taiping", "大里區": "dali", "霧峰區": "wufeng", "烏日區": "wuri", "豐原區": "fengyuan", "后里區": "houli", "石岡區": "shigang", "東勢區": "dongshi", "和平區": "heping", "新社區": "xinshe", "潭子區": "tanzi", "大雅區": "daya", "神岡區": "shengang", "大肚區": "dadu", "沙鹿區": "shalu", "龍井區": "longjing", "梧棲區": "wuqi", "清水區": "qingshui", "大甲區": "dajia", "外埔區": "waipu", "大安區": "daan" } }, "臺南市": { "english": "tainan", "districts": { "臺南市": "tainan", "中西區": "west central", "東區": "east", "南區": "south", "北區": "north", "安平區": "anping", "安南區": "annan", "永康區": "yongkang", "歸仁區": "guiren", "新化區": "xinhua", "左鎮區": "zuozhen", "玉井區": "yujing", "楠西區": "nanxi", "南化區": "nanhua", "仁德區": "rende", "關廟區": "guanmiao", "龍崎區": "longqi", "官田區": "guantian", "麻豆區": "madou", "佳里區": "jiali", "西港區": "xigang", "七股區": "qigu", "將軍區": "jiangjun", "學甲區": "xuejia", "北門區": "beimen", "新營區": "xinying", "後壁區": "houbi", "白河區": "baihe", "東山區": "dongshan", "六甲區": "liujia", "下營區": "xiaying", "柳營區": "liuying", "鹽水區": "yanshui", "善化區": "shanhua", "大內區": "danei", "山上區": "shanshang", "新市區": "xingshi", "安定區": "anding" } }, "高雄市": { "english": "kaohsiung", "districts": { "高雄市": "kaohsiung", "楠梓區": "nanzi", "左營區": "zuoying", "鼓山區": "gushan", "三民區": "sanmin", "鹽埕區": "yancheng", "前金區": "qianjin", "新興區": "xinxing", "苓雅區": "lingya", "前鎮區": "qianzhen", "旗津區": "qijin", "小港區": "xiaogang", "鳳山區": "fengshan", "林園區": "linyuan", "大寮區": "daliao", "大樹區": "dashu", "大社區": "dashe", "仁武區": "renwu", "鳥松區": "niaosong", "岡山區": "gangshan", "橋頭區": "qiaotou", "燕巢區": "yanchao", "田寮區": "tianliao", "阿蓮區": "alian", "路竹區": "luzhu", "湖內區": "hunei", "茄萣區": "qieding", "永安區": "yong'an", "彌陀區": "mizuo", "梓官區": "ziguan", "旗山區": "qishan", "美濃區": "meinong", "六龜區": "liugui", "甲仙區": "jiaxian", "杉林區": "shanlin", "內門區": "neimen", "茂林區": "maolin", "桃源區": "taoyuan", "那瑪夏區": "namasia" } }, "新竹縣": { "english": "hsinchu county", "districts": { "新竹縣": "hsinchu county", "竹北市": "zhubei", "竹東鎮": "zhudong", "新埔鎮": "xinpu", "關西鎮": "guanxi", "湖口鄉": "hukou", "新豐鄉": "xinfeng", "芎林鄉": "qionglin", "橫山鄉": "hengshan", "北埔鄉": "beipu", "寶山鄉": "baoshan", "峨眉鄉": "emei", "尖石鄉": "jianshi", "五峰鄉": "wufeng" } }, "苗栗縣": { "english": "miaoli", "districts": { "苗栗縣": "miaoli", "苗栗市": "miaoli city", "頭份市": "toufen", "苑裡鎮": "yuanli", "通霄鎮": "tongxiao", "竹南鎮": "zhunan", "後龍鎮": "houlong", "卓蘭鎮": "zhuolan", "大湖鄉": "dahu", "公館鄉": "gongguan", "銅鑼鄉": "tongluo", "南庄鄉": "nanzhuang", "頭屋鄉": "touwu", "三灣鄉": "sanwan", "三義鄉": "sanyi", "西湖鄉": "xihu", "造橋鄉": "zaoqiao", "獅潭鄉": "shitan", "泰安鄉": "taian" } }, "彰化縣": { "english": "changhua", "districts": { "彰化縣": "changhua", "彰化市": "changhua city", "員林市": "yuanlin", "和美鎮": "hemei", "鹿港鎮": "lukang", "溪湖鎮": "xihu", "田中鎮": "tianzhong", "北斗鎮": "beidou", "二林鎮": "erlin", "線西鄉": "xianxi", "伸港鄉": "shengang", "福興鄉": "fuxing", "秀水鄉": "xiushui", "花壇鄉": "huatan", "芬園鄉": "fenyuan", "大村鄉": "dacun", "埔鹽鄉": "puyan", "埔心鄉": "puxin", "永靖鄉": "yongjing", "社頭鄉": "shetou", "二水鄉": "ershui", "田尾鄉": "tianwei", "埤頭鄉": "pitou", "芳苑鄉": "fangyuan", "大城鄉": "dacheng", "竹塘鄉": "zhutang", "溪州鄉": "xizhou" } }, "南投縣": { "english": "nantou", "districts": { "南投縣": "nantou", "南投市": "nantou city", "埔里鎮": "puli", "草屯鎮": "caotun", "竹山鎮": "zhushan", "集集鎮": "jiji", "名間鄉": "mingjian", "鹿谷鄉": "lugu", "中寮鄉": "zhongliao", "魚池鄉": "yuchi", "國姓鄉": "guoxing", "水里鄉": "shuili", "信義鄉": "xinyi", "仁愛鄉": "ren'ai" } }, "雲林縣": { "english": "yunlin", "districts": { "雲林縣": "yunlin", "斗六市": "douliu", "斗南鎮": "dounan", "虎尾鎮": "huwei", "西螺鎮": "xiluo", "土庫鎮": "tuku", "北港鎮": "beigang", "古坑鄉": "gukeng", "大埤鄉": "dapi", "莿桐鄉": "citong", "林內鄉": "linnei", "二崙鄉": "erlun", "崙背鄉": "lunbei", "麥寮鄉": "mailiao", "東勢鄉": "dongshi", "褒忠鄉": "baozhong", "臺西鄉": "taixi", "元長鄉": "yuanchang", "四湖鄉": "sihu", "口湖鄉": "kouhu", "水林鄉": "shuilin" } }, "嘉義縣": { "english": "chiayi county", "districts": { "嘉義縣": "chiayi county", "太保市": "taibao", "朴子市": "puzi", "布袋鎮": "budai", "大林鎮": "dalin", "民雄鄉": "minxiong", "溪口鄉": "xikou", "新港鄉": "xingang", "六腳鄉": "liujiao", "東石鄉": "dongshi", "義竹鄉": "yizu", "鹿草鄉": "lucao", "水上鄉": "shuishang", "中埔鄉": "zhongpu", "竹崎鄉": "zhuqi", "梅山鄉": "meishan", "番路鄉": "fanlu", "大埔鄉": "dapu", "阿里山鄉": "alishan" } }, "屏東縣": { "english": "pingtung", "districts": { "屏東縣": "pingtung", "屏東市": "pingtung city", "潮州鎮": "chaozhou", "東港鎮": "donggang", "恆春鎮": "hengchun", "萬丹鄉": "wandan", "長治鄉": "changzhi", "麟洛鄉": "linluo", "九如鄉": "jiuru", "里港鄉": "ligang", "鹽埔鄉": "yanpu", "高樹鄉": "gaoshu", "萬巒鄉": "wanluan", "內埔鄉": "neipu", "竹田鄉": "zhutian", "新埤鄉": "xinpi", "枋寮鄉": "fangliao", "新園鄉": "xinyuan", "崁頂鄉": "kanding", "林邊鄉": "linbian", "南州鄉": "nanzhou", "佳冬鄉": "jiadong", "琉球鄉": "liuqiu", "車城鄉": "checheng", "滿州鄉": "manzhou", "枋山鄉": "fangshan", "三地門鄉": "sandimen", "霧臺鄉": "wutai", "瑪家鄉": "majia", "泰武鄉": "taiwu", "來義鄉": "laiyi", "春日鄉": "chunri", "獅子鄉": "shizi", "牡丹鄉": "mudan" } }, "宜蘭縣": { "english": "yilan", "districts": { "宜蘭縣": "yilan", "宜蘭市": "yilan city", "羅東鎮": "luodong", "蘇澳鎮": "su'ao", "頭城鎮": "toucheng", "礁溪鄉": "jiaoxi", "壯圍鄉": "zhuangwei", "員山鄉": "yuanshan", "冬山鄉": "dongshan", "五結鄉": "wujie", "三星鄉": "sanxing", "大同鄉": "datong", "南澳鄉": "nan'ao" } }, "花蓮縣": { "english": "hualien", "districts": { "花蓮縣": "hualien", "花蓮市": "hualien city", "鳳林鎮": "fenglin", "玉里鎮": "yuli", "新城鄉": "xincheng", "吉安鄉": "ji'an", "壽豐鄉": "shoufeng", "光復鄉": "guangfu", "豐濱鄉": "fengbin", "瑞穗鄉": "ruisui", "富里鄉": "fuli", "秀林鄉": "xiulin", "萬榮鄉": "wanrong", "卓溪鄉": "zhuoxi" } }, "臺東縣": { "english": "taitung", "districts": { "臺東縣": "taitung", "臺東市": "taitung city", "成功鎮": "chenggong", "關山鎮": "guanshan", "卑南鄉": "beinan", "鹿野鄉": "luye", "池上鄉": "chishang", "東河鄉": "donghe", "長濱鄉": "changbin", "太麻里鄉": "taimali", "大武鄉": "dawu", "達仁鄉": "daren", "金峰鄉": "jinfeng", "海端鄉": "haiduan", "延平鄉": "yanping", "綠島鄉": "ludao", "蘭嶼鄉": "lanyu" } }, "澎湖縣": { "english": "penghu", "districts": { "澎湖縣": "penghu", "馬公市": "magong", "湖西鄉": "huxi", "白沙鄉": "baisha", "西嶼鄉": "xiyu", "望安鄉": "wang'an", "七美鄉": "qimei" } }, "金門縣": { "english": "kinmen", "districts": { "金門縣": "kinmen", "金城鎮": "jincheng", "金湖鎮": "jinhu", "金沙鎮": "jinsha", "金寧鄉": "jinning", "烈嶼鄉": "lieyu", "烏坵鄉": "wuqiu" } }, "連江縣": { "english": "lienchiang", "districts": { "連江縣": "lienchiang", "南竿鄉": "nangan", "北竿鄉": "beigan", "莒光鄉": "juguang", "東引鄉": "dongyin" } }, "新竹市": { "english": "hsinchu", "districts": { "新竹市": "hsinchu", "東區": "east", "北區": "north", "香山區": "xiangshan" } }, "嘉義市": { "english": "chiayi", "districts": { "嘉義市": "chiayi", "東區": "east", "西區": "west" } } };
+            const signs = [
+                { sign: "摩羯座", m: 1, d: 20, range: "12/22 - 1/19" }, { sign: "水瓶座", m: 2, d: 19, range: "1/20 - 2/18" },
+                { sign: "雙魚座", m: 3, d: 21, range: "2/19 - 3/20" }, { sign: "牡羊座", m: 4, d: 20, range: "3/21 - 4/19" },
+                { sign: "金牛座", m: 5, d: 21, range: "4/20 - 5/20" }, { sign: "雙子座", m: 6, d: 22, range: "5/21 - 6/21" },
+                { sign: "巨蟹座", m: 7, d: 23, range: "6/22 - 7/22" }, { sign: "獅子座", m: 8, d: 23, range: "7/23 - 8/22" },
+                { sign: "處女座", m: 9, d: 23, range: "8/23 - 9/22" }, { sign: "天秤座", m: 10, d: 24, range: "9/23 - 10/23" },
+                { sign: "天蠍座", m: 11, d: 23, range: "10/24 - 11/22" }, { sign: "射手座", m: 12, d: 22, range: "11/23 - 12/21" },
+                { sign: "摩羯座", m: 13, d: 32, range: "12/22 - 1/19" } // 處理跨年
+            ];
     </script>
 </body>
 </html>
