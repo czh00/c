@@ -22,8 +22,6 @@
         /* --- 通用 Widget 容器樣式 --- */
         .widget-container {
             position: absolute;
-            border: 2px dashed transparent;
-            transition: border-color 0.3s;
             box-sizing: border-box; user-select: none;
             display: flex; flex-direction: column;
             background-color: transparent; z-index: 10;
@@ -32,7 +30,34 @@
         }
         .widget-container.edit-mode:not(:has(.control-handle:hover)) { cursor: zoom-in; }
         .widget-container.edit-mode:not(:has(.control-handle:hover)):active { cursor: zoom-out; }
-        .widget-container.edit-mode { border-color: rgba(0, 255, 255, 0.5); }
+        /* --- SVG 邊框樣式 (新增) --- */
+        .widget-border-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9;
+            display: none;
+            overflow: visible; /* 防止非縮放筆劃被裁切 */
+        }
+        .widget-border-svg rect {
+            width: 100%;
+            height: 100%;
+            fill: none;
+            stroke: rgba(0, 255, 255, 0.5);
+            stroke-width: 2;
+            stroke-dasharray: 6 6;
+            vector-effect: non-scaling-stroke; /* 核心屬性：防止筆劃縮放 */
+            transition: stroke 0.3s;
+        }
+        .widget-container.edit-mode .widget-border-svg {
+            display: block;
+        }
+        .widget-container.selected-for-group .widget-border-svg rect {
+            stroke: rgba(255, 255, 0, 0.8) !important;
+        }
         .widget-content-wrapper {
             width: 100%; height: 100%; flex-grow: 1;
             display: flex; flex-direction: column;
@@ -160,7 +185,7 @@
         .widget-container.edit-mode .rotate-handle { display: flex; align-items: center; justify-content: center; }
         .group-select-handle { position: absolute; top: 8px; left: 8px; width: 24px; height: 24px; cursor: pointer; z-index: 101; display: none; background-color: rgba(0, 255, 255, 0.5); border-radius: 4px; padding: 2px; transform-origin: top left; }
         .widget-container.edit-mode .group-select-handle { display: block; }
-        .widget-container.selected-for-group { border-color: rgba(255, 255, 0, 0.8) !important; box-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
+        .widget-container.selected-for-group { box-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
         .widget-container.selected-for-group .rotate-handle { display: none !important; }
         #group-move-handle { position: absolute; width: 32px; height: 32px; z-index: 200; cursor: move; background-color: rgba(255, 255, 0, 0.8); border-radius: 6px; padding: 4px; display: flex; align-items: center; justify-content: center; }
         #group-rotate-handle { position: absolute; width: 28px; height: 28px; z-index: 200; cursor: alias; background-color: rgba(255, 255, 0, 0.8); border-radius: 50%; padding: 4px; display: flex; align-items: center; justify-content: center; }
@@ -358,6 +383,7 @@
     </svg>
     <div id="edit-mode-grid"></div>
     <div id="calendar-container" class="widget-container calendar-widget">
+        <svg class="widget-border-svg" preserveAspectRatio="none"><rect/></svg>
         <div class="widget-content-wrapper">
             <div id="background-month" class="background-month"></div>
             <header class="calendar-header">
@@ -381,6 +407,7 @@
         </div>
     </div>
     <div id="led-clock-container" class="widget-container">
+        <svg class="widget-border-svg" preserveAspectRatio="none"><rect/></svg>
         <div class="widget-content-wrapper">
             <main>
                 <svg id="led-clock-svg" viewBox="0 0 1200 350"></svg>
@@ -388,6 +415,7 @@
         </div>
     </div>
     <div id="analog-clock-container" class="widget-container">
+        <svg class="widget-border-svg" preserveAspectRatio="none"><rect/></svg>
         <div class="widget-content-wrapper">
             <main class="analog-clock-face">
                 <div class="ticks-container" id="ticks-container"></div>
@@ -399,9 +427,11 @@
         </div>
     </div>
     <div id="marquee-container-0" class="widget-container marquee-widget">
+        <svg class="widget-border-svg" preserveAspectRatio="none"><rect/></svg>
         <div class="widget-content-wrapper"><main><div class="marquee-inner"></div></main></div>
     </div>
     <div id="moon-phase-container" class="widget-container calendar-widget">
+        <svg class="widget-border-svg" preserveAspectRatio="none"><rect/></svg>
         <div class="widget-content-wrapper">
             <div id="moon-background-month" class="background-month"></div>
             <header class="calendar-header">
@@ -864,7 +894,6 @@
                     else if (h.classList.contains('rotate-handle')) h.style.transform = `scale(${inverseScale})`;
                     else if (h.classList.contains('group-select-handle')) h.style.transform = `scale(${inverseScale})`;
                 });
-                widgetEl.style.borderWidth = `${2 * inverseScale}px`;
             };
             const applyAllTransforms = () => { Object.keys(transformStates).forEach(id => applyTransform(document.getElementById(id), transformStates[id])); };
             function checkAndClampWidgetBounds(state) {
