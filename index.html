@@ -239,6 +239,7 @@
         .justify-content-space-between { justify-content: space-between; }
         .justify-content-center { justify-content: center; }
         .justify-content-flex-end { justify-content: flex-end; }
+        .justify-content-start { justify-content: flex-start; }
         .align-items-flex-start { align-items: flex-start; }
         .flex-direction-column { flex-direction: column; }
         .flex-wrap { flex-wrap: wrap; }
@@ -578,15 +579,26 @@
                             </div>
                         </div>
                         <div class="grid-column-span-2 md-grid-column-span-2">
-                            <div class="display-flex align-items-center justify-content-space-between width-full padding-vertical-2 p0">
+                            <div class="display-flex align-items-center justify-content-start width-full padding-vertical-2 p0 flex-wrap gap-3">
                                 <div class="display-flex align-items-center gap-2">
                                     <input type="checkbox" id="timed-effect-enabled-toggle" class="form-checkbox">
                                     <label for="timed-effect-enabled-toggle" class="font-size-lg font-weight-semibold color-gray-400">定時特效</label>
                                 </div>
                                 <div class="display-flex align-items-center gap-2">
-                                    <label>觸發間隔</label>
+                                    <label for="timed-effect-interval-seconds">觸發間隔</label>
                                     <select id="timed-effect-interval-seconds"></select>
                                     <span>秒</span>
+                                </div>
+                                <div class="display-flex align-items-center gap-2">
+                                    <label for="timed-effect-type">類型</label>
+                                    <select id="timed-effect-type">
+                                        <option value="slide">滑動</option>
+                                        <option value="layoutSwitch">版面切換</option>
+                                    </select>
+                                </div>
+                                <div id="layout-switch-options" class="display-flex align-items-center gap-2" style="display: none;">
+                                    <input type="checkbox" id="layout-switch-random-toggle" class="form-checkbox">
+                                    <label for="layout-switch-random-toggle" class="cursor-pointer">亂數</label>
                                 </div>
                             </div>
                         </div>
@@ -717,6 +729,8 @@
         const STORAGE_LAYOUTS_KEY = 'widgets_layouts_v2';
         let weatherDataLoaded = false;
         let layouts = [];
+        let currentLayoutIndex = -1; // -1 表示目前狀態未對應任何已儲存的版面，或是已被修改
+        let nextLayoutIndex = 0; // 用於循序版面切換
 
         document.addEventListener('DOMContentLoaded', function () {
             // ===================================================================
@@ -735,7 +749,12 @@
                 AnalogClock.init();
                 MarqueeManager.rebuildAllAnimations();
             }
-            function saveCurrentSettings() { localStorage.setItem(STORAGE_AUTOSAVE_KEY, JSON.stringify({ transforms: transformStates, settings: settingsState })); }
+            function saveCurrentSettings(isProgrammaticChange = false) {
+                localStorage.setItem(STORAGE_AUTOSAVE_KEY, JSON.stringify({ transforms: transformStates, settings: settingsState }));
+                if (!isProgrammaticChange) {
+                    currentLayoutIndex = -1; // 手動編輯會將版面標記為'已修改'
+                }
+            }
             function updateSettingsUIFromState() {
                 document.querySelectorAll('#modal-backdrop-settings input[data-setting-type="color"]').forEach(picker => {
                     const widget = picker.dataset.widget, cssVar = picker.dataset.var;
@@ -750,7 +769,21 @@
                 updateMarqueeSelectorUI();
                 loadMarqueeSettingsToUI(document.getElementById('marquee-selector').value);
                 const teSettings = settingsState.timedEffect;
-                if (teSettings) { document.getElementById('timed-effect-enabled-toggle').checked = teSettings.enabled; document.getElementById('timed-effect-interval-seconds').value = teSettings.intervalSeconds; }
+                if (teSettings) {
+                    document.getElementById('timed-effect-enabled-toggle').checked = teSettings.enabled;
+                    document.getElementById('timed-effect-interval-seconds').value = teSettings.intervalSeconds;
+                    const effectTypeSelect = document.getElementById('timed-effect-type');
+                    effectTypeSelect.value = teSettings.type || 'slide';
+
+                    const layoutSwitchOptions = document.getElementById('layout-switch-options');
+                    const randomToggle = document.getElementById('layout-switch-random-toggle');
+                    if (teSettings.type === 'layoutSwitch') {
+                        layoutSwitchOptions.style.display = 'flex';
+                        randomToggle.checked = teSettings.isRandom ?? false;
+                    } else {
+                        layoutSwitchOptions.style.display = 'none';
+                    }
+                }
             }
             const marqueeSelector = document.getElementById('marquee-selector'), marqueeTextInput = document.getElementById('marquee-text-input'), marqueeSpeedInput = document.getElementById('marquee-speed-input'), marqueeVerticalToggle = document.getElementById('marquee-vertical-toggle'), marqueeEnabledToggle = document.getElementById('marquee-enabled-toggle'), marqueeColorInput = document.getElementById('marquee-default-color'), marqueeDirectionSelect = document.getElementById('marquee-direction-select');
             function updateMarqueeSelectorUI() {
@@ -1185,11 +1218,20 @@
             // ===================================================================
             // 版面配置儲存/載入
             // ===================================================================
-            const getCurrentLayout = () => ({ transforms: transformStates, settings: settingsState });
-            const applyLayout = (layout) => {
+            const getCurrentLayout = () => {
+                const settingsToSave = JSON.parse(JSON.stringify(settingsState));
+                delete settingsToSave.timedEffect; // 不要儲存定時特效設定
+                return {
+                    transforms: JSON.parse(JSON.stringify(transformStates)),
+                    settings: settingsToSave
+                };
+            };
+            const applyLayout = (layout, options = {}) => {
+                const { ignoreTimedEffect = false } = options;
                 if (layout.transforms) transformStates = { ...transformStates, ...layout.transforms };
                 if (layout.settings) {
                     Object.keys(layout.settings).forEach(key => {
+                        if (ignoreTimedEffect && key === 'timedEffect') return;
                         if (key === 'marquees' && Array.isArray(layout.settings[key])) {
                             settingsState[key] = layout.settings[key].map(m => (typeof m.color === 'string' && !m.colors) ? { ...m, colors: { default: m.color }, color: undefined } : m);
                         } else if (typeof layout.settings[key] === 'object' && !Array.isArray(layout.settings[key]) && layout.settings[key] !== null) {
@@ -1203,6 +1245,50 @@
                 MarqueeManager.syncInstances();
                 applyAllSettings();
             };
+            function animateLayoutChange(targetLayout, duration = 1000, preserveTimedEffectSettings = false) {
+                if (!targetLayout || !targetLayout.transforms || Object.values(isWidgetAnimating).some(v => v)) return;
+                const sourceTransforms = transformStates;
+                const targetTransforms = targetLayout.transforms;
+                const allWidgetIds = new Set([...Object.keys(sourceTransforms), ...Object.keys(targetTransforms)]);
+                const transitionStyle = `all ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+
+                allWidgetIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    const sourceState = sourceTransforms[id];
+                    const targetState = targetTransforms[id];
+                    const isVisibleSource = sourceState?.visible ?? false;
+                    const isVisibleTarget = targetState?.visible ?? false;
+                    isWidgetAnimating[id] = true;
+                    if (isVisibleSource && !isVisibleTarget) { // 消失中
+                        el.style.transition = transitionStyle;
+                        const newTransform = `scale(0) rotate(${sourceState.rotation || 0}deg)`;
+                        el.style.transform = newTransform;
+                        el.style.opacity = '0';
+                    } else if (!isVisibleSource && isVisibleTarget) { // 出現中
+                        el.style.transition = 'none';
+                        el.style.opacity = '0';
+                        applyTransform(el, { ...targetState, scale: 0 });
+                        el.style.display = 'flex';
+                        void el.offsetWidth; // 強制重繪
+                        el.style.transition = transitionStyle;
+                        el.style.opacity = '1';
+                        applyTransform(el, targetState);
+                    } else if (isVisibleSource && isVisibleTarget) { // 持續存在
+                        el.style.transition = transitionStyle;
+                        applyTransform(el, targetState);
+                    }
+                });
+                setTimeout(() => {
+                    applyLayout(JSON.parse(JSON.stringify(targetLayout)), { ignoreTimedEffect: preserveTimedEffectSettings });
+                    saveCurrentSettings(true); // 標記為程式化變更，以保留 currentLayoutIndex
+                    allWidgetIds.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.transition = '';
+                        isWidgetAnimating[id] = false;
+                    });
+                }, duration + 100);
+            }
             const toolbarTitle = document.getElementById('toolbar-title');
             let toolbarMoving = false, toolbarOffsetX, toolbarOffsetY;
             const handleToolbarDragStart = (e) => { e.preventDefault(); toolbarMoving = true; const rect = editToolbar.getBoundingClientRect(); const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY; toolbarOffsetX = clientX - rect.left; toolbarOffsetY = clientY - rect.top; editToolbar.style.transition = 'none'; };
@@ -1233,6 +1319,21 @@
                 document.getElementById('delete-layout-btn').disabled = layouts.length === 0;
                 document.getElementById('load-layout-btn').disabled = layouts.length === 0;
                 document.getElementById('export-layout-btn').disabled = layouts.length === 0;
+                const effectTypeSelect = document.getElementById('timed-effect-type');
+                const switchLayoutOption = effectTypeSelect.querySelector('option[value="layoutSwitch"]');
+                if (switchLayoutOption) {
+                    if (layouts.length < 2) {
+                        switchLayoutOption.disabled = true;
+                        switchLayoutOption.textContent = '版面切換 (需2組以上)';
+                        if (effectTypeSelect.value === 'layoutSwitch') {
+                            effectTypeSelect.value = 'slide';
+                            if (settingsState.timedEffect) { settingsState.timedEffect.type = 'slide'; saveCurrentSettings(); }
+                        }
+                    } else {
+                        switchLayoutOption.disabled = false;
+                        switchLayoutOption.textContent = '版面切換';
+                    }
+                }
             }
             document.getElementById('save-layout-btn').addEventListener('click', () => {
                 const defaultName = `版面 ${new Date().toLocaleString('sv').replace(' ', '_')}`;
@@ -1243,7 +1344,9 @@
                     layouts.push(layout);
                     localStorage.setItem(STORAGE_LAYOUTS_KEY, JSON.stringify(layouts));
                     updateLayoutSelector();
-                    layoutSelector.value = layouts.length - 1;
+                    const newIndex = layouts.length - 1;
+                    layoutSelector.value = newIndex;
+                    currentLayoutIndex = newIndex; // 將目前狀態對應到新的存檔
                 });
             });
             document.getElementById('delete-layout-btn').addEventListener('click', () => {
@@ -1255,6 +1358,7 @@
                         layouts.splice(index, 1);
                         localStorage.setItem(STORAGE_LAYOUTS_KEY, JSON.stringify(layouts));
                         updateLayoutSelector();
+                        nextLayoutIndex = 0; // 重設循序索引
                         showAlert("成功", `存檔 "${layoutName}" 已被刪除。`);
                     }
                 });
@@ -1262,8 +1366,8 @@
             document.getElementById('load-layout-btn').addEventListener('click',()=>{
                 const index = parseInt(layoutSelector.value, 10);
                 if (index >= 0 && layouts[index]) {
-                    applyLayout(JSON.parse(JSON.stringify(layouts[index])));
-                    saveCurrentSettings();
+                    currentLayoutIndex = index; // 標記目前正在使用的版面索引
+                    animateLayoutChange(layouts[index], 1000, true); // true: 保留目前的特效設定
                 } else {
                     showAlert('提示','此欄位沒有儲存設定。');
                 }
@@ -1328,9 +1432,29 @@
             function setupTimedEffectControls() {
                 const effectEnabled = document.getElementById('timed-effect-enabled-toggle');
                 const effectInterval = document.getElementById('timed-effect-interval-seconds');
+                const effectType = document.getElementById('timed-effect-type');
+                const layoutSwitchOptions = document.getElementById('layout-switch-options');
+                const randomToggle = document.getElementById('layout-switch-random-toggle');
+
                 [10, 15, 20, 30, 60].forEach(val => effectInterval.add(new Option(String(val), val)));
-                const updateSetting = () => { if (!settingsState.timedEffect) settingsState.timedEffect = JSON.parse(JSON.stringify(userDefaultLayout.settings.timedEffect)); settingsState.timedEffect.enabled = effectEnabled.checked; settingsState.timedEffect.intervalSeconds = parseInt(effectInterval.value, 10); saveCurrentSettings(); };
-                effectEnabled.addEventListener('change', updateSetting); effectInterval.addEventListener('change', updateSetting);
+
+                const updateSetting = () => {
+                    if (!settingsState.timedEffect) settingsState.timedEffect = JSON.parse(JSON.stringify(userDefaultLayout.settings.timedEffect));
+                    settingsState.timedEffect.enabled = effectEnabled.checked;
+                    settingsState.timedEffect.intervalSeconds = parseInt(effectInterval.value, 10);
+                    settingsState.timedEffect.type = effectType.value;
+                    settingsState.timedEffect.isRandom = randomToggle.checked;
+                    saveCurrentSettings();
+                };
+
+                effectType.addEventListener('change', () => {
+                    layoutSwitchOptions.style.display = (effectType.value === 'layoutSwitch') ? 'flex' : 'none';
+                    updateSetting();
+                });
+
+                effectEnabled.addEventListener('change', updateSetting);
+                effectInterval.addEventListener('change', updateSetting);
+                randomToggle.addEventListener('change', updateSetting);
             }
             // ===================================================================
             // 動態跑馬燈相關函式
@@ -1496,7 +1620,7 @@
                     ],
                     "marqueeGlobal": { "useLedFont": true },
                     "location": "taiwan",
-                    "timedEffect": { "enabled": true, "intervalSeconds": 10 }
+                    "timedEffect": { "enabled": true, "intervalSeconds": 10, "type": "slide", "isRandom": false }
                 }
             };
             // ===================================================================
@@ -1520,37 +1644,26 @@
                     const effectSettings = settingsState.timedEffect;
                     if (!isEditMode && effectSettings && effectSettings.enabled && s % effectSettings.intervalSeconds === 0) {
                         if (Object.values(isWidgetAnimating).some(v => v)) return;
-                        let targets = [];
-                        ['calendar-container', 'moon-phase-container', 'led-clock-container', 'analog-clock-container'].forEach(id => {
-                            if (transformStates[id]?.visible) targets.push(id);
-                        });
-                        MarqueeManager.instances.forEach(instance => {
-                            if (transformStates[instance.container.id]?.visible && !instance.isScrolling) {
-                                targets.push(instance.container.id);
+
+                        if (effectSettings.type === 'layoutSwitch') {
+                            if (layouts.length >= 2) {
+                                if (effectSettings.isRandom) {
+                                    let randomIndex;
+                                    do { // 確保選擇一個與目前不同的版面
+                                        randomIndex = Math.floor(Math.random() * layouts.length);
+                                    } while (layouts.length > 1 && randomIndex === currentLayoutIndex);
+                                    currentLayoutIndex = randomIndex; // 更新目前使用的版面索引
+                                    animateLayoutChange(layouts[randomIndex], 1000, true);
+                                } else {
+                                    // 循序切換
+                                    currentLayoutIndex = nextLayoutIndex;
+                                    animateLayoutChange(layouts[nextLayoutIndex], 1000, true);
+                                    nextLayoutIndex = (nextLayoutIndex + 1) % layouts.length; // 移至下一個索引
+                                }
                             }
-                        });
-                        if (targets.length === 0) return;
-                        const move = { up: 'translateY(-100vh)', down: 'translateY(100vh)', left: 'translateX(-100vw)', right: 'translateX(100vw)' };
-                        const directions = Object.keys(move);
-                        const duration = 700;
-                        targets.forEach(id => {
-                            const el = document.getElementById(id);
-                            if (!el || isWidgetAnimating[id]) return;
-                            const direction = directions[Math.floor(Math.random() * directions.length)];
-                            isWidgetAnimating[id] = true;
-                            const originalTransform = el.style.transform;
-                            const originalTransition = el.style.transition;
-                            el.style.transition = `transform ${duration}ms ease-in-out`;
-                            el.style.transform = `${originalTransform} ${move[direction]}`;
-                            setTimeout(() => {
-                                el.style.transition = 'none';
-                                el.style.transform = originalTransform;
-                                setTimeout(() => {
-                                    el.style.transition = originalTransition;
-                                    isWidgetAnimating[id] = false;
-                                }, 50);
-                            }, duration);
-                        });
+                        } else if (effectSettings.type === 'slide') {
+                            this.triggerSlideEffect();
+                        }
                     }
                     if (this.periodTextElement) { this.periodTextElement.textContent = TimeHelper.getPeriodText(h); }
                     let h12 = h % 12; if (h12 === 0) h12 = 12; const hStr = String(h12).padStart(2, '0'); const mStr = String(m).padStart(2, '0'); const sStr = String(s).padStart(2, '0');
@@ -1559,6 +1672,37 @@
                     const colonOpacity = shouldBlink ? (s % 2 === 0 ? '1' : '0.2') : '1';
                     this.colons.h.querySelectorAll('.colon').forEach(c => c.style.opacity = colonOpacity);
                 },
+                triggerSlideEffect() {
+                    let targets = [];
+                    allWidgetContainers().forEach(el => {
+                        if (transformStates[el.id]?.visible && !el.classList.contains('marquee-widget')) targets.push(el.id);
+                    });
+                    MarqueeManager.instances.forEach(instance => {
+                        if (transformStates[instance.container.id]?.visible && !instance.isScrolling) targets.push(instance.container.id);
+                    });
+                    if (targets.length === 0) return;
+                    const move = { up: 'translateY(-100vh)', down: 'translateY(100vh)', left: 'translateX(-100vw)', right: 'translateX(100vw)' };
+                    const directions = Object.keys(move);
+                    const duration = 700;
+                    targets.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (!el || isWidgetAnimating[id]) return;
+                        const direction = directions[Math.floor(Math.random() * directions.length)];
+                        isWidgetAnimating[id] = true;
+                        const originalTransform = el.style.transform;
+                        const originalTransition = el.style.transition;
+                        el.style.transition = `transform ${duration}ms ease-in-out`;
+                        el.style.transform = `${originalTransform} ${move[direction]}`;
+                        setTimeout(() => {
+                            el.style.transition = 'none';
+                            el.style.transform = originalTransform;
+                            setTimeout(() => {
+                                el.style.transition = originalTransition;
+                                isWidgetAnimating[id] = false;
+                            }, 50);
+                        }, duration);
+                    });
+                }
             };
             // ===================================================================
             // 月曆與月相曆模組 (工廠模式)
