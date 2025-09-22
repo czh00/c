@@ -1273,11 +1273,18 @@
                 const sourceTransforms = transformStates;
                 const targetTransforms = targetLayout.transforms;
                 const allWidgetIds = new Set([...Object.keys(sourceTransforms), ...Object.keys(targetTransforms)]);
-                const transitionStyle = `all ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+                // 修改前: transition: all ... 效能差
+                // const transitionStyle = `all ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+                // 修改後: 明確指定要過渡的屬性，效能較好
+                const transitionStyle = `transform ${duration}ms cubic-bezier(0.4, 0, 0.2, 1), opacity ${duration}ms cubic-bezier(0.4, 0, 0.2, 1), width ${duration}ms cubic-bezier(0.4, 0, 0.2, 1), height ${duration}ms cubic-bezier(0.4, 0, 0.2, 1), left ${duration}ms cubic-bezier(0.4, 0, 0.2, 1), top ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
 
                 allWidgetIds.forEach(id => {
                     const el = document.getElementById(id);
                     if (!el) return;
+                    // 新增: 強制啟用硬體加速
+                    el.style.willChange = 'transform, opacity';
+                    el.style.transform += ' translateZ(0)';
+
                     const sourceState = sourceTransforms[id];
                     const targetState = targetTransforms[id];
                     const isVisibleSource = sourceState?.visible ?? false;
@@ -1307,7 +1314,13 @@
                     saveCurrentSettings(true); // 標記為程式化變更，以保留 currentLayoutIndex
                     allWidgetIds.forEach(id => {
                         const el = document.getElementById(id);
-                        if (el) el.style.transition = '';
+                        if (el) {
+                             el.style.transition = '';
+                             // 新增: 動畫結束後移除硬體加速提示
+                             el.style.willChange = 'auto';
+                             // 恢復原始 transform，移除 translateZ(0)
+                             applyTransform(el, transformStates[id]);
+                        }
                         isWidgetAnimating[id] = false;
                     });
                 }, duration + 100);
