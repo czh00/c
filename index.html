@@ -1836,6 +1836,7 @@
             // 指針時鐘模組
             // ===================================================================
             const AnalogClock = {
+                lastSecond: -1,
                 hourHand: document.querySelector('#analog-clock-container .hour-hand'),
                 minuteHand: document.querySelector('#analog-clock-container .minute-hand'),
                 secondHand: document.querySelector('#analog-clock-container .second-hand'),
@@ -1872,6 +1873,17 @@
                 update() {
                     const now = new Date();
                     const smooth = settingsState.analogClock?.smoothSeconds ?? false;
+
+                    // 當平滑秒針關閉時，只在秒數變更時才更新
+                    if (!smooth) {
+                        const currentSecond = now.getSeconds();
+                        if (currentSecond === this.lastSecond) {
+                            this.animationFrameId = requestAnimationFrame(() => this.update());
+                            return; // 秒數未變，跳過此次更新
+                        }
+                        this.lastSecond = currentSecond;
+                    }
+
                     const s = smooth ? now.getSeconds() + now.getMilliseconds() / 1000 : now.getSeconds();
                     const m = now.getMinutes() + s / 60;
                     const h = now.getHours() % 12 + m / 60;
