@@ -563,7 +563,12 @@
                                     <input type="checkbox" id="analog-clock-use-led-font-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="analogClock" data-key="useLedFont">
                                     <label for="analog-clock-use-led-font-toggle" class="cursor-pointer">LED 字型</label>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>指針</label><input type="color" class="color-picker" data-setting-type="color" data-widget="analogClock" data-var="--analog-hand-color"></div>
-                                <div class="display-flex justify-content-space-between align-items-center"><label>秒針</label><input type="color" class="color-picker" data-setting-type="color" data-widget="analogClock" data-var="--analog-second-hand-color"></div>
+                                <div class="display-flex justify-content-space-between align-items-center"><label>秒針</label>
+                                <div class="p0">
+                                    <input type="checkbox" id="analog-clock-smooth-seconds-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="analogClock" data-key="smoothSeconds">
+                                    <label for="analog-clock-smooth-seconds-toggle" class="cursor-pointer">平滑</label>
+                                <input type="color" class="color-picker" data-setting-type="color" data-widget="analogClock" data-var="--analog-second-hand-color"></div>
+                                </div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>刻度</label><input type="color" class="color-picker" data-setting-type="color" data-widget="analogClock" data-var="--analog-tick-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>數字</label><input type="color" class="color-picker" data-setting-type="color" data-widget="analogClock" data-var="--analog-number-color"></div>
                             </div>
@@ -1661,7 +1666,7 @@
                 "settings": {
                     "calendar": { "visible": true, "showMoonIcon": true, "useLedFont": true, "colors": { "--bg-primary": "#000000", "--year-color": "#FF7000", "--month-color": "#3070a0", "--week-color": "#8830d0", "--day-color": "#ffffff", "--lunar-color": "#FFFF00", "--bg-secondary": "transparent", "--bg-hover": "rgba(55, 65, 81, 0.5)", "--border-color": "#374151", "--text-primary": "#F3F4F6", "--text-secondary": "#9CA3AF", "--text-muted": "#6B7280", "--today-bg": "transparent", "--holiday-color": "#6ee7b7", "--solarterm-color": "#fcd34d", "--yi-color": "#34D399", "--ji-color": "#F87171" } },
                     "ledClock": { "visible": true, "colonBlink": true, "colors": { "--led-hour-color": "#00ff00", "--led-minute-color": "#00ff00", "--led-second-color": "#00ff00", "--led-colon-color": "#00ff00", "--led-period-color": "#00ff00" } },
-                    "analogClock": { "visible": true, "useLedFont": true, "colors": { "--analog-face-color": "transparent", "--analog-hand-color": "#ffffff", "--analog-second-hand-color": "#ff3333", "--analog-tick-color": "#cccccc", "--analog-number-color": "#ffffff" } },
+                    "analogClock": { "visible": true, "useLedFont": true, "smoothSeconds": false, "colors": { "--analog-face-color": "transparent", "--analog-hand-color": "#ffffff", "--analog-second-hand-color": "#ff3333", "--analog-tick-color": "#cccccc", "--analog-number-color": "#ffffff" } },
                     "moonPhase": { "visible": false, "useLedFont": true, "colors": { "--moon-light-color": "#f0e68c", "--moon-dark-color": "#222222", "--moon-header-color": "#a78bfa", "--moon-desc-color": "#d1d5db", "--moon-highlight-color": "#fcd34d" } },
                     "marquees": [
                         { "text": "%YYYY%/%ROC_YY%年%MM%月%DD%日%W_SHORT%%ap_c%%hh%%C(#00FF00, :)%%mm%%br%%C(#FFFF00, 農曆)%%LM_C%%LD_C%%br%%SHICHEN_NAME%%L_GZ%%L_SX%%MOON_ICON%%CONSTELLATION%%br%%WEATHER_LOC%%WEATHER_DESC%%TEMP%°C%br%日出%SUNRISE%%br%日落%SUNSET%", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }
@@ -1835,6 +1840,7 @@
                 minuteHand: document.querySelector('#analog-clock-container .minute-hand'),
                 secondHand: document.querySelector('#analog-clock-container .second-hand'),
                 ticksContainer: document.getElementById('ticks-container'),
+                animationFrameId: null,
                 init() {
                     this.ticksContainer.innerHTML = '';
                     const useLed = settingsState.analogClock?.useLedFont ?? true;
@@ -1865,7 +1871,8 @@
                 },
                 update() {
                     const now = new Date();
-                    const s = now.getSeconds() + now.getMilliseconds() / 1000;
+                    const smooth = settingsState.analogClock?.smoothSeconds ?? false;
+                    const s = smooth ? now.getSeconds() + now.getMilliseconds() / 1000 : now.getSeconds();
                     const m = now.getMinutes() + s / 60;
                     const h = now.getHours() % 12 + m / 60;
                     this.hourHand.style.transform = `translateX(-50%) rotate(${(h / 12) * 360}deg)`;
