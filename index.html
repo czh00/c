@@ -26,38 +26,30 @@
             display: flex; flex-direction: column;
             background-color: transparent; z-index: 10;
             padding: 0;
-            transform-origin: center;
+            transform-origin: center center;
         }
         .widget-container.edit-mode:not(:has(.control-handle:hover)) { cursor: zoom-in; }
         .widget-container.edit-mode:not(:has(.control-handle:hover)):active { cursor: zoom-out; }
-        /* --- SVG 邊框樣式 (新增) --- */
-        .widget-border-svg {
+        
+        /* --- CSS 編輯模式邊框 --- */
+        .widget-container.edit-mode::after {
+            content: '';
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            right: 0;
+            bottom: 0;
+            border: 2px dashed rgba(0, 255, 255, 0.5);
             pointer-events: none;
-            z-index: 9;
-            display: none;
-            overflow: visible; /* 防止非縮放筆劃被裁切 */
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+            border-radius: inherit; /* 繼承容器的圓角設定 */
         }
-        .widget-border-svg rect {
-            width: 100%;
-            height: 100%;
-            fill: none;
-            stroke: rgba(0, 255, 255, 0.5);
-            stroke-width: 2;
-            stroke-dasharray: 6 6;
-            vector-effect: non-scaling-stroke; /* 核心屬性：防止筆劃縮放 */
-            transition: stroke 0.3s;
+
+        .widget-container.selected-for-group::after {
+            border-color: rgba(255, 255, 0, 0.8) !important;
         }
-        .widget-container.edit-mode .widget-border-svg {
-            display: block;
-        }
-        .widget-container.selected-for-group .widget-border-svg rect {
-            stroke: rgba(255, 255, 0, 0.8) !important;
-        }
+
         .widget-content-wrapper {
             width: 100%; height: 100%; flex-grow: 1;
             display: flex; flex-direction: column;
@@ -172,7 +164,7 @@
         .widget-container.edit-mode .move-handle { display: flex; }
         .reset-handle {
             position: absolute; width: 24px; height: 24px; top: 8px; right: 8px; cursor: pointer;
-            padding: 3px; border-radius: 6px; background-color: rgba(239, 68, 68, 0.8); z-index: 101;
+            padding: 2px; border-radius: 4px; background-color: rgba(239, 68, 68, 0.8); z-index: 101;
             transform-origin: top right; align-items: center; justify-content: center;
         }
         .widget-container.edit-mode .reset-handle { display: flex; }
@@ -384,7 +376,6 @@
     </svg>
     <div id="edit-mode-grid"></div>
     <div id="calendar-container" class="widget-container calendar-widget">
-        <svg class="widget-border-svg" preserveAspectRatio="none"><rect/></svg>
         <div class="widget-content-wrapper">
             <div id="background-month" class="background-month"></div>
             <header class="calendar-header">
@@ -408,7 +399,6 @@
         </div>
     </div>
     <div id="led-clock-container" class="widget-container">
-        <svg class="widget-border-svg" preserveAspectRatio="none"><rect/></svg>
         <div class="widget-content-wrapper">
             <main>
                 <svg id="led-clock-svg" viewBox="0 0 1200 350"></svg>
@@ -416,7 +406,6 @@
         </div>
     </div>
     <div id="analog-clock-container" class="widget-container">
-        <svg class="widget-border-svg" preserveAspectRatio="none"><rect/></svg>
         <div class="widget-content-wrapper">
             <main class="analog-clock-face">
                 <div class="ticks-container" id="ticks-container"></div>
@@ -428,11 +417,9 @@
         </div>
     </div>
     <div id="marquee-container-0" class="widget-container marquee-widget">
-        <svg class="widget-border-svg" preserveAspectRatio="none"><rect/></svg>
         <div class="widget-content-wrapper"><main><div class="marquee-inner"></div></main></div>
     </div>
     <div id="moon-phase-container" class="widget-container calendar-widget">
-        <svg class="widget-border-svg" preserveAspectRatio="none"><rect/></svg>
         <div class="widget-content-wrapper">
             <div id="moon-background-month" class="background-month"></div>
             <header class="calendar-header">
@@ -512,7 +499,7 @@
                         <div>
                             <h4 class="p0">
                                 <input type="checkbox" data-widget-toggle="calendar-container" class="form-checkbox">
-                                <span>月曆</span>
+                                <span class="font-size-lg font-weight-semibold">月曆</span>
                             </h4>
                             <div class="space-y-3">
                                 <div class="p0">
@@ -534,7 +521,7 @@
                         <div>
                             <h4 class="p0">
                                 <input type="checkbox" data-widget-toggle="moon-phase-container" class="form-checkbox">
-                                <span>月相月曆</span>
+                                <span class="font-size-lg font-weight-semibold">月相月曆</span>
                             </h4>
                             <div class="space-y-3">
                                 <input type="checkbox" id="moon-phase-use-led-font-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="moonPhase" data-key="useLedFont">
@@ -549,7 +536,7 @@
                         <div>
                             <h4 class="p0">
                                 <input type="checkbox" data-widget-toggle="led-clock-container" class="form-checkbox">
-                                <span>LED 時鐘</span>
+                                <span class="font-size-lg font-weight-semibold">LED 時鐘</span>
                             </h4>
                             <div class="space-y-3">
                                 <div class="display-flex justify-content-space-between align-items-center"><label>時</label><input type="color" class="color-picker" data-setting-type="color" data-widget="ledClock" data-var="--led-hour-color"></div>
@@ -567,7 +554,7 @@
                         <div>
                             <h4 class="p0">
                                 <input type="checkbox" data-widget-toggle="analog-clock-container" class="form-checkbox">
-                                <span>指針時鐘</span>
+                                <span class="font-size-lg font-weight-semibold">指針時鐘</span>
                             </h4>
                             <div class="space-y-3">
                                     <input type="checkbox" id="analog-clock-use-led-font-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="analogClock" data-key="useLedFont">
@@ -578,11 +565,12 @@
                                 <div class="display-flex justify-content-space-between align-items-center"><label>數字</label><input type="color" class="color-picker" data-setting-type="color" data-widget="analogClock" data-var="--analog-number-color"></div>
                             </div>
                         </div>
+                </div>
                         <div class="grid-column-span-2 md-grid-column-span-2">
                             <div class="display-flex align-items-center justify-content-start width-full padding-vertical-2 p0 flex-wrap gap-3">
                                 <div class="display-flex align-items-center gap-2">
                                     <input type="checkbox" id="timed-effect-enabled-toggle" class="form-checkbox">
-                                    <label for="timed-effect-enabled-toggle" class="font-size-lg font-weight-semibold color-gray-400">定時特效</label>
+                                    <label for="timed-effect-enabled-toggle" class="font-size-lg font-weight-semibold">定時特效</label>
                                 </div>
                                 <div class="display-flex align-items-center gap-2">
                                     <label for="timed-effect-interval-seconds">觸發間隔</label>
@@ -596,21 +584,26 @@
                                         <option value="layoutSwitch">版面切換</option>
                                     </select>
                                 </div>
-                                <div id="layout-switch-options" class="display-flex align-items-center gap-2" style="display: none;">
-                                    <input type="checkbox" id="layout-switch-random-toggle" class="form-checkbox">
-                                    <label for="layout-switch-random-toggle" class="cursor-pointer">亂數</label>
+                                <div class="display-flex align-items-center gap-3">
+                                    <div id="layout-switch-options" class="display-flex align-items-center gap-2" style="display: none;">
+                                        <input type="checkbox" id="layout-switch-random-toggle" class="form-checkbox">
+                                        <label for="layout-switch-random-toggle" class="cursor-pointer">亂數</label>
+                                    </div>
+                                    <div class="display-flex align-items-center gap-2">
+                                        <input type="checkbox" id="transition-effect-enabled-toggle" class="form-checkbox">
+                                        <label for="transition-effect-enabled-toggle" class="cursor-pointer">轉場特效</label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                      </div>
-                </div>
                 <div class="p0">
                     <div class="display-grid grid-columns-1 md-grid-columns-2 gap-4 align-items-center">
                         <div class="display-flex flex-direction-column row-gap-3 flex-shrink-0">
                             <div class="display-flex align-items-center column-gap-6 flex-wrap">
                                 <div class="display-flex align-items-center gap-2">
                                     <input type="checkbox" id="marquee-enabled-toggle" class="form-checkbox" title="啟用/停用目前選擇的跑馬燈">
-                                    <label for="marquee-enabled-toggle" class="font-size-lg font-weight-semibold color-gray-400 cursor-pointer">跑馬燈</label>
+                                    <label for="marquee-enabled-toggle" class="font-size-lg font-weight-semibold">跑馬燈</label>
                                 </div>
                                 <div class="display-flex align-items-center">
                                     <label for="marquee-selector" class="flex-shrink-0">組別:</label>
@@ -774,6 +767,7 @@
                     document.getElementById('timed-effect-interval-seconds').value = teSettings.intervalSeconds;
                     const effectTypeSelect = document.getElementById('timed-effect-type');
                     effectTypeSelect.value = teSettings.type || 'slide';
+                    document.getElementById('transition-effect-enabled-toggle').checked = teSettings.transitionEnabled ?? false;
 
                     const layoutSwitchOptions = document.getElementById('layout-switch-options');
                     const randomToggle = document.getElementById('layout-switch-random-toggle');
@@ -901,6 +895,7 @@
                 const { left, top, width, height, scale, visible, rotation = 0 } = state;
                 widgetEl.style.left = `${left}px`; widgetEl.style.top = `${top}px`;
                 widgetEl.style.width = `${width}px`; widgetEl.style.height = `${height}px`;
+                widgetEl.style.transformOrigin = 'center';
                 widgetEl.style.transform = `scale(${scale}) rotate(${rotation}deg)`;
                 widgetEl.style.display = visible ? 'flex' : 'none';
                 if (widgetEl.classList.contains('calendar-widget') && state.height > 0) {
@@ -960,23 +955,29 @@
                     e.preventDefault(); e.stopPropagation();
                     activeHandle = 'group-rotate';
                 } else if (targetWidget) {
-                    allWidgetContainers().forEach(w => w.style.zIndex = '10');
-                    targetWidget.style.zIndex = '100';
-                    e.preventDefault(); e.stopPropagation();
-                    const originalTransition = targetWidget.style.transition;
-                    targetWidget.style.transition = 'none';
-                    activeWidget = { el: targetWidget, state: transformStates[targetWidget.id], originalTransition: originalTransition };
                     const handle = e.target.closest('.control-handle');
                     const isPartOfGroup = selectedWidgets.has(targetWidget.id) && selectedWidgets.size >= 2;
+                    let isDragAction = false;
+
                     if (handle && !handle.classList.contains('reset-handle')) {
-                        if (handle.classList.contains('move-handle')) activeHandle = 'move';
-                        else if (handle.classList.contains('resize-handle-w')) activeHandle = 'resize-w';
-                        else if (handle.classList.contains('resize-handle-h')) activeHandle = 'resize-h';
+                        if (handle.classList.contains('move-handle')) { activeHandle = 'move'; isDragAction = true; }
+                        else if (handle.classList.contains('resize-handle-w')) { activeHandle = 'resize-w'; isDragAction = true; }
+                        else if (handle.classList.contains('resize-handle-h')) { activeHandle = 'resize-h'; isDragAction = true; }
                         else if (handle.classList.contains('rotate-handle')) {
-                            activeHandle = isPartOfGroup ? 'group-rotate' : 'rotate';
+                            activeHandle = isPartOfGroup ? 'group-rotate' : 'rotate'; isDragAction = true;
                         }
                     } else if (!handle) {
                         activeHandle = isPartOfGroup ? 'group-scale' : 'scale';
+                        isDragAction = true;
+                    }
+
+                    if (isDragAction) {
+                        allWidgetContainers().forEach(w => w.style.zIndex = '10');
+                        targetWidget.style.zIndex = '100';
+                        e.preventDefault(); e.stopPropagation();
+                        const originalTransition = targetWidget.style.transition;
+                        targetWidget.style.transition = 'none';
+                        activeWidget = { el: targetWidget, state: transformStates[targetWidget.id], originalTransition: originalTransition };
                     }
                 }
                 if (!activeHandle) return;
@@ -1098,22 +1099,53 @@
                     rotateHandle(groupRotateHandle, initialGroupTransforms.rotateHandle);
                     return;
                 }
+                
+                // --- 單一元件操作 ---
                 if (!activeWidget) return; e.preventDefault();
                 switch (activeHandle) {
-                    case 'move': document.body.style.cursor = 'grabbing'; activeWidget.state.left = initialTransformState.left + dx; activeWidget.state.top = initialTransformState.top + dy; break;
-                    case 'resize-w': document.body.style.cursor = 'ew-resize'; activeWidget.state.width = Math.max(50, initialTransformState.width + dx); if (activeWidget.el.id === 'analog-clock-container') activeWidget.state.height = activeWidget.state.width; else if (activeWidget.el.id === 'led-clock-container' && LedClock.aspectRatio > 0) activeWidget.state.height = activeWidget.state.width / LedClock.aspectRatio; break;
-                    case 'resize-h': document.body.style.cursor = 'ns-resize'; activeWidget.state.height = Math.max(50, initialTransformState.height + dy); if (activeWidget.el.id === 'analog-clock-container') activeWidget.state.width = activeWidget.state.height; else if (activeWidget.el.id === 'led-clock-container' && LedClock.aspectRatio > 0) activeWidget.state.width = activeWidget.state.height * LedClock.aspectRatio; break;
-                    case 'scale': {
+                    case 'move': 
+                        document.body.style.cursor = 'grabbing'; 
+                        activeWidget.state.left = initialTransformState.left + dx; 
+                        activeWidget.state.top = initialTransformState.top + dy; 
+                        break;
+                    case 'resize-w': { // 處理右側控制點的水平縮放
+                        document.body.style.cursor = 'ew-resize';
+                        // 只改變寬度，不改變 left。這樣就能實現左上角固定的效果。
+                        const newWidth = Math.max(50, initialTransformState.width + dx);
+                        activeWidget.state.width = newWidth;
+
+                        // 對於需要維持長寬比的元件，同步調整高度
+                        if (activeWidget.el.id === 'analog-clock-container') {
+                            activeWidget.state.height = newWidth; // 圓形時鐘，寬高相等
+                        } else if (activeWidget.el.id === 'led-clock-container' && LedClock.aspectRatio > 0) {
+                            activeWidget.state.height = newWidth / LedClock.aspectRatio;
+                        }
+                        break;
+                    }
+                    case 'resize-h': { // 處理下方控制點的垂直縮放
+                        document.body.style.cursor = 'ns-resize';
+                        // 只改變高度，不改變 top。這樣就能實現左上角固定的效果。
+                        const newHeight = Math.max(50, initialTransformState.height + dy);
+                        activeWidget.state.height = newHeight;
+
+                        // 對於需要維持長寬比的元件，同步調整寬度
+                        if (activeWidget.el.id === 'analog-clock-container') {
+                             activeWidget.state.width = newHeight; // 圓形時鐘，寬高相等
+                        } else if (activeWidget.el.id === 'led-clock-container' && LedClock.aspectRatio > 0) {
+                            activeWidget.state.width = newHeight * LedClock.aspectRatio;
+                        }
+                        break;
+                    }
+                    case 'scale': { // 處理拖曳元件本體的中心點縮放
                         const currentDist = Math.hypot(currentX - scaleCenterX, currentY - scaleCenterY);
                         const oldScale = initialTransformState.scale;
+                        // 根據滑鼠與中心點的距離來計算縮放比例
                         let newScale = initialDist > 0 ? (oldScale * (currentDist / initialDist)) : oldScale;
-                        newScale = Math.max(0.2, Math.min(newScale, 5));
-                        const deltaWidth = (initialTransformState.width * newScale) - (initialTransformState.width * oldScale);
-                        const deltaHeight = (initialTransformState.height * newScale) - (initialTransformState.height * oldScale);
+                        newScale = Math.max(0.2, Math.min(newScale, 5)); // 限制縮放範圍
                         activeWidget.state.scale = newScale;
-                        activeWidget.state.left = initialTransformState.left - deltaWidth / 2;
-                        activeWidget.state.top = initialTransformState.top - deltaHeight / 2;
                         document.body.style.cursor = currentDist > initialDist ? 'zoom-in' : 'zoom-out';
+                        // 這裡只改變 scale 屬性，left/top 不變。
+                        // transform-origin 預設為 center，因此會以中心點進行縮放。
                         break;
                     }
                     case 'rotate':
@@ -1366,8 +1398,14 @@
             document.getElementById('load-layout-btn').addEventListener('click',()=>{
                 const index = parseInt(layoutSelector.value, 10);
                 if (index >= 0 && layouts[index]) {
-                    currentLayoutIndex = index; // 標記目前正在使用的版面索引
-                    animateLayoutChange(layouts[index], 1000, true); // true: 保留目前的特效設定
+                    currentLayoutIndex = index;
+                    const useTransition = settingsState.timedEffect?.transitionEnabled ?? false;
+                    if (useTransition) {
+                        animateLayoutChange(layouts[index], 1000, true);
+                    } else {
+                        applyLayout(layouts[index], { ignoreTimedEffect: true });
+                        saveCurrentSettings(true);
+                    }
                 } else {
                     showAlert('提示','此欄位沒有儲存設定。');
                 }
@@ -1435,6 +1473,7 @@
                 const effectType = document.getElementById('timed-effect-type');
                 const layoutSwitchOptions = document.getElementById('layout-switch-options');
                 const randomToggle = document.getElementById('layout-switch-random-toggle');
+                const transitionEnabledToggle = document.getElementById('transition-effect-enabled-toggle');
 
                 [10, 15, 20, 30, 60].forEach(val => effectInterval.add(new Option(String(val), val)));
 
@@ -1444,6 +1483,7 @@
                     settingsState.timedEffect.intervalSeconds = parseInt(effectInterval.value, 10);
                     settingsState.timedEffect.type = effectType.value;
                     settingsState.timedEffect.isRandom = randomToggle.checked;
+                    settingsState.timedEffect.transitionEnabled = transitionEnabledToggle.checked;
                     saveCurrentSettings();
                 };
 
@@ -1455,6 +1495,7 @@
                 effectEnabled.addEventListener('change', updateSetting);
                 effectInterval.addEventListener('change', updateSetting);
                 randomToggle.addEventListener('change', updateSetting);
+                transitionEnabledToggle.addEventListener('change', updateSetting);
             }
             // ===================================================================
             // 動態跑馬燈相關函式
@@ -1620,7 +1661,7 @@
                     ],
                     "marqueeGlobal": { "useLedFont": true },
                     "location": "taiwan",
-                    "timedEffect": { "enabled": true, "intervalSeconds": 10, "type": "slide", "isRandom": false }
+                    "timedEffect": { "enabled": true, "intervalSeconds": 10, "type": "slide", "isRandom": false, "transitionEnabled": false }
                 }
             };
             // ===================================================================
@@ -1649,16 +1690,20 @@
                             if (layouts.length >= 2) {
                                 if (effectSettings.isRandom) {
                                     let randomIndex;
-                                    do { // 確保選擇一個與目前不同的版面
+                                    do {
                                         randomIndex = Math.floor(Math.random() * layouts.length);
                                     } while (layouts.length > 1 && randomIndex === currentLayoutIndex);
-                                    currentLayoutIndex = randomIndex; // 更新目前使用的版面索引
-                                    animateLayoutChange(layouts[randomIndex], 1000, true);
+                                    currentLayoutIndex = randomIndex;
                                 } else {
-                                    // 循序切換
                                     currentLayoutIndex = nextLayoutIndex;
-                                    animateLayoutChange(layouts[nextLayoutIndex], 1000, true);
-                                    nextLayoutIndex = (nextLayoutIndex + 1) % layouts.length; // 移至下一個索引
+                                    nextLayoutIndex = (nextLayoutIndex + 1) % layouts.length;
+                                }
+                                const useTransition = settingsState.timedEffect?.transitionEnabled ?? false;
+                                if (useTransition) {
+                                    animateLayoutChange(layouts[currentLayoutIndex], 1000, true);
+                                } else {
+                                    applyLayout(layouts[currentLayoutIndex], { ignoreTimedEffect: true });
+                                    saveCurrentSettings(true);
                                 }
                             }
                         } else if (effectSettings.type === 'slide') {
