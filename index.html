@@ -1019,7 +1019,7 @@
                         if (activeHandle === 'scale') {
                             initialDist = Math.hypot(startX - scaleCenterX, startY - scaleCenterY);
                         } else { // 'rotate'
-                            const startAngle = Math.atan2(startY - scaleCenterY, startX - scaleCenterX) * (180 / Math.PI);
+                            const startAngle = Math.atan2(startY - scaleCenterY, currentX - scaleCenterX) * (180 / Math.PI);
                             initialTransformState.startAngle = startAngle;
                         }
                     }
@@ -1108,44 +1108,35 @@
                         activeWidget.state.left = initialTransformState.left + dx; 
                         activeWidget.state.top = initialTransformState.top + dy; 
                         break;
-                    case 'resize-w': { // 處理右側控制點的水平縮放
+                    case 'resize-w': {
                         document.body.style.cursor = 'ew-resize';
-                        // 只改變寬度，不改變 left。這樣就能實現左上角固定的效果。
                         const newWidth = Math.max(50, initialTransformState.width + dx);
                         activeWidget.state.width = newWidth;
-
-                        // 對於需要維持長寬比的元件，同步調整高度
                         if (activeWidget.el.id === 'analog-clock-container') {
-                            activeWidget.state.height = newWidth; // 圓形時鐘，寬高相等
+                            activeWidget.state.height = newWidth;
                         } else if (activeWidget.el.id === 'led-clock-container' && LedClock.aspectRatio > 0) {
                             activeWidget.state.height = newWidth / LedClock.aspectRatio;
                         }
                         break;
                     }
-                    case 'resize-h': { // 處理下方控制點的垂直縮放
+                    case 'resize-h': {
                         document.body.style.cursor = 'ns-resize';
-                        // 只改變高度，不改變 top。這樣就能實現左上角固定的效果。
                         const newHeight = Math.max(50, initialTransformState.height + dy);
                         activeWidget.state.height = newHeight;
-
-                        // 對於需要維持長寬比的元件，同步調整寬度
                         if (activeWidget.el.id === 'analog-clock-container') {
-                             activeWidget.state.width = newHeight; // 圓形時鐘，寬高相等
+                             activeWidget.state.width = newHeight;
                         } else if (activeWidget.el.id === 'led-clock-container' && LedClock.aspectRatio > 0) {
                             activeWidget.state.width = newHeight * LedClock.aspectRatio;
                         }
                         break;
                     }
-                    case 'scale': { // 處理拖曳元件本體的中心點縮放
+                    case 'scale': {
                         const currentDist = Math.hypot(currentX - scaleCenterX, currentY - scaleCenterY);
                         const oldScale = initialTransformState.scale;
-                        // 根據滑鼠與中心點的距離來計算縮放比例
                         let newScale = initialDist > 0 ? (oldScale * (currentDist / initialDist)) : oldScale;
-                        newScale = Math.max(0.2, Math.min(newScale, 5)); // 限制縮放範圍
+                        newScale = Math.max(0.2, Math.min(newScale, 5));
                         activeWidget.state.scale = newScale;
                         document.body.style.cursor = currentDist > initialDist ? 'zoom-in' : 'zoom-out';
-                        // 這裡只改變 scale 屬性，left/top 不變。
-                        // transform-origin 預設為 center，因此會以中心點進行縮放。
                         break;
                     }
                     case 'rotate':
