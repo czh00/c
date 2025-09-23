@@ -90,7 +90,7 @@
         .calendar-widget .calendar-day {
             padding: 0.25rem; margin: 0; display: flex; flex-direction: column; justify-content: flex-start;
             align-items: center; font-size: 0.9em; border: 1px solid #555; cursor: pointer;
-            transition: background-color 0.3s, opacity 0.3s; background-color: transparent !important;
+            transition: background-color 0.3s, opacity 0.3s; background-color: transparent;
             z-index: 1; position: relative; overflow: hidden;
         }
         .calendar-widget .calendar-day:not(.edit-mode-active):hover { background-color: var(--bg-hover); cursor: pointer; }
@@ -98,12 +98,12 @@
             border: 1px solid #555; background-color: var(--bg-secondary); color: var(--week-color);
             font-size: 1.2em; padding: 0; text-align: center; font-weight: 600;
         }
-        .calendar-widget .today { background-color: var(--today-bg); color: white; box-shadow: 0 0 10px 1px #FF0000; border-radius: 0.5em; }
+        .calendar-widget .today { background-color: #ff000080; color: white; box-shadow: 0 0 10px 1px #FF0000; border-radius: 0.5em; }
         .calendar-widget .other-month { color: var(--text-muted); opacity: 0.4; }
         .calendar-widget .background-month {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             font-weight: 900; color: var(--month-color); z-index: 1; user-select: none;
-            opacity: 0.8; line-height: 0.8; pointer-events: none;
+            opacity: 0.6; line-height: 0.6; pointer-events: none;
         }
         #calendar-body, #moon-calendar-body { flex-grow: 1; display: grid; min-height: 0; }
         /* --- 標準月曆 spezifische樣式 --- */
@@ -187,16 +187,10 @@
         /* --- Modal 彈出視窗樣式 --- */
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); display: flex; justify-content: center; align-items: center; z-index: 1050; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
         .modal-backdrop.show { opacity: 1; visibility: visible; }
-        .yi-tag { background-color: var(--yi-color); color: var(--bg-primary); }
-        .ji-tag { background-color: var(--ji-color); color: white; }
-        .yi-text, .ji-text { font-size: 0.8em; padding: 0; border-radius: 0; cursor: help; }
         .param-list { list-style: none; padding-left: 0; margin-top: 1rem; color: #d1d5db; }
         .param-item { font-size: 0.875rem; margin-bottom: 0.5rem; }
         .param-item strong { color: #f7fafc; min-width: 120px; display: inline-block; }
         .param-group-title { font-weight: bold; color: #a5b4fc; margin-top: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #4b5563; }
-        .yi-text { color: var(--yi-color); background-color: rgba(52, 211, 153, 0.1); }
-        .ji-text { color: var(--ji-color); background-color: rgba(248, 113, 113, 0.1); }
-        .today .yi-text, .today .ji-text { background-color: rgba(200, 210, 254, 0.2); }
         #month-year-picker { max-width: 320px; }
         #month-year-picker .year-nav { display: flex; justify-content: space-between; align-items: center; }
         #month-year-picker .month-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
@@ -504,7 +498,6 @@
                                 <input type="checkbox" data-widget-toggle="calendar-container" class="form-checkbox">
                                 <span class="font-size-lg font-weight-semibold">月曆</span>
                             </h4>
-                            <div class="space-y-3">
                                 <div class="p0">
                                     <input type="checkbox" id="calendar-use-led-font-toggle" class="form-checkbox" data-setting-type="toggle" data-widget="calendar" data-key="useLedFont">
                                     <label for="calendar-use-led-font-toggle" class="cursor-pointer">LED 字型</label>
@@ -520,7 +513,6 @@
                                 <div class="display-flex justify-content-space-between align-items-center"><label>節日</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--holiday-color"></div>
                                 <div class="display-flex justify-content-space-between align-items-center"><label>節氣</label><input type="color" class="color-picker" data-setting-type="color" data-widget="calendar" data-var="--solarterm-color"></div>
                             </div>
-                        </div>
                         <div>
                             <h4 class="p0">
                                 <input type="checkbox" data-widget-toggle="moon-phase-container" class="form-checkbox">
@@ -1252,23 +1244,27 @@
             const getCurrentLayout = () => {
                 const settingsToSave = JSON.parse(JSON.stringify(settingsState));
                 delete settingsToSave.timedEffect; // 不要儲存定時特效設定
+                delete settingsToSave.location; // 不要儲存地區設定
                 return {
                     transforms: JSON.parse(JSON.stringify(transformStates)),
                     settings: settingsToSave
                 };
             };
             const applyLayout = (layout, options = {}) => {
-                const { ignoreTimedEffect = false } = options;
-                if (layout.transforms) transformStates = { ...transformStates, ...layout.transforms };
-                if (layout.settings) {
-                    Object.keys(layout.settings).forEach(key => {
+                // 2025-09-23: 新增深拷貝，避免後續操作汙染原始 layout 物件
+                const layoutToApply = JSON.parse(JSON.stringify(layout));
+                const { ignoreTimedEffect = false, ignoreLocation = false } = options;
+                if (layoutToApply.transforms) transformStates = { ...transformStates, ...layoutToApply.transforms };
+                if (layoutToApply.settings) {
+                    Object.keys(layoutToApply.settings).forEach(key => {
                         if (ignoreTimedEffect && key === 'timedEffect') return;
-                        if (key === 'marquees' && Array.isArray(layout.settings[key])) {
-                            settingsState[key] = layout.settings[key].map(m => (typeof m.color === 'string' && !m.colors) ? { ...m, colors: { default: m.color }, color: undefined } : m);
-                        } else if (typeof layout.settings[key] === 'object' && !Array.isArray(layout.settings[key]) && layout.settings[key] !== null) {
-                            settingsState[key] = { ...(settingsState[key] || {}), ...layout.settings[key] };
+                        if (ignoreLocation && key === 'location') return;
+                        if (key === 'marquees' && Array.isArray(layoutToApply.settings[key])) {
+                            settingsState[key] = layoutToApply.settings[key].map(m => (typeof m.color === 'string' && !m.colors) ? { ...m, colors: { default: m.color }, color: undefined } : m);
+                        } else if (typeof layoutToApply.settings[key] === 'object' && !Array.isArray(layoutToApply.settings[key]) && layoutToApply.settings[key] !== null) {
+                            settingsState[key] = { ...(settingsState[key] || {}), ...layoutToApply.settings[key] };
                         } else {
-                            settingsState[key] = layout.settings[key];
+                            settingsState[key] = layoutToApply.settings[key];
                         }
                     });
                 }
@@ -1276,20 +1272,16 @@
                 MarqueeManager.syncInstances();
                 applyAllSettings();
             };
-            function animateLayoutChange(targetLayout, duration = 1000, preserveTimedEffectSettings = false) {
+            function animateLayoutChange(targetLayout, duration = 1000, preserveTimedEffectSettings = false, callback = null) {
                 if (!targetLayout || !targetLayout.transforms || Object.values(isWidgetAnimating).some(v => v)) return;
                 const sourceTransforms = transformStates;
                 const targetTransforms = targetLayout.transforms;
                 const allWidgetIds = new Set([...Object.keys(sourceTransforms), ...Object.keys(targetTransforms)]);
-                // 修改前: transition: all ... 效能差
-                // const transitionStyle = `all ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
-                // 修改後: 明確指定要過渡的屬性，效能較好
                 const transitionStyle = `transform ${duration}ms cubic-bezier(0.4, 0, 0.2, 1), opacity ${duration}ms cubic-bezier(0.4, 0, 0.2, 1), width ${duration}ms cubic-bezier(0.4, 0, 0.2, 1), height ${duration}ms cubic-bezier(0.4, 0, 0.2, 1), left ${duration}ms cubic-bezier(0.4, 0, 0.2, 1), top ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
 
                 allWidgetIds.forEach(id => {
                     const el = document.getElementById(id);
                     if (!el) return;
-                    // 新增: 強制啟用硬體加速
                     el.style.willChange = 'transform, opacity';
                     el.style.transform += ' translateZ(0)';
 
@@ -1298,35 +1290,41 @@
                     const isVisibleSource = sourceState?.visible ?? false;
                     const isVisibleTarget = targetState?.visible ?? false;
                     isWidgetAnimating[id] = true;
-                    if (isVisibleSource && !isVisibleTarget) { // 消失中
+                    if (isVisibleSource && !isVisibleTarget) {
                         el.style.transition = transitionStyle;
                         const newTransform = `scale(0) rotate(${sourceState.rotation || 0}deg)`;
                         el.style.transform = newTransform;
                         el.style.opacity = '0';
-                    } else if (!isVisibleSource && isVisibleTarget) { // 出現中
+                    } else if (!isVisibleSource && isVisibleTarget) {
                         el.style.transition = 'none';
                         el.style.opacity = '0';
                         applyTransform(el, { ...targetState, scale: 0 });
                         el.style.display = 'flex';
-                        void el.offsetWidth; // 強制重繪
+                        void el.offsetWidth;
                         el.style.transition = transitionStyle;
                         el.style.opacity = '1';
                         applyTransform(el, targetState);
-                    } else if (isVisibleSource && isVisibleTarget) { // 持續存在
+                    } else if (isVisibleSource && isVisibleTarget) {
                         el.style.transition = transitionStyle;
                         applyTransform(el, targetState);
                     }
                 });
                 setTimeout(() => {
-                    applyLayout(JSON.parse(JSON.stringify(targetLayout)), { ignoreTimedEffect: preserveTimedEffectSettings });
-                    saveCurrentSettings(true); // 標記為程式化變更，以保留 currentLayoutIndex
+                    // 2025-09-23: applyLayout 現在會處理深拷貝
+                    applyLayout(targetLayout, { ignoreTimedEffect: preserveTimedEffectSettings, ignoreLocation: true });
+                    
+                    // 2025-09-23: 根據是否有回呼函式來決定後續行為
+                    if (callback) {
+                        callback();
+                    } else {
+                        saveCurrentSettings(true);
+                    }
+                    
                     allWidgetIds.forEach(id => {
                         const el = document.getElementById(id);
                         if (el) {
                              el.style.transition = '';
-                             // 新增: 動畫結束後移除硬體加速提示
                              el.style.willChange = 'auto';
-                             // 恢復原始 transform，移除 translateZ(0)
                              applyTransform(el, transformStates[id]);
                         }
                         isWidgetAnimating[id] = false;
@@ -1407,19 +1405,30 @@
                     }
                 });
             });
-            document.getElementById('load-layout-btn').addEventListener('click',()=>{
+            document.getElementById('load-layout-btn').addEventListener('click', () => {
                 const index = parseInt(layoutSelector.value, 10);
                 if (index >= 0 && layouts[index]) {
-                    currentLayoutIndex = index;
+                    const layoutToLoad = layouts[index];
                     const useTransition = settingsState.timedEffect?.transitionEnabled ?? false;
+
+                    // 2025-09-23: 建立一個載入後執行的回呼函式
+                    const afterLoadCallback = () => {
+                        // 載入後，立即將當前狀態標記為「已修改」(未關聯任何已儲存版面)
+                        // 這樣任何後續的編輯，在儲存時都會是新增一組，而不會覆蓋舊的
+                        currentLayoutIndex = -1;
+                        saveCurrentSettings(); // 使用不帶參數的版本，它會將 currentLayoutIndex 設為 -1
+                        layoutSelector.value = index; // 保持下拉選單的選擇，讓使用者知道是從哪一組載入的
+                    };
+
                     if (useTransition) {
-                        animateLayoutChange(layouts[index], 1000, true);
+                        // 傳入回呼函式給動畫函式
+                        animateLayoutChange(layoutToLoad, 1000, true, afterLoadCallback);
                     } else {
-                        applyLayout(layouts[index], { ignoreTimedEffect: true });
-                        saveCurrentSettings(true);
+                        applyLayout(layoutToLoad, { ignoreTimedEffect: true, ignoreLocation: true });
+                        afterLoadCallback(); // 直接執行回呼
                     }
                 } else {
-                    showAlert('提示','此欄位沒有儲存設定。');
+                    showAlert('提示', '此欄位沒有儲存設定。');
                 }
             });
             document.getElementById('export-layout-btn').addEventListener('click', () => {
@@ -1476,6 +1485,42 @@
             districtSelect.addEventListener('change', () => handleLocationChange(taiwanLocations[countySelect.value].districts[districtSelect.value]));
             manualLocationInput.addEventListener('change', () => handleLocationChange(manualLocationInput.value.trim()));
             document.getElementById('useCurrentLocationBtn').addEventListener('click', () => { if (navigator.geolocation) navigator.geolocation.getCurrentPosition(pos => { fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&localityLanguage=en`).then(r=>r.json()).then(geo=>{const city=geo.locality||geo.city;if(city){handleLocationChange(city);updateLocationSelectors()}}) }); });
+            // ===================================================================
+            // 天氣模組
+            // ===================================================================
+            const Weather = {
+                data: null,
+                init() {
+                    setInterval(() => this.updateWeather(), 3 * 60 * 60 * 1000); 
+                },
+                async fetchAPI(url) { try { const response = await fetch(url); if (!response.ok) throw new Error('API請求失敗'); return await response.json(); } catch (error) { console.error(`獲取資料失敗: ${url}`, error); return null; } },
+                async fetchCoordinates(name) { const data = await this.fetchAPI(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en&format=json`); return data?.results?.[0] || null; },
+                async fetchWeather(lat, lon) { const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=weather_code,sunrise,sunset&timezone=auto`; return await this.fetchAPI(url); },
+                async updateWeather() {
+                    const locationName = settingsState.location?.trim();
+                    
+                    if (!locationName) {
+                        this.data = null;
+                    } else {
+                        const coords = await this.fetchCoordinates(locationName);
+                        this.data = coords ? await this.fetchWeather(coords.latitude, coords.longitude) : null;
+                    }
+                    weatherDataLoaded = true;
+
+                    MarqueeManager._weatherDataChanged = true;
+                    MarqueeManager._updateCacheAndGetStatus();
+                    MarqueeManager.rebuildAllAnimations();
+                },
+                getWeatherDescription(code) { const map={0:"晴",1:"多雲時晴",2:"局部多雲",3:"陰",45:"霧",48:"凍霧",51:"毛毛雨",53:"毛毛雨",55:"毛毛雨",56:"凍毛毛雨",57:"凍毛毛雨",61:"雨",63:"雨",65:"大雨",66:"凍雨",67:"凍雨",71:"雪",73:"雪",75:"大雪",77:"冰雹",80:"陣雨",81:"陣雨",82:"大陣雨",85:"陣雪",86:"大陣雪",95:"雷陣雨",96:"雷陣雨伴冰雹",99:"雷陣雨伴冰雹"}; return map[code] || "未知"; },
+                getChineseLocationName(englishName) {
+                    if (!englishName) return '';
+                    for (const county in taiwanLocations) {
+                        if (taiwanLocations[county].english.toLowerCase() === englishName.toLowerCase()) return county;
+                        for (const district in taiwanLocations[county].districts) { if (taiwanLocations[county].districts[district].toLowerCase() === englishName.toLowerCase()) return district === county ? county : `${county}${district}`; }
+                    }
+                    return englishName.charAt(0).toUpperCase() + englishName.slice(1);
+                }
+            };
             // ===================================================================
             // 定時特效設定
             // ===================================================================
@@ -1664,7 +1709,7 @@
                     "marquee-container-0": { "visible": true, "width": 800, "height": 80, "left": 10, "top": 10, "scale": 1, "rotation": 0 }
                 },
                 "settings": {
-                    "calendar": { "visible": true, "showMoonIcon": true, "useLedFont": true, "colors": { "--bg-primary": "#000000", "--year-color": "#FF7000", "--month-color": "#3070a0", "--week-color": "#8830d0", "--day-color": "#ffffff", "--lunar-color": "#FFFF00", "--bg-secondary": "transparent", "--bg-hover": "rgba(55, 65, 81, 0.5)", "--border-color": "#374151", "--text-primary": "#F3F4F6", "--text-secondary": "#9CA3AF", "--text-muted": "#6B7280", "--today-bg": "transparent", "--holiday-color": "#6ee7b7", "--solarterm-color": "#fcd34d", "--yi-color": "#34D399", "--ji-color": "#F87171" } },
+                    "calendar": { "visible": true, "showMoonIcon": true, "useLedFont": true, "colors": { "--bg-primary": "#000000", "--year-color": "#FF7000", "--month-color": "#3070a0", "--week-color": "#8830d0", "--day-color": "#ffffff", "--lunar-color": "#FFFF00", "--bg-secondary": "transparent", "--bg-hover": "rgba(55, 65, 81, 0.5)", "--border-color": "#374151", "--text-primary": "#F3F4F6", "--text-secondary": "#9CA3AF", "--text-muted": "#6B7280", "--holiday-color": "#6ee7b7", "--solarterm-color": "#fcd34d", "--yi-color": "#34D399", "--ji-color": "#F87171" } },
                     "ledClock": { "visible": true, "colonBlink": true, "colors": { "--led-hour-color": "#00ff00", "--led-minute-color": "#00ff00", "--led-second-color": "#00ff00", "--led-colon-color": "#00ff00", "--led-period-color": "#00ff00" } },
                     "analogClock": { "visible": true, "useLedFont": true, "smoothSeconds": false, "colors": { "--analog-face-color": "transparent", "--analog-hand-color": "#ffffff", "--analog-second-hand-color": "#ff3333", "--analog-tick-color": "#cccccc", "--analog-number-color": "#ffffff" } },
                     "moonPhase": { "visible": false, "useLedFont": true, "colors": { "--moon-light-color": "#f0e68c", "--moon-dark-color": "#222222", "--moon-header-color": "#a78bfa", "--moon-desc-color": "#d1d5db", "--moon-highlight-color": "#fcd34d" } },
@@ -1679,8 +1724,9 @@
             // ===================================================================
             // LED 時鐘模組
             // ===================================================================
-            const LedClock = {
+const LedClock = {
                 svg: document.getElementById('led-clock-svg'), digits: {}, colons: {}, periodTextElement: null,
+                lastTime: { h: -1, m: -1, s: -1 },
                 segmentMap: [[1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],[0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1]],
                 segmentTransforms: ['translate(0, 0)','translate(132, 20) rotate(90)','translate(132, 140) rotate(90)','translate(0, 240)','translate(12, 140) rotate(90)','translate(12, 20) rotate(90)','translate(0, 120)'],
                 baseViewBoxWidth: 0, aspectRatio: 0,
@@ -1693,41 +1739,64 @@
                 },
                 updateDigit(digitElement, number) { const pattern = this.segmentMap[number]; digitElement.querySelectorAll('.segment').forEach((segment, i) => { segment.style.opacity = pattern[i] ? '1' : '0.1'; }); },
                 update() {
-                    const now = new Date(); let h = now.getHours(); const m = now.getMinutes(); const s = now.getSeconds();
-                    const effectSettings = settingsState.timedEffect;
-                    if (!isEditMode && effectSettings && effectSettings.enabled && s % effectSettings.intervalSeconds === 0) {
-                        if (Object.values(isWidgetAnimating).some(v => v)) return;
+                    const now = new Date();
+                    const s = now.getSeconds();
 
-                        if (effectSettings.type === 'layoutSwitch') {
-                            if (layouts.length >= 2) {
-                                if (effectSettings.isRandom) {
-                                    let randomIndex;
-                                    do {
-                                        randomIndex = Math.floor(Math.random() * layouts.length);
-                                    } while (layouts.length > 1 && randomIndex === currentLayoutIndex);
-                                    currentLayoutIndex = randomIndex;
-                                } else {
-                                    currentLayoutIndex = nextLayoutIndex;
-                                    nextLayoutIndex = (nextLayoutIndex + 1) % layouts.length;
+                    // --- 每秒執行的部分 ---
+                    if (s !== this.lastTime.s) {
+                        // 處理定時特效
+                        const effectSettings = settingsState.timedEffect;
+                        if (!isEditMode && effectSettings && effectSettings.enabled && s % effectSettings.intervalSeconds === 0) {
+                            if (Object.values(isWidgetAnimating).some(v => v)) return;
+
+                            if (effectSettings.type === 'layoutSwitch') {
+                                if (layouts.length >= 2) {
+                                    if (effectSettings.isRandom) {
+                                        let randomIndex;
+                                        do { randomIndex = Math.floor(Math.random() * layouts.length); } while (layouts.length > 1 && randomIndex === currentLayoutIndex);
+                                        currentLayoutIndex = randomIndex;
+                                    } else {
+                                        currentLayoutIndex = nextLayoutIndex;
+                                        nextLayoutIndex = (nextLayoutIndex + 1) % layouts.length;
+                                    }
+                                    const useTransition = settingsState.timedEffect?.transitionEnabled ?? false;
+                                    if (useTransition) { animateLayoutChange(layouts[currentLayoutIndex], 1000, true); } 
+                                    else { applyLayout(layouts[currentLayoutIndex], { ignoreTimedEffect: true }); saveCurrentSettings(true); }
                                 }
-                                const useTransition = settingsState.timedEffect?.transitionEnabled ?? false;
-                                if (useTransition) {
-                                    animateLayoutChange(layouts[currentLayoutIndex], 1000, true);
-                                } else {
-                                    applyLayout(layouts[currentLayoutIndex], { ignoreTimedEffect: true });
-                                    saveCurrentSettings(true);
-                                }
+                            } else if (effectSettings.type === 'slide') {
+                                this.triggerSlideEffect();
                             }
-                        } else if (effectSettings.type === 'slide') {
-                            this.triggerSlideEffect();
                         }
+
+                        // 更新秒數顯示和冒號閃爍
+                        const sStr = String(s).padStart(2, '0');
+                        this.updateDigit(this.digits.s1, parseInt(sStr[0]));
+                        this.updateDigit(this.digits.s2, parseInt(sStr[1]));
+                        const shouldBlink = settingsState.ledClock?.colonBlink ?? true;
+                        const colonOpacity = shouldBlink ? (s % 2 === 0 ? '1' : '0.2') : '1';
+                        this.colons.h.querySelectorAll('.colon').forEach(c => c.style.opacity = colonOpacity);
+                        this.lastTime.s = s;
                     }
-                    if (this.periodTextElement) { this.periodTextElement.textContent = TimeHelper.getPeriodText(h); }
-                    let h12 = h % 12; if (h12 === 0) h12 = 12; const hStr = String(h12).padStart(2, '0'); const mStr = String(m).padStart(2, '0'); const sStr = String(s).padStart(2, '0');
-                    this.updateDigit(this.digits.h1, parseInt(hStr[0])); this.updateDigit(this.digits.h2, parseInt(hStr[1])); this.updateDigit(this.digits.m1, parseInt(mStr[0])); this.updateDigit(this.digits.m2, parseInt(mStr[1])); this.updateDigit(this.digits.s1, parseInt(sStr[0])); this.updateDigit(this.digits.s2, parseInt(sStr[1]));
-                    const shouldBlink = settingsState.ledClock?.colonBlink ?? true;
-                    const colonOpacity = shouldBlink ? (s % 2 === 0 ? '1' : '0.2') : '1';
-                    this.colons.h.querySelectorAll('.colon').forEach(c => c.style.opacity = colonOpacity);
+
+                    // --- 每分鐘執行的部分 ---
+                    const m = now.getMinutes();
+                    if (m !== this.lastTime.m) {
+                        const mStr = String(m).padStart(2, '0');
+                        this.updateDigit(this.digits.m1, parseInt(mStr[0]));
+                        this.updateDigit(this.digits.m2, parseInt(mStr[1]));
+                        this.lastTime.m = m;
+                    }
+
+                    // --- 每小時執行的部分 ---
+                    const h = now.getHours();
+                    if (h !== this.lastTime.h) {
+                        if (this.periodTextElement) { this.periodTextElement.textContent = TimeHelper.getPeriodText(h); }
+                        let h12 = h % 12; if (h12 === 0) h12 = 12;
+                        const hStr = String(h12).padStart(2, '0');
+                        this.updateDigit(this.digits.h1, parseInt(hStr[0]));
+                        this.updateDigit(this.digits.h2, parseInt(hStr[1]));
+                        this.lastTime.h = h;
+                    }
                 },
                 triggerSlideEffect() {
                     let targets = [];
@@ -1988,7 +2057,7 @@
             // ===================================================================
             // 跑馬燈模組 (Class)
             // ===================================================================
-            class MarqueeInstance {
+class MarqueeInstance {
                 constructor(containerId, index) {
                     this.container = document.getElementById(containerId);
                     this.mainContainer = this.container.querySelector('main');
@@ -1998,23 +2067,30 @@
                     document.head.appendChild(this.animationStyleTag);
                     this.rebuildTimeout = null;
                     this.isScrolling = false;
+
+                    // 參數與更新頻率的映射
+                    this.paramToFrequency = {
+                        s: ['%ss%', '%s%'],
+                        m: ['%mm%', '%m%', '%HH%', '%H%', '%hh%', '%h%', '%AP%', '%ap%', '%ap_c%', '%SHICHEN_GZ%', '%SHICHEN_NAME%', '%SHICHEN_CHAR%'],
+                        d: ['%YYYY%', '%YY%', '%ROC_YY%', '%MM%', '%M%', '%DD%', '%D%', '%WEEKDAY%', '%W_SHORT%', '%W_CHAR%', '%W_NUM%', '%CONSTELLATION%', '%L_GZ%', '%L_SX%', '%LM_C%', '%LD_C%', '%MOON_PHASE%', '%MOON_ICON%', '%MOON_DAY%'],
+                        w: ['%WEATHER_LOC%', '%WEATHER_DESC%', '%TEMP%', '%SUNRISE%', '%SUNSET%']
+                    };
+                    // 根據頻率分類儲存對應的 span 元素
+                    this.spansByFrequency = { s: [], m: [], d: [], w: [] };
                 }
-                getReplacements() {
-                    const now = new Date(), year = now.getFullYear(), month = now.getMonth() + 1, day = now.getDate(), hours = now.getHours(), minutes = now.getMinutes(), seconds = now.getSeconds(), dayOfWeek = now.getDay();
-                    const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'], dayOfWeekChars = ['日', '一', '二', '三', '四', '五', '六'];
-                    const amPm = hours >= 12 ? 'PM' : 'AM', h12 = hours % 12 || 12;
-                    const lunar = getLunarDate(now);
-                    const moonDetails = lunar ? (moonPhaseData[lunar.day] || { n: '未知', a: '' }) : { n: '', a: '' };
-                    const moonName = moonDetails.a ? `${moonDetails.n}(${moonDetails.a})` : moonDetails.n;
-                    const yearGZ = tiangan.charAt((lunar.year - 4) % 10) + dizhi.charAt((lunar.year - 4) % 12);
-                    const yearSX = shengxiao.charAt((lunar.year - 4) % 12);
-                    const pad = (num) => String(num).padStart(2, '0');
-                    const periodText = TimeHelper.getPeriodText(hours), shichen = ShichenHelper.getData(now);
-                    let weatherReplacements = { '%WEATHER_LOC%': Weather.getChineseLocationName(settingsState.location), '%WEATHER_DESC%': '讀取中', '%TEMP%': '...', '%SUNRISE%': '...', '%SUNSET%': '...' };
-                    if (Weather.data) { const formatTime = (dateStr) => dateStr ? new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'N/A'; weatherReplacements = { '%WEATHER_LOC%': Weather.getChineseLocationName(settingsState.location), '%WEATHER_DESC%': Weather.getWeatherDescription(Weather.data.current.weather_code), '%TEMP%': Math.round(Weather.data.current.temperature_2m), '%SUNRISE%': formatTime(Weather.data.daily.sunrise[0]), '%SUNSET%': formatTime(Weather.data.daily.sunset[0]), }; }
-                    const constellationInfo = getConstellation(now);
-                    return { '%YYYY%': year, '%ROC_YY%': year - 1911, '%YY%': String(year).slice(-2), '%MM%': pad(month), '%M%': month, '%DD%': pad(day), '%D%': day, '%WEEKDAY%': weekdays[dayOfWeek], '%W_NUM%': dayOfWeek, '%W_SHORT%': `週${dayOfWeekChars[dayOfWeek]}`, '%W_CHAR%': dayOfWeekChars[dayOfWeek], '%L_GZ%': yearGZ, '%L_SX%': yearSX, '%LM_C%': lunar ? lunar.toString.split(/月/)[0] + '月' : '', '%LD_C%': lunar ? lunar.dayString : '', '%HH%': pad(hours), '%H%': hours, '%hh%': pad(h12), '%h%': h12, '%mm%': pad(minutes), '%m%': minutes, '%ss%': pad(seconds), '%s%': seconds, '%AP%': amPm, '%ap%': amPm.toLowerCase(), '%ap_c%': periodText, ...weatherReplacements, '%MOON_PHASE%': moonName, '%MOON_ICON%': lunar ? MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '1em', `marquee-${this.index}`) : '', '%MOON_DAY%': lunar ? lunar.day : '', '%SHICHEN_GZ%': shichen.gz, '%SHICHEN_NAME%': shichen.name, '%SHICHEN_CHAR%': shichen.char, '%CONSTELLATION%': constellationInfo ? constellationInfo.sign : '' };
+
+                // 新增：將跑馬燈內的參數 span 元素進行分類儲存
+                _categorizeSpans() {
+                    this.spansByFrequency = { s: [], m: [], d: [], w: [] };
+                    this.innerDiv.querySelectorAll('[data-time-key]').forEach(span => {
+                        const key = span.dataset.timeKey;
+                        if (this.paramToFrequency.s.includes(key)) this.spansByFrequency.s.push(span);
+                        else if (this.paramToFrequency.m.includes(key)) this.spansByFrequency.m.push(span);
+                        else if (this.paramToFrequency.d.includes(key)) this.spansByFrequency.d.push(span);
+                        else if (this.paramToFrequency.w.includes(key)) this.spansByFrequency.w.push(span);
+                    });
                 }
+
                 buildInitialHTML(text) {
                     const settings = settingsState.marquees[this.index], isVertical = settings.vertical, useLedGlobal = settingsState.marqueeGlobal?.useLedFont ?? true, defaultColor = (settings.colors && settings.colors.default) ? settings.colors.default : '#FFFFFF';
                     const processMarqueeChunk = (chunk) => {
@@ -2032,8 +2108,9 @@
                         }
                         return processedHTML;
                     };
-                    const replacements = this.getReplacements();
-                    const paramRegex = new RegExp(`%C\\(#([0-9a-fA-F]{6}),\\s*([^%)]+)\\)%|${Object.keys(replacements).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')}|%br%`, 'g');
+                    // 不再呼叫 getReplacements()，而是使用 Manager 提供的快取
+                    const replacements = MarqueeManager._cachedReplacements;
+                    const paramRegex = new RegExp(`%C\\(#([0-9a-fA-F]{6}),\\s*([^%)]+)\\)%|${Object.keys(marqueeParamColorMap).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')}|%br%`, 'g');
                     let resultHTML = '', lastIndex = 0, match;
                     const ledParams = ['%HH%', '%H%', '%hh%', '%h%', '%mm%', '%m%', '%ss%', '%s%', '%ROC_YY%', '%YYYY%', '%YY%', '%MM%', '%M%', '%DD%', '%D%', '%TEMP%', '%SUNRISE%', '%SUNSET%'];
                     while ((match = paramRegex.exec(text)) !== null) {
@@ -2049,7 +2126,7 @@
                             }
                         } else if (param === '%br%') {
                             if (isVertical) resultHTML += '</div><div>';
-                        } else {
+                        } else if (replacements[param] !== undefined) { // 確保 replacements 有值
                             const cssVar = marqueeParamColorMap[param];
                             const color = cssVar ? getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() : defaultColor;
                             const replacementContent = String(replacements[param] || '');
@@ -2068,9 +2145,10 @@
                     if (lastIndex < text.length) { resultHTML += processMarqueeChunk(text.substring(lastIndex)); }
                     return isVertical ? `<div>${resultHTML}</div>` : resultHTML;
                 }
-                updateContent() {
-                    const replacements = this.getReplacements();
-                    this.innerDiv.querySelectorAll('[data-time-key]').forEach(span => {
+
+                // 修改：接收狀態和快取資料，進行目標式更新
+                updateContent(status, replacements) {
+                    const updateSpan = (span) => {
                         const key = span.dataset.timeKey;
                         if (replacements[key] === undefined) return;
                         const useLed = settingsState.marqueeGlobal?.useLedFont ?? true;
@@ -2089,8 +2167,14 @@
                         } else {
                             if (span.textContent !== newText) span.textContent = newText;
                         }
-                    });
+                    };
+                    
+                    if (status.s) this.spansByFrequency.s.forEach(updateSpan);
+                    if (status.m) this.spansByFrequency.m.forEach(updateSpan);
+                    if (status.d) this.spansByFrequency.d.forEach(updateSpan);
+                    if (status.w) this.spansByFrequency.w.forEach(updateSpan);
                 }
+
                 rebuildAnimation() {
                     clearTimeout(this.rebuildTimeout);
                     this.innerDiv.style.animation = ''; this.isScrolling = false;
@@ -2123,10 +2207,16 @@
                             if (!isVertical && instance1.scrollWidth > this.mainContainer.clientWidth) {
                                 this.container.style.fontSize = `${parseFloat(getComputedStyle(this.container).fontSize) * (this.mainContainer.clientWidth / instance1.scrollWidth) * 0.98}px`;
                             }
-                            return;
+                        } else {
+                            this.isScrolling = true;
+                            this.innerDiv.appendChild(instance1.cloneNode(true));
                         }
-                        this.isScrolling = true;
-                        this.innerDiv.appendChild(instance1.cloneNode(true));
+                        
+                        // 建立完 HTML 後，立即對 span 進行分類
+                        this._categorizeSpans();
+
+                        if (!this.isScrolling) return; // 如果不需要滾動，後續動畫邏輯可省略
+                        
                         const travelDistance = contentMeasure; if (travelDistance <= 0) return;
                         const duration = travelDistance / (parseInt(speed, 10) || 80);
                         const animName = `marquee-${this.index}-${Date.now()}`;
@@ -2144,40 +2234,6 @@
                 }
                  setPlayState(shouldPlay) { this.innerDiv.style.animationPlayState = shouldPlay ? 'running' : 'paused'; }
             }
-            const MarqueeManager = {
-                instances: [],
-                init() { this.syncInstances(); setInterval(() => this.updateAllContent(), 1000); },
-                syncInstances() { this.instances.forEach(inst => { if (inst.animationStyleTag) inst.animationStyleTag.remove(); }); this.instances = []; document.querySelectorAll('.marquee-widget').forEach((el, i) => { this.instances.push(new MarqueeInstance(el.id, i)); }); },
-                updateAllContent() { this.instances.forEach(inst => inst.updateContent()); },
-                rebuildAllAnimations() { this.instances.forEach(inst => inst.rebuildAnimation()); },
-                rebuildAnimationByIndex(index) { if (this.instances[index]) this.instances[index].rebuildAnimation(); },
-                setPlayState(shouldPlay) { this.instances.forEach(inst => inst.setPlayState(shouldPlay)); }
-            };
-            // ===================================================================
-            // 天氣模組
-            // ===================================================================
-            const Weather = {
-                data: null, init() { this.updateWeather(); setInterval(() => this.updateWeather(), 15 * 60 * 1000); },
-                async fetchAPI(url) { try { const response = await fetch(url); if (!response.ok) throw new Error('API請求失敗'); return await response.json(); } catch (error) { console.error(`獲取資料失敗: ${url}`, error); return null; } },
-                async fetchCoordinates(name) { const data = await this.fetchAPI(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en&format=json`); return data?.results?.[0] || null; },
-                async fetchWeather(lat, lon) { const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=weather_code,sunrise,sunset&timezone=auto`; return await this.fetchAPI(url); },
-                async updateWeather() {
-                    const locationName = settingsState.location?.trim();
-                    if (!locationName) { this.data = null; weatherDataLoaded = true; MarqueeManager.rebuildAllAnimations(); return; }
-                    const coords = await this.fetchCoordinates(locationName);
-                    this.data = coords ? await this.fetchWeather(coords.latitude, coords.longitude) : null;
-                    weatherDataLoaded = true; MarqueeManager.rebuildAllAnimations();
-                },
-                getWeatherDescription(code) { const map={0:"晴",1:"多雲時晴",2:"局部多雲",3:"陰",45:"霧",48:"凍霧",51:"毛毛雨",53:"毛毛雨",55:"毛毛雨",56:"凍毛毛雨",57:"凍毛毛雨",61:"雨",63:"雨",65:"大雨",66:"凍雨",67:"凍雨",71:"雪",73:"雪",75:"大雪",77:"冰雹",80:"陣雨",81:"陣雨",82:"大陣雨",85:"陣雪",86:"大陣雪",95:"雷陣雨",96:"雷陣雨伴冰雹",99:"雷陣雨伴冰雹"}; return map[code] || "未知"; },
-                getChineseLocationName(englishName) {
-                    if (!englishName) return '';
-                    for (const county in taiwanLocations) {
-                        if (taiwanLocations[county].english.toLowerCase() === englishName.toLowerCase()) return county;
-                        for (const district in taiwanLocations[county].districts) { if (taiwanLocations[county].districts[district].toLowerCase() === englishName.toLowerCase()) return district === county ? county : `${county}${district}`; }
-                    }
-                    return englishName.charAt(0).toUpperCase() + englishName.slice(1);
-                }
-            };
             // ===================================================================
             // 月相 SVG 產生器
             // ===================================================================
@@ -2430,28 +2486,136 @@
                 getSetting: () => settingsState.moonPhase
             });
             MoonPhaseWidget.getMoonPhaseSVG = getMoonPhaseSVG;
-            (function initializeApp() {
+const MarqueeManager = {
+                instances: [],
+                _lastUpdateTime: { s: -1, m: -1, d: -1 },
+                _cachedReplacements: {},
+                _weatherDataChanged: false,
+
+                init() {
+                    this.syncInstances();
+                    // 首次執行以填滿快取
+                    this._updateCacheAndGetStatus();
+                    setInterval(() => this.updateAllContent(), 1000);
+                },
+
+                _updateCacheAndGetStatus() {
+                    const now = new Date();
+                    const s = now.getSeconds(), m = now.getMinutes(), d = now.getDate();
+                    const status = { s: false, m: false, d: false, w: this._weatherDataChanged };
+
+                    // 依賴鍊：如果日期變了，分鐘和秒鐘也必定需要更新
+                    if (d !== this._lastUpdateTime.d) status.d = true;
+                    if (status.d || m !== this._lastUpdateTime.m) status.m = true;
+                    if (status.m || s !== this._lastUpdateTime.s) status.s = true;
+
+                    // 根據狀態更新對應的快取資料
+                    if (status.s) {
+                        this._cachedReplacements['%ss%'] = String(s).padStart(2, '0');
+                        this._cachedReplacements['%s%'] = s;
+                        this._lastUpdateTime.s = s;
+                    }
+
+                    if (status.m) {
+                        const h = now.getHours(), h12 = h % 12 || 12, amPm = h >= 12 ? 'PM' : 'AM';
+                        const shichen = ShichenHelper.getData(now);
+                        Object.assign(this._cachedReplacements, {
+                            '%mm%': String(m).padStart(2, '0'), '%m%': m,
+                            '%HH%': String(h).padStart(2, '0'), '%H%': h,
+                            '%hh%': String(h12).padStart(2, '0'), '%h%': h12,
+                            '%AP%': amPm, '%ap%': amPm.toLowerCase(), '%ap_c%': TimeHelper.getPeriodText(h),
+                            '%SHICHEN_GZ%': shichen.gz, '%SHICHEN_NAME%': shichen.name, '%SHICHEN_CHAR%': shichen.char
+                        });
+                        this._lastUpdateTime.m = m;
+                    }
+
+                    if (status.d) {
+                        const year = now.getFullYear(), month = now.getMonth() + 1, dayOfWeek = now.getDay();
+                        const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'], dayOfWeekChars = ['日', '一', '二', '三', '四', '五', '六'];
+                        const lunar = getLunarDate(now);
+                        const moonDetails = lunar ? (moonPhaseData[lunar.day] || { n: '未知', a: '' }) : { n: '', a: '' };
+                        const moonName = moonDetails.a ? `${moonDetails.n}(${moonDetails.a})` : moonDetails.n;
+                        const yearGZ = tiangan.charAt((lunar.year - 4) % 10) + dizhi.charAt((lunar.year - 4) % 12);
+                        const yearSX = shengxiao.charAt((lunar.year - 4) % 12);
+                        const constellationInfo = getConstellation(now);
+                        Object.assign(this._cachedReplacements, {
+                            '%YYYY%': year, '%ROC_YY%': year - 1911, '%YY%': String(year).slice(-2),
+                            '%MM%': String(month).padStart(2, '0'), '%M%': month, '%DD%': String(d).padStart(2, '0'), '%D%': d,
+                            '%WEEKDAY%': weekdays[dayOfWeek], '%W_NUM%': dayOfWeek, '%W_SHORT%': `週${dayOfWeekChars[dayOfWeek]}`, '%W_CHAR%': dayOfWeekChars[dayOfWeek],
+                            '%L_GZ%': yearGZ, '%L_SX%': yearSX,
+                            '%LM_C%': lunar ? lunar.toString.split(/月/)[0] + '月' : '', '%LD_C%': lunar ? lunar.dayString : '',
+                            '%MOON_PHASE%': moonName,
+                            '%MOON_ICON%': lunar ? MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '1em', `marquee-manager`) : '',
+                            '%MOON_DAY%': lunar ? lunar.day : '',
+                            '%CONSTELLATION%': constellationInfo ? constellationInfo.sign : ''
+                        });
+                        this._lastUpdateTime.d = d;
+                    }
+
+                    if (status.w) {
+                        let weatherReplacements = { '%WEATHER_LOC%': Weather.getChineseLocationName(settingsState.location), '%WEATHER_DESC%': '讀取中', '%TEMP%': '...', '%SUNRISE%': '...', '%SUNSET%': '...' };
+                        if (Weather.data) {
+                            const formatTime = (dateStr) => dateStr ? new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
+                            weatherReplacements = {
+                                '%WEATHER_LOC%': Weather.getChineseLocationName(settingsState.location),
+                                '%WEATHER_DESC%': Weather.getWeatherDescription(Weather.data.current.weather_code),
+                                '%TEMP%': Math.round(Weather.data.current.temperature_2m),
+                                '%SUNRISE%': formatTime(Weather.data.daily.sunrise[0]),
+                                '%SUNSET%': formatTime(Weather.data.daily.sunset[0]),
+                            };
+                        }
+                        Object.assign(this._cachedReplacements, weatherReplacements);
+                        this._weatherDataChanged = false; // 重設標記
+                    }
+                    return status;
+                },
+
+                updateAllContent() {
+                    const status = this._updateCacheAndGetStatus();
+                    if (status.s || status.m || status.d || status.w) {
+                        this.instances.forEach(inst => inst.updateContent(status, this._cachedReplacements));
+                    }
+                },
+                syncInstances() { this.instances.forEach(inst => { if (inst.animationStyleTag) inst.animationStyleTag.remove(); }); this.instances = []; document.querySelectorAll('.marquee-widget').forEach((el, i) => { this.instances.push(new MarqueeInstance(el.id, i)); }); },
+                rebuildAllAnimations() { this.instances.forEach(inst => inst.rebuildAnimation()); },
+                rebuildAnimationByIndex(index) { if (this.instances[index]) this.instances[index].rebuildAnimation(); },
+                setPlayState(shouldPlay) { this.instances.forEach(inst => inst.setPlayState(shouldPlay)); }
+            };
+            (async function initializeApp() {
                 const autoSavedLayout = localStorage.getItem('widgets_autosave');
                 if (autoSavedLayout) {
                     applyLayout(JSON.parse(autoSavedLayout));
                 } else {
                     applyLayout(JSON.parse(JSON.stringify(userDefaultLayout)));
                 }
+                
+                if (!settingsState.location) {
+                    settingsState.location = "taiwan";
+                }
+
                 const savedLayouts = localStorage.getItem('widgets_layouts_v2');
                 if (savedLayouts) {
                     try { layouts = JSON.parse(savedLayouts); } catch (e) { console.error("無法從 localStorage 解析版面設定", e); layouts = []; }
                 }
+
                 initializeWidgetControls();
                 Calendar.init();
                 MoonPhaseWidget.init();
                 LedClock.init();
                 AnalogClock.init();
-                Weather.init();
-                MarqueeManager.init()
+                Weather.init(); 
+                MarqueeManager.init();
+                
+                updateLocationSelectors();
+                
+                await Weather.updateWeather();
+
                 setupTimedEffectControls();
                 resetActivityTimeout();
                 updateLayoutSelector();
-                saveCurrentSettings();
+                
+                saveCurrentSettings(); 
+                
                 window.addEventListener('resize', () => { ensureWidgetsInBounds(); MarqueeManager.rebuildAllAnimations(); saveCurrentSettings(); });
                 document.fonts.ready.then(() => { ensureWidgetsInBounds(); MarqueeManager.rebuildAllAnimations(); });
             })();
