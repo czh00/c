@@ -740,6 +740,115 @@
 
         document.addEventListener('DOMContentLoaded', function () {
             // ===================================================================
+            // LED 顯示管理器 (Refactored & Integrated)
+            // 說明: 統一管理所有 LED 字型 SVG 的生成與更新。
+            // ===================================================================
+            const LedManager = {
+                segmentMap: [[1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],[0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1]],
+                segmentTransforms: ['translate(0, 0)','translate(132, 20) rotate(90)','translate(132, 140) rotate(90)','translate(0, 240)','translate(12, 140) rotate(90)','translate(12, 20) rotate(90)','translate(0, 120)'],
+                digitBaseWidth: 144,
+                digitBaseHeight: 272,
+                colonBaseWidth: 48,
+
+                create(text, config = {}) {
+                    const { height = 24, color = '#FFFFFF', letterSpacing = 16 } = config;
+                    const id_suffix = Math.random().toString(36).substring(2, 9);
+                    const segmentId = `led-segment-${id_suffix}`, colonId = `led-colon-${id_suffix}`;
+                    
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.setAttribute('fill', color);
+                    svg.style.verticalAlign = 'middle';
+                    svg.style.display = 'inline-block';
+                    
+                    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                    defs.innerHTML = `<polygon id="${segmentId}" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="${colonId}" x="-16" y="0" width="32" height="32" rx="5" ry="5" />`;
+                    svg.appendChild(defs);
+
+                    let currentX = 0;
+                    const textStr = String(text);
+
+                    for (const char of textStr) {
+                        if (/\d/.test(char)) {
+                            const digit = parseInt(char, 10);
+                            const digitGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                            digitGroup.setAttribute('class', 'led-digit-group');
+                            digitGroup.setAttribute('transform', `translate(${currentX}, 0)`);
+                            const pattern = this.segmentMap[digit];
+                            for (let i = 0; i < 7; i++) {
+                                const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                                use.setAttribute('href', `#${segmentId}`);
+                                use.setAttribute('class', 'segment');
+                                use.style.opacity = pattern[i] ? '1' : '0.1';
+                                use.setAttribute('transform', this.segmentTransforms[i]);
+                                digitGroup.appendChild(use);
+                            }
+                            svg.appendChild(digitGroup);
+                            currentX += this.digitBaseWidth + letterSpacing;
+                        } else if (char === ':') {
+                            const colonGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                            colonGroup.setAttribute('transform', `translate(${currentX}, 0)`);
+                            ['translate(0, 60)', 'translate(0, 180)'].forEach(transform => {
+                                const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                                use.setAttribute('href', `#${colonId}`);
+                                use.setAttribute('transform', transform);
+                                colonGroup.appendChild(use);
+                            });
+                            svg.appendChild(colonGroup);
+                            currentX += this.colonBaseWidth + letterSpacing;
+                        } else if (['/', '-', '.'].includes(char)) {
+                             const separatorWidth = 60, entity = { '/': '/', '-': '—', '.': '.' }[char];
+                             const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                             textEl.setAttribute('x', currentX + separatorWidth / 2);
+                             textEl.setAttribute('y', this.digitBaseHeight / 2);
+                             textEl.setAttribute('text-anchor', 'middle');
+                             textEl.setAttribute('dominant-baseline', 'central');
+                             textEl.setAttribute('font-size', `${this.digitBaseHeight * 0.9}`);
+                             textEl.setAttribute('font-family', "'Courier New', Courier, monospace");
+                             textEl.setAttribute('font-weight', 'bold');
+                             textEl.textContent = entity;
+                             svg.appendChild(textEl);
+                             currentX += separatorWidth + letterSpacing;
+                        }
+                    }
+
+                    const totalWidth = currentX > 0 ? currentX - letterSpacing : 0;
+                    if (totalWidth === 0) return null;
+
+                    const padding = 16;
+                    const finalWidth = ((totalWidth + padding * 2) / this.digitBaseHeight) * height;
+
+                    svg.setAttribute('viewBox', `-${padding} 0 ${totalWidth + padding * 2} ${this.digitBaseHeight}`);
+                    svg.setAttribute('height', `${height}px`);
+                    svg.setAttribute('width', `${finalWidth}px`);
+                    svg.dataset.text = text;
+
+                    return svg;
+                },
+
+                update(svg, text) {
+                    if (!svg) return;
+                    const digits = svg.querySelectorAll('.led-digit-group');
+                    const textDigits = String(text).replace(/[^0-9]/g, '');
+                    
+                    digits.forEach((digitGroup, index) => {
+                        const digit = parseInt(textDigits[index], 10);
+                        if (!isNaN(digit)) {
+                            const pattern = this.segmentMap[digit];
+                            digitGroup.querySelectorAll('.segment').forEach((segment, i) => {
+                                segment.style.opacity = pattern[i] ? '1' : '0.1';
+                            });
+                        }
+                    });
+                    svg.dataset.text = text;
+                }
+            };
+
+            // 為了向下相容舊的 generateLedSvg 字串生成用法，提供一個轉換器
+            function generateLedSvgString(text, config = {}) {
+                const element = LedManager.create(text, config);
+                return element ? element.outerHTML : '';
+            }
+            // ===================================================================
             // 設定、顏色與儲存
             // 說明: 處理所有設定的載入、套用和儲存邏輯。
             // ===================================================================
@@ -1154,7 +1263,7 @@
                         const widgetState = transformStates[widgetId];
                         if (useLedHeader && widgetState) {
                              const monthColor = getComputedStyle(document.documentElement).getPropertyValue('--month-color').trim() || '#3070a0';
-                             backgroundMonth.innerHTML = generateLedSvg(String(month + 1), { height: widgetState.height * 0.7, color: monthColor });
+                             backgroundMonth.innerHTML = generateLedSvgString(String(month + 1), { height: widgetState.height * 0.7, color: monthColor });
                         } else {
                              backgroundMonth.textContent = month + 1;
                         }
@@ -1181,7 +1290,7 @@
                     ${solarTerm ? `<div class="solarterm-text truncate" data-key="${solarTerm}">${solarTerm}</div>` : ''}
                     ${holiday ? `<div class="holiday-text truncate" data-key="${holiday}">${holiday}</div>` : ''}`;
                 const dayColor = getComputedStyle(document.documentElement).getPropertyValue('--day-color').trim();
-                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvg(String(day), {height: 20, color: dayColor})}</div>` : `<div class="day-number-wrapper" style="font-size: 1.5em; line-height: 1.2; color: ${dayColor}; display: flex; align-items: center; justify-content: center; height: 20px; font-weight: 700;">${day}</div>`;
+                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvgString(String(day), {height: 20, color: dayColor})}</div>` : `<div class="day-number-wrapper" style="font-size: 1.5em; line-height: 1.2; color: ${dayColor}; display: flex; align-items: center; justify-content: center; height: 20px; font-weight: 700;">${day}</div>`;
                 if (showMoonIcon) {
                     cell.classList.add('with-moon-icon');
                     cell.innerHTML = `<div class="day-text-content">${dayNumberHTML}<div class="space-y-px">${textDetailsHTML}</div></div><div class="day-moon-container">${MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '28px', `main-cal-${Math.random()}`)}</div>`;
@@ -1194,7 +1303,7 @@
             };
             const moonPhaseCellRenderer = (cell, date, settings) => {
                 const lunar = getLunarDate(date), useLed = settings.useLedFont ?? true, dayColor = getComputedStyle(document.documentElement).getPropertyValue('--day-color').trim() || '#ffffff', day = date.getDate();
-                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvg(String(day), { height: 20, color: dayColor })}</div>` : `<div class="day-number-wrapper" style="font-size: 1.2em; line-height: 1; color: ${dayColor}; font-weight: bold;">${day}</div>`;
+                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvgString(String(day), { height: 20, color: dayColor })}</div>` : `<div class="day-number-wrapper" style="font-size: 1.2em; line-height: 1; color: ${dayColor}; font-weight: bold;">${day}</div>`;
                 const lunarDateText = lunar.day === 1 ? lunar.toString.substring(0, lunar.isLeap ? 3 : 2) : lunar.dayString;
                 cell.innerHTML = `${dayNumberHTML}<div class="moon-icon-small">${MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '100%', `grid-${Math.random()}`)}</div><div class="lunar-date">${lunarDateText}</div>`;
                 cell.addEventListener('click', () => { if(!isEditMode) showDayDetailModal(date.toISOString()); });
@@ -1227,7 +1336,7 @@
                             if (useLed) {
                                 const clockState = transformStates['analog-clock-container'];
                                 const svgHeight = clockState ? clockState.width * 0.08 : 16;
-                                numDiv.innerHTML = `<div>${generateLedSvg(numberText, { height: svgHeight, color: numberColor })}</div>`;
+                                numDiv.innerHTML = `<div>${generateLedSvgString(numberText, { height: svgHeight, color: numberColor })}</div>`;
                             } else {
                                 numDiv.innerHTML = `<div style="transform: rotate(calc(-1 * var(--rotation))); color: ${numberColor}; font-size: 1.2em; font-weight: bold;">${numberText}</div>`;
                             }
@@ -1255,41 +1364,10 @@
                     this.updateTime(now);
                 }
             };
+
             // ===================================================================
-            // LED 數字 SVG 產生器
+            // LED 相關輔助函式 (Refactored)
             // ===================================================================
-            function generateLedSvg(text, config = {}) {
-                const { height = 24, color = '#FFFFFF', letterSpacing = 16 } = config;
-                const id_suffix = Math.random().toString(36).substring(2, 9);
-                const segmentId = `led-segment-${id_suffix}`, colonId = `led-colon-${id_suffix}`;
-                const segmentMap = [[1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],[0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1]];
-                const segmentTransforms = ['translate(0, 0)','translate(132, 20) rotate(90)','translate(132, 140) rotate(90)','translate(0, 240)','translate(12, 140) rotate(90)','translate(12, 20) rotate(90)','translate(0, 120)'];
-                const digitBaseWidth = 144, digitBaseHeight = 272, colonBaseWidth = 48;
-                let svgContent = '', currentX = 0;
-                for (const char of String(text)) {
-                    if (/\d/.test(char)) {
-                        const digit = parseInt(char, 10);
-                        if (digit >= 0 && digit <= 9) {
-                            const pattern = segmentMap[digit];
-                            let digitGroup = `<g transform="translate(${currentX}, 0)">`;
-                            for (let i = 0; i < 7; i++) digitGroup += `<use href="#${segmentId}" opacity="${pattern[i] ? '1' : '0.1'}" transform="${segmentTransforms[i]}" />`;
-                            digitGroup += `</g>`; svgContent += digitGroup;
-                        }
-                        currentX += digitBaseWidth + letterSpacing;
-                    } else if (char === ':') {
-                        svgContent += `<g transform="translate(${currentX}, 0)"><use href="#${colonId}" transform="translate(0, 60)" /><use href="#${colonId}" transform="translate(0, 180)" /></g>`;
-                        currentX += colonBaseWidth + letterSpacing;
-                    } else if (['/', '-', '.'].includes(char)) {
-                        const separatorWidth = 60, entity = { '/': '/', '-': '—', '.': '.' }[char];
-                        svgContent += `<text x="${currentX + separatorWidth / 2}" y="${digitBaseHeight / 2}" text-anchor="middle" dominant-baseline="central" font-size="${digitBaseHeight * 0.9}" font-family="'Courier New', Courier, monospace" font-weight="bold">${entity}</text>`;
-                        currentX += separatorWidth + letterSpacing;
-                    }
-                }
-                const totalWidth = currentX > 0 ? currentX - letterSpacing : 0;
-                if (totalWidth === 0) return '';
-                const padding = 16, finalWidth = ((totalWidth + padding * 2) / digitBaseHeight) * height;
-                return `<svg viewBox="-${padding} 0 ${totalWidth + padding * 2} ${digitBaseHeight}" data-text="${text}" height="${height}px" width="${finalWidth}px" fill="${color}" style="vertical-align: middle; display: inline-block;"><defs><polygon id="${segmentId}" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="${colonId}" x="-16" y="0" width="32" height="32" rx="5" ry="5" /></defs>${svgContent}</svg>`.replace(/\n\s*/g, '');
-            }
             function getLedHTML(text, useLed, options = {}) {
                 if (!useLed) return String(text).replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 const { color = '#FFFFFF', fontSize = 16, heightMultiplier = 1.1, defaultSpan = true } = options;
@@ -1297,7 +1375,7 @@
                 const parts = String(text).split(/(\d+[\d:./-]*)/);
                 parts.forEach(part => {
                     if (/^\d+[\d:./-]*$/.test(part) && part.trim() !== '') {
-                        resultHTML += generateLedSvg(part, { height: fontSize * heightMultiplier, color: color });
+                        resultHTML += generateLedSvgString(part, { height: fontSize * heightMultiplier, color: color });
                     } else if (part) {
                         const escapedPart = part.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                         resultHTML += defaultSpan ? `<span style="color:${color};">${escapedPart}</span>` : escapedPart;
@@ -1324,16 +1402,16 @@
                         if (/^\d+[\d:./-]*$/.test(part) && part.trim() !== '') {
                             const color = getComputedStyle(parent).color || '#FFFFFF';
                             const fontSize = parseFloat(getComputedStyle(parent).fontSize) || 16;
-                            const template = document.createElement('template');
-                            const svgHTML = generateLedSvg(part, { height: fontSize * 1.1, color: color }).trim();
-                            if (svgHTML) {
-                                template.innerHTML = svgHTML;
-                                if (template.content.firstChild) {
-                                    template.content.firstChild.dataset.ledProcessed = 'true';
-                                    fragment.appendChild(template.content.firstChild);
-                                }
-                            } else { fragment.appendChild(document.createTextNode(part)); }
-                        } else if (part) { fragment.appendChild(document.createTextNode(part)); }
+                            const svgElement = LedManager.create(part, { height: fontSize * 1.1, color: color });
+                            if (svgElement) {
+                                svgElement.dataset.ledProcessed = 'true';
+                                fragment.appendChild(svgElement);
+                            } else {
+                                fragment.appendChild(document.createTextNode(part));
+                            }
+                        } else if (part) {
+                            fragment.appendChild(document.createTextNode(part));
+                        }
                     });
                     parent.replaceChild(fragment, node);
                 });
@@ -1344,92 +1422,10 @@
             // ===================================================================
             function renderCalendarTitle(element, year, useLed, ledHeight, ledColor, defaultFontSize, defaultColor) {
                 element.innerHTML = useLed
-                    ? generateLedSvg(String(year), {height: ledHeight, color: ledColor})
+                    ? generateLedSvgString(String(year), {height: ledHeight, color: ledColor})
                     : `<span style="font-size: ${defaultFontSize}; color: ${defaultColor}; line-height: 1; font-weight: 700;">${year}</span>`;
             }
-            // ===================================================================
-            // LED 數字 SVG 產生器 (優化版本)
-            // ===================================================================
-            const ledSegmentMapForUpdate = [[1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],[0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1]];
-            function updateLedSvgContent(svg, text) {
-                if (!svg) return;
-                const digits = svg.querySelectorAll('.led-digit-group');
-                const textDigits = String(text).replace(/[^0-9]/g, '');
-                
-                digits.forEach((digitGroup, index) => {
-                    const digit = parseInt(textDigits[index], 10);
-                    if (!isNaN(digit)) {
-                        const pattern = ledSegmentMapForUpdate[digit];
-                        digitGroup.querySelectorAll('.segment').forEach((segment, i) => {
-                            segment.style.opacity = pattern[i] ? '1' : '0.1';
-                        });
-                    }
-                });
-                svg.dataset.text = text;
-            }
-            function createLedSvgElement(text, config = {}) {
-                const { height = 24, color = '#FFFFFF', letterSpacing = 16 } = config;
-                const id_suffix = Math.random().toString(36).substring(2, 9);
-                const segmentId = `led-segment-${id_suffix}`, colonId = `led-colon-${id_suffix}`;
-                const ledSegmentTransforms = ['translate(0, 0)','translate(132, 20) rotate(90)','translate(132, 140) rotate(90)','translate(0, 240)','translate(12, 140) rotate(90)','translate(12, 20) rotate(90)','translate(0, 120)'];
-                const ledDigitBaseWidth = 144, ledDigitBaseHeight = 272, ledColonBaseWidth = 48;
 
-                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svg.setAttribute('fill', color);
-                svg.style.verticalAlign = 'middle';
-                svg.style.display = 'inline-block';
-                
-                const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-                defs.innerHTML = `<polygon id="${segmentId}" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="${colonId}" x="-16" y="0" width="32" height="32" rx="5" ry="5" />`;
-                svg.appendChild(defs);
-
-                let currentX = 0;
-                const textStr = String(text);
-
-                for (const char of textStr) {
-                    if (/\d/.test(char)) {
-                        const digit = parseInt(char, 10);
-                        const digitGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                        digitGroup.setAttribute('class', 'led-digit-group');
-                        digitGroup.setAttribute('transform', `translate(${currentX}, 0)`);
-                        const pattern = ledSegmentMapForUpdate[digit];
-                        for (let i = 0; i < 7; i++) {
-                            const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-                            use.setAttribute('href', `#${segmentId}`);
-                            use.setAttribute('class', 'segment');
-                            use.style.opacity = pattern[i] ? '1' : '0.1';
-                            use.setAttribute('transform', ledSegmentTransforms[i]);
-                            digitGroup.appendChild(use);
-                        }
-                        svg.appendChild(digitGroup);
-                        currentX += ledDigitBaseWidth + letterSpacing;
-                    } else if (char === ':') {
-                        const colonGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                        colonGroup.setAttribute('transform', `translate(${currentX}, 0)`);
-                        ['translate(0, 60)', 'translate(0, 180)'].forEach(transform => {
-                            const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-                            use.setAttribute('href', `#${colonId}`);
-                            use.setAttribute('transform', transform);
-                            colonGroup.appendChild(use);
-                        });
-                        svg.appendChild(colonGroup);
-                        currentX += ledColonBaseWidth + letterSpacing;
-                    }
-                }
-
-                const totalWidth = currentX > 0 ? currentX - letterSpacing : 0;
-                if (totalWidth === 0) return null;
-
-                const padding = 16;
-                const finalWidth = ((totalWidth + padding * 2) / ledDigitBaseHeight) * height;
-
-                svg.setAttribute('viewBox', `-${padding} 0 ${totalWidth + padding * 2} ${ledDigitBaseHeight}`);
-                svg.setAttribute('height', `${height}px`);
-                svg.setAttribute('width', `${finalWidth}px`);
-                svg.dataset.text = text;
-
-                return svg;
-            }
             // ===================================================================
             // 跑馬燈模組 (Class)
             // ===================================================================
@@ -1515,7 +1511,7 @@
                             if (useLedGlobal && ledParams.includes(param) && /^[\d:.]+$/.test(replacementContent)) {
                                 const widgetState = transformStates[this.container.id];
                                 const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
-                                const svgElement = createLedSvgElement(replacementContent, { height: svgHeight, color: color });
+                                const svgElement = LedManager.create(replacementContent, { height: svgHeight, color: color });
                                 if (svgElement) span.appendChild(svgElement);
                             } else if (param === '%MOON_ICON%') {
                                 span.innerHTML = replacementContent;
@@ -1546,7 +1542,7 @@
                         if (useLed && ledParams.includes(key) && /^[\d:.]+$/.test(newText)) {
                             const svgEl = span.querySelector('svg');
                             if (svgEl && svgEl.dataset.text !== newText) {
-                                updateLedSvgContent(svgEl, newText);
+                                LedManager.update(svgEl, newText);
                             }
                         } else if (key === '%MOON_ICON%') {
                             if (span.innerHTML !== newText) span.innerHTML = newText;
