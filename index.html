@@ -31,8 +31,8 @@
             padding: 0;
             transform-origin: center center;
         }
-        .widget-container.edit-mode:not(:has(.control-handle:hover)) { cursor: zoom-in; }
-        .widget-container.edit-mode:not(:has(.control-handle:hover)):active { cursor: zoom-out; }
+        /* --- Cursors for edit mode --- */
+        .widget-container.edit-mode:not(:has(.control-handle:hover)) { cursor: move; }
         
         /* --- CSS 編輯模式邊框 --- */
         .widget-container.edit-mode::after {
@@ -163,27 +163,35 @@
         /* --- 控制點樣式 --- */
         .control-handle { position: absolute; background-color: rgba(79, 70, 229, 0.8); border-radius: 50%; display: none; z-index: 100; }
         .widget-container.edit-mode .control-handle { display: block; }
-        .move-handle { width: 28px; height: 28px; top: 50%; left: 50%; transform: translate(-50%, -50%); cursor: move; padding: 4px; border-radius: 6px; align-items: center; justify-content: center; }
-        .widget-container.edit-mode .move-handle { display: flex; }
+        .move-handle { display: none !important; /* Replaced by dragging the whole widget */ }
+
         .reset-handle {
-            position: absolute; width: 24px; height: 24px; top: 8px; right: 8px; cursor: pointer;
+            position: absolute; width: 24px; height: 24px; top: -12px; right: -12px; cursor: pointer;
             padding: 2px; border-radius: 4px; background-color: rgba(239, 68, 68, 0.8); z-index: 101;
-            transform-origin: top right; align-items: center; justify-content: center;
+            transform-origin: center; align-items: center; justify-content: center;
         }
         .widget-container.edit-mode .reset-handle { display: flex; }
         .resize-handle-w { width: 8px; height: 50px; top: 50%; right: -4px; transform: translateY(-50%); border-radius: 4px; cursor: ew-resize; }
         .resize-handle-h { width: 50px; height: 8px; bottom: -4px; left: 50%; transform: translateX(-50%); border-radius: 4px; cursor: ns-resize; }
         .rotate-handle {
-            width: 24px; height: 24px; position: absolute; bottom: -12px; right: -12px;
+            width: 24px; height: 24px; position: absolute; bottom: -12px; left: -12px;
             cursor: alias; padding: 4px; transform-origin: center; display: none;
         }
-        .widget-container.edit-mode .rotate-handle { display: flex; align-items: center; justify-content: center; }
-        .group-select-handle { position: absolute; top: 8px; left: 8px; width: 24px; height: 24px; cursor: pointer; z-index: 101; display: none; background-color: rgba(0, 255, 255, 0.5); border-radius: 4px; padding: 2px; transform-origin: top left; }
+        .scale-handle {
+            width: 24px; height: 24px; position: absolute; bottom: -12px; right: -12px;
+            cursor: sw-resize; padding: 4px; transform-origin: center; display: none;
+        }
+        .widget-container.edit-mode .rotate-handle, .widget-container.edit-mode .scale-handle { display: flex; align-items: center; justify-content: center; }
+        .group-select-handle {
+            position: absolute; top: -12px; left: -12px; width: 24px; height: 24px; cursor: pointer;
+            z-index: 101; display: none; background-color: rgba(0, 255, 255, 0.5);
+            border-radius: 4px; padding: 2px; transform-origin: center;
+        }
         .widget-container.edit-mode .group-select-handle { display: block; }
         .widget-container.selected-for-group { box-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
-        .widget-container.selected-for-group .rotate-handle { display: none !important; }
         #group-move-handle { position: absolute; width: 32px; height: 32px; z-index: 200; cursor: move; background-color: rgba(255, 255, 0, 0.8); border-radius: 6px; padding: 4px; display: flex; align-items: center; justify-content: center; }
         #group-rotate-handle { position: absolute; width: 28px; height: 28px; z-index: 200; cursor: alias; background-color: rgba(255, 255, 0, 0.8); border-radius: 50%; padding: 4px; display: flex; align-items: center; justify-content: center; }
+        #group-scale-handle { position: absolute; width: 28px; height: 28px; z-index: 200; cursor: sw-resize; background-color: rgba(255, 255, 0, 0.8); border-radius: 50%; padding: 4px; display: flex; align-items: center; justify-content: center; }
         /* --- Modal 彈出視窗樣式 --- */
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); display: flex; justify-content: center; align-items: center; z-index: 1050; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
         .modal-backdrop.show { opacity: 1; visibility: visible; }
@@ -361,6 +369,12 @@
             <symbol id="icon-rotate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M23 4v6h-6"></path>
                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </symbol>
+             <symbol id="icon-scale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <polyline points="9 21 3 21 3 15"></polyline>
+                <line x1="21" y1="3" x2="14" y2="10"></line>
+                <line x1="3" y1="21" x2="10" y2="14"></line>
             </symbol>
             <symbol id="icon-checkbox-unchecked" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -739,6 +753,398 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            // ===================================================================
+            // 編輯模式與拖曳縮放
+            // 說明: 處理編輯模式下的所有互動，包括拖曳、縮放、還原尺寸等。
+            // ===================================================================
+            document.getElementById('edit-layout-btn').addEventListener('click', () => {
+                isEditMode = !isEditMode;
+                const timedEffectToggle = document.getElementById('timed-effect-enabled-toggle');
+                const timedEffectInterval = document.getElementById('timed-effect-interval-seconds');
+                if (isEditMode) {
+                    MarqueeManager.setPlayState(false);
+                    timedEffectToggle.disabled = true; timedEffectInterval.disabled = true;
+                } else {
+                    clearGroupSelection();
+                    MarqueeManager.setPlayState(true); saveCurrentSettings();
+                    editToolbar.style.left = '50%'; editToolbar.style.top = 'auto'; editToolbar.style.bottom = ''; editToolbar.style.transform = 'translateX(-50%)';
+                    timedEffectToggle.disabled = false; timedEffectInterval.disabled = false;
+                }
+                document.body.classList.toggle('edit-mode', isEditMode);
+                allWidgetContainers().forEach(c => c.classList.toggle('edit-mode', isEditMode));
+                document.getElementById('edit-icon').classList.toggle('display-none', isEditMode);
+                document.getElementById('edit-exit-icon').classList.toggle('display-none', !isEditMode);
+                editToolbar.classList.toggle('show', isEditMode);
+                document.querySelectorAll('.calendar-day').forEach(d => d.classList.toggle('edit-mode-active', isEditMode));
+                resetActivityTimeout();
+            });
+            let activeHandle = null, startX, startY, initialTransformState, scaleCenterX, scaleCenterY, initialDist, activeWidget;
+            const applyTransform = (widgetEl, state) => {
+                if (!widgetEl || !state) return;
+                const { left, top, width, height, scale, visible, rotation = 0 } = state;
+                widgetEl.style.left = `${left}px`; widgetEl.style.top = `${top}px`;
+                widgetEl.style.width = `${width}px`; widgetEl.style.height = `${height}px`;
+                widgetEl.style.transformOrigin = 'center';
+                widgetEl.style.transform = `scale(${scale}) rotate(${rotation}deg)`;
+                widgetEl.style.display = visible ? 'flex' : 'none';
+                if (widgetEl.classList.contains('calendar-widget') && state.height > 0) {
+                    widgetEl.querySelector('.background-month').style.fontSize = `${state.height * 0.7}px`;
+                    widgetEl.style.fontSize = `${state.height / 40}px`;
+                    const titleElement = widgetEl.querySelector('.calendar-title'), headerContainer = widgetEl.querySelector('.calendar-header'), navElement = widgetEl.querySelector('.calendar-nav');
+                    if (titleElement && headerContainer && navElement) {
+                        headerContainer.getBoundingClientRect();
+                        const availableWidth = headerContainer.clientWidth - navElement.offsetWidth - 16;
+                        if (titleElement.scrollWidth > availableWidth && availableWidth > 0) widgetEl.style.fontSize = `${parseFloat(getComputedStyle(widgetEl).fontSize) * (availableWidth / titleElement.scrollWidth)}px`;
+                    }
+                } else if (widgetEl.id === 'analog-clock-container') {
+                    widgetEl.style.fontSize = `${state.width / 20}px`;
+                } else if (widgetEl.classList.contains('marquee-widget')) {
+                    widgetEl.style.fontSize = `${state.height * 0.75}px`;
+                    MarqueeManager.rebuildAnimationByIndex(parseInt(widgetEl.id.split('-')[2]));
+                }
+                const inverseScale = 1 / scale;
+                widgetEl.querySelectorAll('.control-handle, .group-select-handle').forEach(h => {
+                    if (h.classList.contains('move-handle')) h.style.transform = `translate(-50%, -50%) scale(${inverseScale})`;
+                    else if (h.classList.contains('reset-handle')) h.style.transform = `scale(${inverseScale})`;
+                    else if (h.classList.contains('resize-handle-w')) h.style.transform = `translateY(-50%) scale(${inverseScale})`;
+                    else if (h.classList.contains('resize-handle-h')) h.style.transform = `translateX(-50%) scale(${inverseScale})`;
+                    else if (h.classList.contains('rotate-handle')) h.style.transform = `scale(${inverseScale})`;
+                    else if (h.classList.contains('scale-handle')) h.style.transform = `scale(${inverseScale})`;
+                    else if (h.classList.contains('group-select-handle')) h.style.transform = `scale(${inverseScale})`;
+                });
+            };
+            const applyAllTransforms = () => { Object.keys(transformStates).forEach(id => applyTransform(document.getElementById(id), transformStates[id])); };
+            function checkAndClampWidgetBounds(state) {
+                if (!state || !state.visible) return;
+                const winW = window.innerWidth, winH = window.innerHeight;
+                const renderedWidth = state.width * state.scale;
+                const renderedHeight = state.height * state.scale;
+                const offsetX = (state.width - renderedWidth) / 2;
+                const offsetY = (state.height - renderedHeight) / 2;
+                const renderedLeft = state.left + offsetX;
+                const renderedTop = state.top + offsetY;
+                const marginW = renderedWidth * 0.05;
+                const marginH = renderedHeight * 0.05;
+                const clampedRenderedLeft = Math.max(-marginW, Math.min(renderedLeft, winW - renderedWidth + marginW));
+                const clampedRenderedTop = Math.max(-marginH, Math.min(renderedTop, winH - renderedHeight + marginH));
+                state.left = clampedRenderedLeft - offsetX;
+                state.top = clampedRenderedTop - offsetY;
+            }
+            const ensureWidgetsInBounds = () => { Object.values(transformStates).forEach(checkAndClampWidgetBounds); applyAllTransforms(); };
+            const onDragStart = (e) => {
+                if (e.target.closest('.group-select-handle')) return;
+                if (!isEditMode) return;
+                const isGroupMoveHandle = e.target.closest('#group-move-handle');
+                const isGroupRotateHandle = e.target.closest('#group-rotate-handle');
+                const isGroupScaleHandle = e.target.closest('#group-scale-handle');
+                const targetWidget = e.target.closest('.widget-container');
+                if (!targetWidget && !isGroupMoveHandle && !isGroupRotateHandle && !isGroupScaleHandle) return;
+                if (isGroupMoveHandle) {
+                    e.preventDefault(); e.stopPropagation();
+                    activeHandle = 'group-move';
+                } else if (isGroupRotateHandle) {
+                    e.preventDefault(); e.stopPropagation();
+                    activeHandle = 'group-rotate';
+                } else if (isGroupScaleHandle) {
+                    e.preventDefault(); e.stopPropagation();
+                    activeHandle = 'group-scale';
+                } else if (targetWidget) {
+                    const handle = e.target.closest('.control-handle');
+                    const isPartOfGroup = selectedWidgets.has(targetWidget.id) && selectedWidgets.size >= 2;
+                    let isDragAction = false;
+                    
+                    if (handle && !handle.classList.contains('reset-handle')) {
+                        if (handle.classList.contains('scale-handle')) { 
+                            activeHandle = 'scale'; isDragAction = true; 
+                        }
+                        else if (handle.classList.contains('resize-handle-w')) { activeHandle = 'resize-w'; isDragAction = true; }
+                        else if (handle.classList.contains('resize-handle-h')) { activeHandle = 'resize-h'; isDragAction = true; }
+                        else if (handle.classList.contains('rotate-handle')) {
+                            activeHandle = isPartOfGroup ? 'group-rotate' : 'rotate'; isDragAction = true;
+                        }
+                    } else if (!handle) { // If no handle is clicked, default to move
+                        activeHandle = isPartOfGroup ? 'group-move' : 'move';
+                        isDragAction = true;
+                    }
+
+                    if (isDragAction) {
+                        allWidgetContainers().forEach(w => w.style.zIndex = '10');
+                        targetWidget.style.zIndex = '100';
+                        e.preventDefault(); e.stopPropagation();
+                        const originalTransition = targetWidget.style.transition;
+                        targetWidget.style.transition = 'none';
+                        activeWidget = { el: targetWidget, state: transformStates[targetWidget.id], originalTransition: originalTransition };
+                    }
+                }
+                if (!activeHandle) return;
+                document.body.style.userSelect = 'none';
+                startX = (e.touches ? e.touches[0] : e).clientX;
+                startY = (e.touches ? e.touches[0] : e).clientY;
+                if (activeHandle.startsWith('group')) {
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    selectedWidgets.forEach(id => {
+                        const state = transformStates[id]; if (!state || !state.visible) return;
+                        const renderedWidth = state.width * state.scale;
+                        const renderedHeight = state.height * state.scale;
+                        const offsetX = (state.width - renderedWidth) / 2;
+                        const offsetY = (state.height - renderedHeight) / 2;
+                        const renderedLeft = state.left + offsetX;
+                        const renderedTop = state.top + offsetY;
+                        minX = Math.min(minX, renderedLeft);
+                        minY = Math.min(minY, renderedTop);
+                        maxX = Math.max(maxX, renderedLeft + renderedWidth);
+                        maxY = Math.max(maxY, renderedTop + renderedHeight);
+                    });
+                    scaleCenterX = minX + (maxX - minX) / 2;
+                    scaleCenterY = minY + (maxY - minY) / 2;
+                    initialGroupTransforms = {};
+                    selectedWidgets.forEach(id => { initialGroupTransforms[id] = { ...transformStates[id] }; });
+                    if (activeHandle === 'group-scale') {
+                        initialDist = Math.hypot(startX - scaleCenterX, startY - scaleCenterY);
+                    } else if (activeHandle === 'group-rotate') {
+                        initialGroupTransforms.startAngle = Math.atan2(startY - scaleCenterY, startX - scaleCenterX);
+                        if (groupMoveHandle) { initialGroupTransforms.moveHandle = { left: groupMoveHandle.offsetLeft, top: groupMoveHandle.offsetTop }; }
+                        if (groupRotateHandle) { initialGroupTransforms.rotateHandle = { left: groupRotateHandle.offsetLeft, top: groupRotateHandle.offsetTop }; }
+                        if (groupScaleHandle) { initialGroupTransforms.scaleHandle = { left: groupScaleHandle.offsetLeft, top: groupScaleHandle.offsetTop }; }
+                    }
+                } else {
+                    initialTransformState = { ...activeWidget.state };
+                    if (activeHandle === 'scale' || activeHandle === 'rotate') {
+                        const rect = activeWidget.el.getBoundingClientRect();
+                        scaleCenterX = rect.left + rect.width / 2;
+                        scaleCenterY = rect.top + rect.height / 2;
+                        if (activeHandle === 'scale') {
+                            initialDist = Math.hypot(startX - scaleCenterX, startY - scaleCenterY);
+                        } else { // 'rotate'
+                            const startAngle = Math.atan2(startY - scaleCenterY, startX - scaleCenterX) * (180 / Math.PI);
+                            initialTransformState.startAngle = startAngle;
+                        }
+                    }
+                }
+                window.addEventListener('mousemove', onDragMove); window.addEventListener('touchmove', onDragMove, { passive: false });
+                window.addEventListener('mouseup', onDragEnd); window.addEventListener('touchend', onDragEnd);
+            };
+            const onDragMove = (e) => {
+                if (!activeHandle) return;
+                const currentX = (e.touches ? e.touches[0] : e).clientX, currentY = (e.touches ? e.touches[0] : e).clientY;
+                const dx = currentX - startX, dy = currentY - startY;
+                if (activeHandle === 'group-move') {
+                    document.body.style.cursor = 'grabbing';
+                    selectedWidgets.forEach(id => {
+                        const widgetEl = document.getElementById(id); const initialState = initialGroupTransforms[id]; const state = transformStates[id];
+                        state.left = initialState.left + dx; state.top = initialState.top + dy;
+                        applyTransform(widgetEl, state);
+                    });
+                    if (groupMoveHandle) groupMoveHandle.style.transform = `translate(${dx}px, ${dy}px)`;
+                    if (groupRotateHandle) groupRotateHandle.style.transform = `translate(${dx}px, ${dy}px)`;
+                    if (groupScaleHandle) groupScaleHandle.style.transform = `translate(${dx}px, ${dy}px)`;
+                    return;
+                }
+                if (activeHandle === 'group-scale') {
+                    const currentDist = Math.hypot(currentX - scaleCenterX, currentY - scaleCenterY);
+                    const scaleFactor = initialDist > 0 ? (currentDist / initialDist) : 1;
+                    selectedWidgets.forEach(id => {
+                        const widgetEl = document.getElementById(id);
+                        const initialState = initialGroupTransforms[id];
+                        const state = transformStates[id];
+                        let newScale = initialState.scale * scaleFactor;
+                        newScale = Math.max(0.1, Math.min(newScale, 10));
+                        state.scale = newScale;
+                        const initialWidgetLayoutCenterX = initialState.left + initialState.width / 2;
+                        const initialWidgetLayoutCenterY = initialState.top + initialState.height / 2;
+                        const newWidgetLayoutCenterX = scaleCenterX + (initialWidgetLayoutCenterX - scaleCenterX) * scaleFactor;
+                        const newWidgetLayoutCenterY = scaleCenterY + (initialWidgetLayoutCenterY - scaleCenterY) * scaleFactor;
+                        state.left = newWidgetLayoutCenterX - state.width / 2;
+                        state.top = newWidgetLayoutCenterY - state.height / 2;
+                        applyTransform(widgetEl, state);
+                    });
+                    document.body.style.cursor = 'sw-resize';
+                    updateGroupControls();
+                    return;
+                }
+                if (activeHandle === 'group-rotate') {
+                    document.body.style.cursor = 'alias';
+                    const currentAngle = Math.atan2(currentY - scaleCenterY, currentX - scaleCenterX);
+                    const angleDelta = currentAngle - initialGroupTransforms.startAngle;
+                    const cosA = Math.cos(angleDelta); const sinA = Math.sin(angleDelta);
+                    selectedWidgets.forEach(id => {
+                        const widgetEl = document.getElementById(id);
+                        const initialState = initialGroupTransforms[id];
+                        const state = transformStates[id];
+                        const initialWidgetCenterX = initialState.left + (initialState.width / 2);
+                        const initialWidgetCenterY = initialState.top + (initialState.height / 2);
+                        const vecX = initialWidgetCenterX - scaleCenterX;
+                        const vecY = initialWidgetCenterY - scaleCenterY;
+                        const rotatedVecX = vecX * cosA - vecY * sinA;
+                        const rotatedVecY = vecX * sinA + vecY * cosA;
+                        state.left = (scaleCenterX + rotatedVecX) - (state.width / 2);
+                        state.top = (scaleCenterY + rotatedVecY) - (state.height / 2);
+                        state.rotation = (initialState.rotation || 0) + (angleDelta * 180 / Math.PI);
+                        applyTransform(widgetEl, state);
+                    });
+                    const rotateHandle = (handle, initialPos) => {
+                        if (!handle || !initialPos) return;
+                        const initialHandleCenterX = initialPos.left + handle.offsetWidth / 2;
+                        const initialHandleCenterY = initialPos.top + handle.offsetHeight / 2;
+                        const vecX = initialHandleCenterX - scaleCenterX;
+                        const vecY = initialHandleCenterY - scaleCenterY;
+                        const rotatedVecX = vecX * cosA - vecY * sinA;
+                        const rotatedVecY = vecX * sinA + vecY * cosA;
+                        handle.style.left = `${(scaleCenterX + rotatedVecX) - handle.offsetWidth / 2}px`;
+                        handle.style.top = `${(scaleCenterY + rotatedVecY) - handle.offsetHeight / 2}px`;
+                    };
+                    rotateHandle(groupMoveHandle, initialGroupTransforms.moveHandle);
+                    rotateHandle(groupRotateHandle, initialGroupTransforms.rotateHandle);
+                    rotateHandle(groupScaleHandle, initialGroupTransforms.scaleHandle);
+                    return;
+                }
+                // --- 單一元件操作 ---
+                if (!activeWidget) return; e.preventDefault();
+                switch (activeHandle) {
+                    case 'move': 
+                        document.body.style.cursor = 'grabbing'; 
+                        activeWidget.state.left = initialTransformState.left + dx; 
+                        activeWidget.state.top = initialTransformState.top + dy; 
+                        break;
+                    case 'resize-w': {
+                        document.body.style.cursor = 'ew-resize';
+                        const newWidth = Math.max(50, initialTransformState.width + dx);
+                        activeWidget.state.width = newWidth;
+                        if (activeWidget.el.id === 'analog-clock-container') {
+                            activeWidget.state.height = newWidth;
+                        } else if (activeWidget.el.id === 'led-clock-container' && LedClock.aspectRatio > 0) {
+                            activeWidget.state.height = newWidth / LedClock.aspectRatio;
+                        }
+                        break;
+                    }
+                    case 'resize-h': {
+                        document.body.style.cursor = 'ns-resize';
+                        const newHeight = Math.max(50, initialTransformState.height + dy);
+                        activeWidget.state.height = newHeight;
+                        if (activeWidget.el.id === 'analog-clock-container') {
+                             activeWidget.state.width = newHeight;
+                        } else if (activeWidget.el.id === 'led-clock-container' && LedClock.aspectRatio > 0) {
+                            activeWidget.state.width = newHeight * LedClock.aspectRatio;
+                        }
+                        break;
+                    }
+                    case 'scale': {
+                        const currentDist = Math.hypot(currentX - scaleCenterX, currentY - scaleCenterY);
+                        const oldScale = initialTransformState.scale;
+                        let newScale = initialDist > 0 ? (oldScale * (currentDist / initialDist)) : oldScale;
+                        newScale = Math.max(0.2, Math.min(newScale, 5));
+                        activeWidget.state.scale = newScale;
+                        document.body.style.cursor = 'sw-resize';
+                        break;
+                    }
+                    case 'rotate':
+                        document.body.style.cursor = 'alias';
+                        const angle = Math.atan2(currentY - scaleCenterY, currentX - scaleCenterX) * (180 / Math.PI);
+                        const rotationDelta = angle - initialTransformState.startAngle;
+                        activeWidget.state.rotation = (initialTransformState.rotation || 0) + rotationDelta;
+                        break;
+                }
+                checkAndClampWidgetBounds(activeWidget.state); applyTransform(activeWidget.el, activeWidget.state);
+            };
+            const onDragEnd = () => {
+                if (!activeHandle) return;
+                if (activeHandle.startsWith('group')) {
+                    if (groupMoveHandle) groupMoveHandle.style.transform = '';
+                    if (groupRotateHandle) groupRotateHandle.style.transform = '';
+                    if (groupScaleHandle) groupScaleHandle.style.transform = '';
+                    selectedWidgets.forEach(id => checkAndClampWidgetBounds(transformStates[id]));
+                    applyAllTransforms();
+                    updateGroupControls();
+                } else if (activeWidget?.el) {
+                    activeWidget.el.style.transition = activeWidget.originalTransition;
+                    ensureWidgetsInBounds();
+                }
+                document.body.style.cursor = 'default'; document.body.style.userSelect = 'auto'; activeHandle = null; activeWidget = null;
+                window.removeEventListener('mousemove', onDragMove); window.removeEventListener('touchmove', onDragMove);
+                window.removeEventListener('mouseup', onDragEnd); window.removeEventListener('touchend', onDragEnd);
+                saveCurrentSettings();
+            };
+            document.body.addEventListener('mousedown', onDragStart); document.body.addEventListener('touchstart', onDragStart, { passive: false });
+            // ===================================================================
+            // 群組功能相關函式
+            // ===================================================================
+            function toggleWidgetSelection(widgetEl) {
+                const widgetId = widgetEl.id, uncheckedIcon = widgetEl.querySelector('.group-select-handle .unchecked'), checkedIcon = widgetEl.querySelector('.group-select-handle .checked');
+                if (selectedWidgets.has(widgetId)) {
+                    selectedWidgets.delete(widgetId); widgetEl.classList.remove('selected-for-group');
+                    uncheckedIcon.style.display = 'block'; checkedIcon.style.display = 'none';
+                } else {
+                    selectedWidgets.add(widgetId); widgetEl.classList.add('selected-for-group');
+                    uncheckedIcon.style.display = 'none'; checkedIcon.style.display = 'block';
+                }
+                updateGroupControls();
+            }
+            function updateGroupControls() {
+                if (selectedWidgets.size < 2) {
+                    if (groupMoveHandle) { groupMoveHandle.remove(); groupMoveHandle = null; }
+                    if (groupRotateHandle) { groupRotateHandle.remove(); groupRotateHandle = null; }
+                    if (groupScaleHandle) { groupScaleHandle.remove(); groupScaleHandle = null; }
+                    allWidgetContainers().forEach(el => {
+                        const moveHandle = el.querySelector('.move-handle'); if (moveHandle) moveHandle.style.display = '';
+                        const rotateHandle = el.querySelector('.rotate-handle'); if (rotateHandle) rotateHandle.style.display = '';
+                    });
+                    return;
+                }
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                selectedWidgets.forEach(id => {
+                    const state = transformStates[id]; if (!state || !state.visible) return;
+                    const renderedWidth = state.width * state.scale, renderedHeight = state.height * state.scale;
+                    const offsetX = (state.width - renderedWidth) / 2, offsetY = (state.height - renderedHeight) / 2;
+                    const renderedLeft = state.left + offsetX, renderedTop = state.top + offsetY;
+                    minX = Math.min(minX, renderedLeft); minY = Math.min(minY, renderedTop);
+                    maxX = Math.max(maxX, renderedLeft + renderedWidth); maxY = Math.max(maxY, renderedTop + renderedHeight);
+                });
+                if (!isFinite(minX)) return;
+                // 中心點計算保留給旋轉與縮放使用
+                const groupCenterX = minX + (maxX - minX) / 2, groupCenterY = minY + (maxY - minY) / 2;
+                
+                 if (!groupRotateHandle) {
+                    groupRotateHandle = document.createElement('div');
+                    groupRotateHandle.id = 'group-rotate-handle';
+                    groupRotateHandle.innerHTML = `<svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-rotate" stroke="black" stroke-width="1.5"></use></svg>`;
+                    document.body.appendChild(groupRotateHandle);
+                }
+                if (!groupScaleHandle) {
+                    groupScaleHandle = document.createElement('div');
+                    groupScaleHandle.id = 'group-scale-handle';
+                    groupScaleHandle.innerHTML = `<svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-scale" stroke="black" stroke-width="1.5"></use></svg>`;
+                    document.body.appendChild(groupScaleHandle);
+                }
+                
+                groupRotateHandle.style.left = `${minX - groupRotateHandle.offsetWidth / 2}px`;
+                groupRotateHandle.style.top = `${maxY - groupRotateHandle.offsetHeight / 2}px`;
+                groupScaleHandle.style.left = `${maxX - groupScaleHandle.offsetWidth / 2}px`;
+                groupScaleHandle.style.top = `${maxY - groupScaleHandle.offsetHeight / 2}px`;
+
+                selectedWidgets.forEach(id => {
+                    const el = document.getElementById(id);
+                    // 隱藏個別的移動圖示，因為可以拖曳元件本身來移動群組
+                    const moveHandle = el.querySelector('.move-handle'); 
+                    if (moveHandle) moveHandle.style.display = 'none';
+                });
+            }
+            function clearGroupSelection() {
+                if (groupMoveHandle) { groupMoveHandle.remove(); groupMoveHandle = null; }
+                if (groupRotateHandle) { groupRotateHandle.remove(); groupRotateHandle = null; }
+                if (groupScaleHandle) { groupScaleHandle.remove(); groupScaleHandle = null; }
+                selectedWidgets.forEach(id => {
+                    const widgetEl = document.getElementById(id); if (!widgetEl) return;
+                    widgetEl.classList.remove('selected-for-group');
+                    const uncheckedIcon = widgetEl.querySelector('.group-select-handle .unchecked'), checkedIcon = widgetEl.querySelector('.group-select-handle .checked');
+                    if (uncheckedIcon) uncheckedIcon.style.display = 'block';
+                    if (checkedIcon) checkedIcon.style.display = 'none';
+                });
+                selectedWidgets.clear();
+                allWidgetContainers().forEach(el => {
+                    const moveHandle = el.querySelector('.move-handle'); if (moveHandle) moveHandle.style.display = '';
+                    const rotateHandle = el.querySelector('.rotate-handle'); if (rotateHandle) rotateHandle.style.display = '';
+                });
+            }
             // ===================================================================
             // LED 顯示管理器 (Refactored & Integrated)
             // 說明: 統一管理所有 LED 字型 SVG 的生成與更新。
@@ -1119,7 +1525,7 @@
             const actionButtons = document.getElementById('action-buttons');
             const editToolbar = document.getElementById('edit-toolbar');
             let isEditMode = false, activityTimeout, transformStates = {}, settingsState = {}, isWidgetAnimating = {};
-            let selectedWidgets = new Set(), groupMoveHandle = null, groupRotateHandle = null, initialGroupTransforms = {};
+            let selectedWidgets = new Set(), groupMoveHandle = null, groupRotateHandle = null, groupScaleHandle = null, initialGroupTransforms = {};
             // --- 跑馬燈參數與顏色變數的映射表 ---
             const marqueeParamColorMap = {
                 '%YYYY%': '--year-color', '%ROC_YY%': '--year-color', '%MM%': '--month-color', '%DD%': '--day-color',
@@ -1840,380 +2246,6 @@
             document.getElementById('fullscreen-btn').addEventListener('click',()=>{if(!document.fullscreenElement){document.documentElement.requestFullscreen()}else{document.exitFullscreen()}});
             document.addEventListener('fullscreenchange',()=>{const isFullscreen=!!document.fullscreenElement;document.getElementById('fullscreen-enter-icon').classList.toggle('display-none',isFullscreen);document.getElementById('fullscreen-exit-icon').classList.toggle('display-none',!isFullscreen)});
             // ===================================================================
-            // 編輯模式與拖曳縮放
-            // 說明: 處理編輯模式下的所有互動，包括拖曳、縮放、還原尺寸等。
-            // ===================================================================
-            document.getElementById('edit-layout-btn').addEventListener('click', () => {
-                isEditMode = !isEditMode;
-                const timedEffectToggle = document.getElementById('timed-effect-enabled-toggle');
-                const timedEffectInterval = document.getElementById('timed-effect-interval-seconds');
-                if (isEditMode) {
-                    MarqueeManager.setPlayState(false);
-                    timedEffectToggle.disabled = true; timedEffectInterval.disabled = true;
-                } else {
-                    clearGroupSelection();
-                    MarqueeManager.setPlayState(true); saveCurrentSettings();
-                    editToolbar.style.left = '50%'; editToolbar.style.top = 'auto'; editToolbar.style.bottom = ''; editToolbar.style.transform = 'translateX(-50%)';
-                    timedEffectToggle.disabled = false; timedEffectInterval.disabled = false;
-                }
-                document.body.classList.toggle('edit-mode', isEditMode);
-                allWidgetContainers().forEach(c => c.classList.toggle('edit-mode', isEditMode));
-                document.getElementById('edit-icon').classList.toggle('display-none', isEditMode);
-                document.getElementById('edit-exit-icon').classList.toggle('display-none', !isEditMode);
-                editToolbar.classList.toggle('show', isEditMode);
-                document.querySelectorAll('.calendar-day').forEach(d => d.classList.toggle('edit-mode-active', isEditMode));
-                resetActivityTimeout();
-            });
-            let activeHandle = null, startX, startY, initialTransformState, scaleCenterX, scaleCenterY, initialDist, activeWidget;
-            const applyTransform = (widgetEl, state) => {
-                if (!widgetEl || !state) return;
-                const { left, top, width, height, scale, visible, rotation = 0 } = state;
-                widgetEl.style.left = `${left}px`; widgetEl.style.top = `${top}px`;
-                widgetEl.style.width = `${width}px`; widgetEl.style.height = `${height}px`;
-                widgetEl.style.transformOrigin = 'center';
-                widgetEl.style.transform = `scale(${scale}) rotate(${rotation}deg)`;
-                widgetEl.style.display = visible ? 'flex' : 'none';
-                if (widgetEl.classList.contains('calendar-widget') && state.height > 0) {
-                    widgetEl.querySelector('.background-month').style.fontSize = `${state.height * 0.7}px`;
-                    widgetEl.style.fontSize = `${state.height / 40}px`;
-                    const titleElement = widgetEl.querySelector('.calendar-title'), headerContainer = widgetEl.querySelector('.calendar-header'), navElement = widgetEl.querySelector('.calendar-nav');
-                    if (titleElement && headerContainer && navElement) {
-                        headerContainer.getBoundingClientRect();
-                        const availableWidth = headerContainer.clientWidth - navElement.offsetWidth - 16;
-                        if (titleElement.scrollWidth > availableWidth && availableWidth > 0) widgetEl.style.fontSize = `${parseFloat(getComputedStyle(widgetEl).fontSize) * (availableWidth / titleElement.scrollWidth)}px`;
-                    }
-                } else if (widgetEl.id === 'analog-clock-container') {
-                    widgetEl.style.fontSize = `${state.width / 20}px`;
-                } else if (widgetEl.classList.contains('marquee-widget')) {
-                    widgetEl.style.fontSize = `${state.height * 0.75}px`;
-                    MarqueeManager.rebuildAnimationByIndex(parseInt(widgetEl.id.split('-')[2]));
-                }
-                const inverseScale = 1 / scale;
-                widgetEl.querySelectorAll('.control-handle, .group-select-handle').forEach(h => {
-                    if (h.classList.contains('move-handle')) h.style.transform = `translate(-50%, -50%) scale(${inverseScale})`;
-                    else if (h.classList.contains('reset-handle')) h.style.transform = `scale(${inverseScale})`;
-                    else if (h.classList.contains('resize-handle-w')) h.style.transform = `translateY(-50%) scale(${inverseScale})`;
-                    else if (h.classList.contains('resize-handle-h')) h.style.transform = `translateX(-50%) scale(${inverseScale})`;
-                    else if (h.classList.contains('rotate-handle')) h.style.transform = `scale(${inverseScale})`;
-                    else if (h.classList.contains('group-select-handle')) h.style.transform = `scale(${inverseScale})`;
-                });
-            };
-            const applyAllTransforms = () => { Object.keys(transformStates).forEach(id => applyTransform(document.getElementById(id), transformStates[id])); };
-            function checkAndClampWidgetBounds(state) {
-                if (!state || !state.visible) return;
-                const winW = window.innerWidth, winH = window.innerHeight;
-                const renderedWidth = state.width * state.scale;
-                const renderedHeight = state.height * state.scale;
-                const offsetX = (state.width - renderedWidth) / 2;
-                const offsetY = (state.height - renderedHeight) / 2;
-                const renderedLeft = state.left + offsetX;
-                const renderedTop = state.top + offsetY;
-                const marginW = renderedWidth * 0.05;
-                const marginH = renderedHeight * 0.05;
-                const clampedRenderedLeft = Math.max(-marginW, Math.min(renderedLeft, winW - renderedWidth + marginW));
-                const clampedRenderedTop = Math.max(-marginH, Math.min(renderedTop, winH - renderedHeight + marginH));
-                state.left = clampedRenderedLeft - offsetX;
-                state.top = clampedRenderedTop - offsetY;
-            }
-            const ensureWidgetsInBounds = () => { Object.values(transformStates).forEach(checkAndClampWidgetBounds); applyAllTransforms(); };
-            const onDragStart = (e) => {
-                if (e.target.closest('.group-select-handle')) return;
-                if (!isEditMode) return;
-                const isGroupMoveHandle = e.target.closest('#group-move-handle');
-                const isGroupRotateHandle = e.target.closest('#group-rotate-handle');
-                const targetWidget = e.target.closest('.widget-container');
-                if (!targetWidget && !isGroupMoveHandle && !isGroupRotateHandle) return;
-                if (isGroupMoveHandle) {
-                    e.preventDefault(); e.stopPropagation();
-                    activeHandle = 'group-move';
-                } else if (isGroupRotateHandle) {
-                    e.preventDefault(); e.stopPropagation();
-                    activeHandle = 'group-rotate';
-                } else if (targetWidget) {
-                    const handle = e.target.closest('.control-handle');
-                    const isPartOfGroup = selectedWidgets.has(targetWidget.id) && selectedWidgets.size >= 2;
-                    let isDragAction = false;
-
-                    if (handle && !handle.classList.contains('reset-handle')) {
-                        if (handle.classList.contains('move-handle')) { activeHandle = 'move'; isDragAction = true; }
-                        else if (handle.classList.contains('resize-handle-w')) { activeHandle = 'resize-w'; isDragAction = true; }
-                        else if (handle.classList.contains('resize-handle-h')) { activeHandle = 'resize-h'; isDragAction = true; }
-                        else if (handle.classList.contains('rotate-handle')) {
-                            activeHandle = isPartOfGroup ? 'group-rotate' : 'rotate'; isDragAction = true;
-                        }
-                    } else if (!handle) {
-                        activeHandle = isPartOfGroup ? 'group-scale' : 'scale';
-                        isDragAction = true;
-                    }
-
-                    if (isDragAction) {
-                        allWidgetContainers().forEach(w => w.style.zIndex = '10');
-                        targetWidget.style.zIndex = '100';
-                        e.preventDefault(); e.stopPropagation();
-                        const originalTransition = targetWidget.style.transition;
-                        targetWidget.style.transition = 'none';
-                        activeWidget = { el: targetWidget, state: transformStates[targetWidget.id], originalTransition: originalTransition };
-                    }
-                }
-                if (!activeHandle) return;
-                document.body.style.userSelect = 'none';
-                startX = (e.touches ? e.touches[0] : e).clientX;
-                startY = (e.touches ? e.touches[0] : e).clientY;
-                if (activeHandle.startsWith('group')) {
-                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                    selectedWidgets.forEach(id => {
-                        const state = transformStates[id]; if (!state || !state.visible) return;
-                        const renderedWidth = state.width * state.scale;
-                        const renderedHeight = state.height * state.scale;
-                        const offsetX = (state.width - renderedWidth) / 2;
-                        const offsetY = (state.height - renderedHeight) / 2;
-                        const renderedLeft = state.left + offsetX;
-                        const renderedTop = state.top + offsetY;
-                        minX = Math.min(minX, renderedLeft);
-                        minY = Math.min(minY, renderedTop);
-                        maxX = Math.max(maxX, renderedLeft + renderedWidth);
-                        maxY = Math.max(maxY, renderedTop + renderedHeight);
-                    });
-                    scaleCenterX = minX + (maxX - minX) / 2;
-                    scaleCenterY = minY + (maxY - minY) / 2;
-                    initialGroupTransforms = {};
-                    selectedWidgets.forEach(id => { initialGroupTransforms[id] = { ...transformStates[id] }; });
-                    if (activeHandle === 'group-scale') {
-                        initialDist = Math.hypot(startX - scaleCenterX, startY - scaleCenterY);
-                    } else if (activeHandle === 'group-rotate') {
-                        initialGroupTransforms.startAngle = Math.atan2(startY - scaleCenterY, startX - scaleCenterX);
-                        if (groupMoveHandle) { initialGroupTransforms.moveHandle = { left: groupMoveHandle.offsetLeft, top: groupMoveHandle.offsetTop }; }
-                        if (groupRotateHandle) { initialGroupTransforms.rotateHandle = { left: groupRotateHandle.offsetLeft, top: groupRotateHandle.offsetTop }; }
-                    }
-                } else {
-                    initialTransformState = { ...activeWidget.state };
-                    if (activeHandle === 'scale' || activeHandle === 'rotate') {
-                        const rect = activeWidget.el.getBoundingClientRect();
-                        scaleCenterX = rect.left + rect.width / 2;
-                        scaleCenterY = rect.top + rect.height / 2;
-                        if (activeHandle === 'scale') {
-                            initialDist = Math.hypot(startX - scaleCenterX, startY - scaleCenterY);
-                        } else { // 'rotate'
-                            const startAngle = Math.atan2(startY - scaleCenterY, startX - scaleCenterX) * (180 / Math.PI);
-                            initialTransformState.startAngle = startAngle;
-                        }
-                    }
-                }
-                window.addEventListener('mousemove', onDragMove); window.addEventListener('touchmove', onDragMove, { passive: false });
-                window.addEventListener('mouseup', onDragEnd); window.addEventListener('touchend', onDragEnd);
-            };
-            const onDragMove = (e) => {
-                if (!activeHandle) return;
-                const currentX = (e.touches ? e.touches[0] : e).clientX, currentY = (e.touches ? e.touches[0] : e).clientY;
-                const dx = currentX - startX, dy = currentY - startY;
-                if (activeHandle === 'group-move') {
-                    document.body.style.cursor = 'grabbing';
-                    selectedWidgets.forEach(id => {
-                        const widgetEl = document.getElementById(id); const initialState = initialGroupTransforms[id]; const state = transformStates[id];
-                        state.left = initialState.left + dx; state.top = initialState.top + dy;
-                        applyTransform(widgetEl, state);
-                    });
-                    if (groupMoveHandle) groupMoveHandle.style.transform = `translate(${dx}px, ${dy}px)`;
-                    if (groupRotateHandle) groupRotateHandle.style.transform = `translate(${dx}px, ${dy}px)`;
-                    return;
-                }
-                if (activeHandle === 'group-scale') {
-                    const currentDist = Math.hypot(currentX - scaleCenterX, currentY - scaleCenterY);
-                    const scaleFactor = initialDist > 0 ? (currentDist / initialDist) : 1;
-                    selectedWidgets.forEach(id => {
-                        const widgetEl = document.getElementById(id);
-                        const initialState = initialGroupTransforms[id];
-                        const state = transformStates[id];
-                        let newScale = initialState.scale * scaleFactor;
-                        newScale = Math.max(0.1, Math.min(newScale, 10));
-                        state.scale = newScale;
-                        const initialWidgetLayoutCenterX = initialState.left + initialState.width / 2;
-                        const initialWidgetLayoutCenterY = initialState.top + initialState.height / 2;
-                        const newWidgetLayoutCenterX = scaleCenterX + (initialWidgetLayoutCenterX - scaleCenterX) * scaleFactor;
-                        const newWidgetLayoutCenterY = scaleCenterY + (initialWidgetLayoutCenterY - scaleCenterY) * scaleFactor;
-                        state.left = newWidgetLayoutCenterX - state.width / 2;
-                        state.top = newWidgetLayoutCenterY - state.height / 2;
-                        applyTransform(widgetEl, state);
-                    });
-                    document.body.style.cursor = currentDist > initialDist ? 'zoom-in' : 'zoom-out';
-                    updateGroupControls();
-                    return;
-                }
-                if (activeHandle === 'group-rotate') {
-                    document.body.style.cursor = 'alias';
-                    const currentAngle = Math.atan2(currentY - scaleCenterY, currentX - scaleCenterX);
-                    const angleDelta = currentAngle - initialGroupTransforms.startAngle;
-                    const cosA = Math.cos(angleDelta); const sinA = Math.sin(angleDelta);
-                    selectedWidgets.forEach(id => {
-                        const widgetEl = document.getElementById(id);
-                        const initialState = initialGroupTransforms[id];
-                        const state = transformStates[id];
-                        const initialWidgetCenterX = initialState.left + (initialState.width / 2);
-                        const initialWidgetCenterY = initialState.top + (initialState.height / 2);
-                        const vecX = initialWidgetCenterX - scaleCenterX;
-                        const vecY = initialWidgetCenterY - scaleCenterY;
-                        const rotatedVecX = vecX * cosA - vecY * sinA;
-                        const rotatedVecY = vecX * sinA + vecY * cosA;
-                        state.left = (scaleCenterX + rotatedVecX) - (state.width / 2);
-                        state.top = (scaleCenterY + rotatedVecY) - (state.height / 2);
-                        state.rotation = (initialState.rotation || 0) + (angleDelta * 180 / Math.PI);
-                        applyTransform(widgetEl, state);
-                    });
-                    const rotateHandle = (handle, initialPos) => {
-                        if (!handle || !initialPos) return;
-                        const initialHandleCenterX = initialPos.left + handle.offsetWidth / 2;
-                        const initialHandleCenterY = initialPos.top + handle.offsetHeight / 2;
-                        const vecX = initialHandleCenterX - scaleCenterX;
-                        const vecY = initialHandleCenterY - scaleCenterY;
-                        const rotatedVecX = vecX * cosA - vecY * sinA;
-                        const rotatedVecY = vecX * sinA + vecY * cosA;
-                        handle.style.left = `${(scaleCenterX + rotatedVecX) - handle.offsetWidth / 2}px`;
-                        handle.style.top = `${(scaleCenterY + rotatedVecY) - handle.offsetHeight / 2}px`;
-                    };
-                    rotateHandle(groupMoveHandle, initialGroupTransforms.moveHandle);
-                    rotateHandle(groupRotateHandle, initialGroupTransforms.rotateHandle);
-                    return;
-                }
-                
-                // --- 單一元件操作 ---
-                if (!activeWidget) return; e.preventDefault();
-                switch (activeHandle) {
-                    case 'move': 
-                        document.body.style.cursor = 'grabbing'; 
-                        activeWidget.state.left = initialTransformState.left + dx; 
-                        activeWidget.state.top = initialTransformState.top + dy; 
-                        break;
-                    case 'resize-w': {
-                        document.body.style.cursor = 'ew-resize';
-                        const newWidth = Math.max(50, initialTransformState.width + dx);
-                        activeWidget.state.width = newWidth;
-                        if (activeWidget.el.id === 'analog-clock-container') {
-                            activeWidget.state.height = newWidth;
-                        } else if (activeWidget.el.id === 'led-clock-container' && LedClock.aspectRatio > 0) {
-                            activeWidget.state.height = newWidth / LedClock.aspectRatio;
-                        }
-                        break;
-                    }
-                    case 'resize-h': {
-                        document.body.style.cursor = 'ns-resize';
-                        const newHeight = Math.max(50, initialTransformState.height + dy);
-                        activeWidget.state.height = newHeight;
-                        if (activeWidget.el.id === 'analog-clock-container') {
-                             activeWidget.state.width = newHeight;
-                        } else if (activeWidget.el.id === 'led-clock-container' && LedClock.aspectRatio > 0) {
-                            activeWidget.state.width = newHeight * LedClock.aspectRatio;
-                        }
-                        break;
-                    }
-                    case 'scale': {
-                        const currentDist = Math.hypot(currentX - scaleCenterX, currentY - scaleCenterY);
-                        const oldScale = initialTransformState.scale;
-                        let newScale = initialDist > 0 ? (oldScale * (currentDist / initialDist)) : oldScale;
-                        newScale = Math.max(0.2, Math.min(newScale, 5));
-                        activeWidget.state.scale = newScale;
-                        document.body.style.cursor = currentDist > initialDist ? 'zoom-in' : 'zoom-out';
-                        break;
-                    }
-                    case 'rotate':
-                        document.body.style.cursor = 'alias';
-                        const angle = Math.atan2(currentY - scaleCenterY, currentX - scaleCenterX) * (180 / Math.PI);
-                        const rotationDelta = angle - initialTransformState.startAngle;
-                        activeWidget.state.rotation = (initialTransformState.rotation || 0) + rotationDelta;
-                        break;
-                }
-                checkAndClampWidgetBounds(activeWidget.state); applyTransform(activeWidget.el, activeWidget.state);
-            };
-            const onDragEnd = () => {
-                if (!activeHandle) return;
-                if (activeHandle.startsWith('group')) {
-                    if (groupMoveHandle) groupMoveHandle.style.transform = '';
-                    if (groupRotateHandle) groupRotateHandle.style.transform = '';
-                    selectedWidgets.forEach(id => checkAndClampWidgetBounds(transformStates[id]));
-                    applyAllTransforms();
-                    updateGroupControls();
-                } else if (activeWidget?.el) {
-                    activeWidget.el.style.transition = activeWidget.originalTransition;
-                    ensureWidgetsInBounds();
-                }
-                document.body.style.cursor = 'default'; document.body.style.userSelect = 'auto'; activeHandle = null; activeWidget = null;
-                window.removeEventListener('mousemove', onDragMove); window.removeEventListener('touchmove', onDragMove);
-                window.removeEventListener('mouseup', onDragEnd); window.removeEventListener('touchend', onDragEnd);
-                saveCurrentSettings();
-            };
-            document.body.addEventListener('mousedown', onDragStart); document.body.addEventListener('touchstart', onDragStart, { passive: false });
-            // ===================================================================
-            // 群組功能相關函式
-            // ===================================================================
-            function toggleWidgetSelection(widgetEl) {
-                const widgetId = widgetEl.id, uncheckedIcon = widgetEl.querySelector('.group-select-handle .unchecked'), checkedIcon = widgetEl.querySelector('.group-select-handle .checked');
-                if (selectedWidgets.has(widgetId)) {
-                    selectedWidgets.delete(widgetId); widgetEl.classList.remove('selected-for-group');
-                    uncheckedIcon.style.display = 'block'; checkedIcon.style.display = 'none';
-                } else {
-                    selectedWidgets.add(widgetId); widgetEl.classList.add('selected-for-group');
-                    uncheckedIcon.style.display = 'none'; checkedIcon.style.display = 'block';
-                }
-                updateGroupControls();
-            }
-            function updateGroupControls() {
-                if (selectedWidgets.size < 2) {
-                    if (groupMoveHandle) { groupMoveHandle.remove(); groupMoveHandle = null; }
-                    if (groupRotateHandle) { groupRotateHandle.remove(); groupRotateHandle = null; }
-                    allWidgetContainers().forEach(el => {
-                        const moveHandle = el.querySelector('.move-handle'); if (moveHandle) moveHandle.style.display = '';
-                        const rotateHandle = el.querySelector('.rotate-handle'); if (rotateHandle) rotateHandle.style.display = '';
-                    });
-                    return;
-                }
-                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                selectedWidgets.forEach(id => {
-                    const state = transformStates[id]; if (!state || !state.visible) return;
-                    const renderedWidth = state.width * state.scale, renderedHeight = state.height * state.scale;
-                    const offsetX = (state.width - renderedWidth) / 2, offsetY = (state.height - renderedHeight) / 2;
-                    const renderedLeft = state.left + offsetX, renderedTop = state.top + offsetY;
-                    minX = Math.min(minX, renderedLeft); minY = Math.min(minY, renderedTop);
-                    maxX = Math.max(maxX, renderedLeft + renderedWidth); maxY = Math.max(maxY, renderedTop + renderedHeight);
-                });
-                if (!isFinite(minX)) return;
-                const groupCenterX = minX + (maxX - minX) / 2, groupCenterY = minY + (maxY - minY) / 2;
-                if (!groupMoveHandle) {
-                    groupMoveHandle = document.createElement('div');
-                    groupMoveHandle.id = 'group-move-handle';
-                    groupMoveHandle.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="width-full height-full"><use href="#icon-move"></use></svg>`;
-                    document.body.appendChild(groupMoveHandle);
-                }
-                 if (!groupRotateHandle) {
-                    groupRotateHandle = document.createElement('div');
-                    groupRotateHandle.id = 'group-rotate-handle';
-                    groupRotateHandle.innerHTML = `<svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-rotate" stroke="black" stroke-width="1.5"></use></svg>`;
-                    document.body.appendChild(groupRotateHandle);
-                }
-                groupMoveHandle.style.left = `${groupCenterX - groupMoveHandle.offsetWidth / 2}px`;
-                groupMoveHandle.style.top = `${groupCenterY - groupMoveHandle.offsetHeight / 2}px`;
-                groupRotateHandle.style.left = `${maxX - groupRotateHandle.offsetWidth / 2}px`;
-                groupRotateHandle.style.top = `${maxY - groupRotateHandle.offsetHeight / 2}px`;
-                selectedWidgets.forEach(id => {
-                    const el = document.getElementById(id);
-                    const moveHandle = el.querySelector('.move-handle'); if (moveHandle) moveHandle.style.display = 'none';
-                });
-            }
-            function clearGroupSelection() {
-                if (groupMoveHandle) { groupMoveHandle.remove(); groupMoveHandle = null; }
-                if (groupRotateHandle) { groupRotateHandle.remove(); groupRotateHandle = null; }
-                selectedWidgets.forEach(id => {
-                    const widgetEl = document.getElementById(id); if (!widgetEl) return;
-                    widgetEl.classList.remove('selected-for-group');
-                    const uncheckedIcon = widgetEl.querySelector('.group-select-handle .unchecked'), checkedIcon = widgetEl.querySelector('.group-select-handle .checked');
-                    if (uncheckedIcon) uncheckedIcon.style.display = 'block';
-                    if (checkedIcon) checkedIcon.style.display = 'none';
-                });
-                selectedWidgets.clear();
-                allWidgetContainers().forEach(el => {
-                    const moveHandle = el.querySelector('.move-handle'); if (moveHandle) moveHandle.style.display = '';
-                    const rotateHandle = el.querySelector('.rotate-handle'); if (rotateHandle) rotateHandle.style.display = '';
-                });
-            }
-            // ===================================================================
             // 版面配置儲存/載入
             // ===================================================================
             const getCurrentLayout = () => {
@@ -2538,11 +2570,13 @@
                 const resizeHandlesHTML = `<div class="resize-handle-w control-handle"></div><div class="resize-handle-h control-handle"></div>`;
                 const groupSelectHTML = `<div class="group-select-handle" title="加入/移出群組"><svg class="unchecked" style="display: block;" viewBox="0 0 24 24"><use href="#icon-checkbox-unchecked" stroke="white"></use></svg><svg class="checked" style="display: none;" viewBox="0 0 24 24"><use href="#icon-checkbox-checked" stroke="white"></use></svg></div>`;
                 const rotateHandleHTML = `<div class="rotate-handle control-handle" title="旋轉"><svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-rotate"></use></svg></div>`;
+                const scaleHandleHTML = `<div class="scale-handle control-handle" title="縮放"><svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-scale"></use></svg></div>`;
                 document.querySelectorAll('.widget-container').forEach(widgetEl => {
                     widgetEl.insertAdjacentHTML('afterbegin', groupSelectHTML);
                     widgetEl.insertAdjacentHTML('beforeend', resetHandleHTML);
                     widgetEl.insertAdjacentHTML('beforeend', moveHandleHTML);
                     widgetEl.insertAdjacentHTML('beforeend', rotateHandleHTML);
+                    widgetEl.insertAdjacentHTML('beforeend', scaleHandleHTML);
                     if (widgetEl.id !== 'analog-clock-container') {
                         widgetEl.insertAdjacentHTML('beforeend', resizeHandlesHTML);
                     }
