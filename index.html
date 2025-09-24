@@ -189,7 +189,7 @@
         }
         .widget-container.edit-mode .group-select-handle { display: block; }
         .widget-container.selected-for-group { box-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
-        #group-move-handle { position: absolute; width: 32px; height: 32px; z-index: 200; cursor: move; background-color: rgba(255, 255, 0, 0.8); border-radius: 6px; padding: 4px; display: flex; align-items: center; justify-content: center; }
+        #group-move-handle { display: none; position: absolute; width: 32px; height: 32px; z-index: 200; cursor: move; background-color: rgba(255, 255, 0, 0.8); border-radius: 6px; padding: 4px; display: flex; align-items: center; justify-content: center; }
         #group-rotate-handle { position: absolute; width: 28px; height: 28px; z-index: 200; cursor: alias; background-color: rgba(255, 255, 0, 0.8); border-radius: 50%; padding: 4px; display: flex; align-items: center; justify-content: center; }
         #group-scale-handle { position: absolute; width: 28px; height: 28px; z-index: 200; cursor: sw-resize; background-color: rgba(255, 255, 0, 0.8); border-radius: 50%; padding: 4px; display: flex; align-items: center; justify-content: center; }
         /* --- Modal 彈出視窗樣式 --- */
@@ -854,13 +854,18 @@
                     let isDragAction = false;
                     
                     if (handle && !handle.classList.contains('reset-handle')) {
-                        if (handle.classList.contains('scale-handle')) { 
-                            activeHandle = 'scale'; isDragAction = true; 
-                        }
-                        else if (handle.classList.contains('resize-handle-w')) { activeHandle = 'resize-w'; isDragAction = true; }
-                        else if (handle.classList.contains('resize-handle-h')) { activeHandle = 'resize-h'; isDragAction = true; }
-                        else if (handle.classList.contains('rotate-handle')) {
-                            activeHandle = isPartOfGroup ? 'group-rotate' : 'rotate'; isDragAction = true;
+                        if (handle.classList.contains('rotate-handle')) {
+                            activeHandle = isPartOfGroup ? 'group-individual-rotate' : 'rotate';
+                            isDragAction = true;
+                        } else if (handle.classList.contains('scale-handle')) {
+                            activeHandle = isPartOfGroup ? 'group-individual-scale' : 'scale';
+                            isDragAction = true;
+                        } else if (handle.classList.contains('resize-handle-w')) {
+                            activeHandle = 'resize-w';
+                            isDragAction = true;
+                        } else if (handle.classList.contains('resize-handle-h')) {
+                            activeHandle = 'resize-h';
+                            isDragAction = true;
                         }
                     } else if (!handle) { // If no handle is clicked, default to move
                         activeHandle = isPartOfGroup ? 'group-move' : 'move';
@@ -880,7 +885,20 @@
                 document.body.style.userSelect = 'none';
                 startX = (e.touches ? e.touches[0] : e).clientX;
                 startY = (e.touches ? e.touches[0] : e).clientY;
-                if (activeHandle.startsWith('group')) {
+                if (activeHandle.startsWith('group-individual')) {
+                    initialGroupTransforms = {};
+                    selectedWidgets.forEach(id => { initialGroupTransforms[id] = { ...transformStates[id] }; });
+                    initialTransformState = { ...activeWidget.state };
+                    const rect = activeWidget.el.getBoundingClientRect();
+                    scaleCenterX = rect.left + rect.width / 2;
+                    scaleCenterY = rect.top + rect.height / 2;
+                    if (activeHandle === 'group-individual-scale') {
+                        initialDist = Math.hypot(startX - scaleCenterX, startY - scaleCenterY);
+                    } else { // group-individual-rotate
+                        const startAngle = Math.atan2(startY - scaleCenterY, startX - scaleCenterX) * (180 / Math.PI);
+                        initialTransformState.startAngle = startAngle;
+                    }
+                } else if (activeHandle.startsWith('group')) {
                     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                     selectedWidgets.forEach(id => {
                         const state = transformStates[id]; if (!state || !state.visible) return;
@@ -928,6 +946,36 @@
                 if (!activeHandle) return;
                 const currentX = (e.touches ? e.touches[0] : e).clientX, currentY = (e.touches ? e.touches[0] : e).clientY;
                 const dx = currentX - startX, dy = currentY - startY;
+
+                if (activeHandle === 'group-individual-rotate') {
+                    document.body.style.cursor = 'alias';
+                    const angle = Math.atan2(currentY - scaleCenterY, currentX - scaleCenterX) * (180 / Math.PI);
+                    const rotationDelta = angle - initialTransformState.startAngle;
+                    selectedWidgets.forEach(id => {
+                        const widgetEl = document.getElementById(id);
+                        const initialState = initialGroupTransforms[id];
+                        const state = transformStates[id];
+                        state.rotation = (initialState.rotation || 0) + rotationDelta;
+                        applyTransform(widgetEl, state);
+                    });
+                    return;
+                }
+                if (activeHandle === 'group-individual-scale') {
+                    document.body.style.cursor = 'sw-resize';
+                    const currentDist = Math.hypot(currentX - scaleCenterX, currentY - scaleCenterY);
+                    const scaleFactor = initialDist > 0 ? (currentDist / initialDist) : 1;
+                    selectedWidgets.forEach(id => {
+                        const widgetEl = document.getElementById(id);
+                        const initialState = initialGroupTransforms[id];
+                        const state = transformStates[id];
+                        let newScale = initialState.scale * scaleFactor;
+                        newScale = Math.max(0.1, Math.min(newScale, 10)); // Clamp scale
+                        state.scale = newScale;
+                        applyTransform(widgetEl, state);
+                    });
+                    return;
+                }
+
                 if (activeHandle === 'group-move') {
                     document.body.style.cursor = 'grabbing';
                     selectedWidgets.forEach(id => {
@@ -1084,10 +1132,6 @@
                     if (groupMoveHandle) { groupMoveHandle.remove(); groupMoveHandle = null; }
                     if (groupRotateHandle) { groupRotateHandle.remove(); groupRotateHandle = null; }
                     if (groupScaleHandle) { groupScaleHandle.remove(); groupScaleHandle = null; }
-                    allWidgetContainers().forEach(el => {
-                        const moveHandle = el.querySelector('.move-handle'); if (moveHandle) moveHandle.style.display = '';
-                        const rotateHandle = el.querySelector('.rotate-handle'); if (rotateHandle) rotateHandle.style.display = '';
-                    });
                     return;
                 }
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -1100,9 +1144,14 @@
                     maxX = Math.max(maxX, renderedLeft + renderedWidth); maxY = Math.max(maxY, renderedTop + renderedHeight);
                 });
                 if (!isFinite(minX)) return;
-                // 中心點計算保留給旋轉與縮放使用
                 const groupCenterX = minX + (maxX - minX) / 2, groupCenterY = minY + (maxY - minY) / 2;
                 
+                if (!groupMoveHandle) {
+                    groupMoveHandle = document.createElement('div');
+                    groupMoveHandle.id = 'group-move-handle';
+                    groupMoveHandle.innerHTML = `<svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-move" stroke="black" stroke-width="1.5"></use></svg>`;
+                    document.body.appendChild(groupMoveHandle);
+                }
                  if (!groupRotateHandle) {
                     groupRotateHandle = document.createElement('div');
                     groupRotateHandle.id = 'group-rotate-handle';
@@ -1116,17 +1165,12 @@
                     document.body.appendChild(groupScaleHandle);
                 }
                 
+                groupMoveHandle.style.left = `${groupCenterX - groupMoveHandle.offsetWidth / 2}px`;
+                groupMoveHandle.style.top = `${groupCenterY - groupMoveHandle.offsetHeight / 2}px`;
                 groupRotateHandle.style.left = `${minX - groupRotateHandle.offsetWidth / 2}px`;
                 groupRotateHandle.style.top = `${maxY - groupRotateHandle.offsetHeight / 2}px`;
                 groupScaleHandle.style.left = `${maxX - groupScaleHandle.offsetWidth / 2}px`;
                 groupScaleHandle.style.top = `${maxY - groupScaleHandle.offsetHeight / 2}px`;
-
-                selectedWidgets.forEach(id => {
-                    const el = document.getElementById(id);
-                    // 隱藏個別的移動圖示，因為可以拖曳元件本身來移動群組
-                    const moveHandle = el.querySelector('.move-handle'); 
-                    if (moveHandle) moveHandle.style.display = 'none';
-                });
             }
             function clearGroupSelection() {
                 if (groupMoveHandle) { groupMoveHandle.remove(); groupMoveHandle = null; }
@@ -1140,10 +1184,6 @@
                     if (checkedIcon) checkedIcon.style.display = 'none';
                 });
                 selectedWidgets.clear();
-                allWidgetContainers().forEach(el => {
-                    const moveHandle = el.querySelector('.move-handle'); if (moveHandle) moveHandle.style.display = '';
-                    const rotateHandle = el.querySelector('.rotate-handle'); if (rotateHandle) rotateHandle.style.display = '';
-                });
             }
             // ===================================================================
             // LED 顯示管理器 (Refactored & Integrated)
@@ -1254,6 +1294,213 @@
                 const element = LedManager.create(text, config);
                 return element ? element.outerHTML : '';
             }
+            // ===================================================================
+            // Modal 彈出視窗與 UI 互動 (Refactored)
+            // ===================================================================
+            function showModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modalId === 'modal-backdrop-marquee-params' || modalId === 'modal-backdrop-explanation') {
+                    const useLed = modalId === 'modal-backdrop-marquee-params' ? (settingsState.marqueeGlobal?.useLedFont ?? true) : (settingsState.calendar?.useLedFont ?? true);
+                    if (useLed) applyLedToStaticContent(modal.querySelector('.modal-content'));
+                }
+                modal.classList.add('show');
+            }
+            function hideModal(modalId) { document.getElementById(modalId).classList.remove('show'); }
+            const promptModal=document.getElementById('modal-backdrop-prompt'),promptTitle=document.getElementById('prompt-title'),promptMessage=document.getElementById('prompt-message'),promptInput=document.getElementById('prompt-input'),promptOkBtn=document.getElementById('prompt-ok-btn'),promptCancelBtn=document.getElementById('prompt-cancel-btn');
+            let promptCallback=null;
+            function _setPromptMessage(message) {
+                const el = promptMessage;
+                const useLed = true;
+                el.innerHTML = getLedHTML(message, useLed, { fontSize: parseFloat(getComputedStyle(el).fontSize) || 16, color: getComputedStyle(el).color || '#d1d5db', defaultSpan: false });
+                el.style.display = message ? 'block' : 'none';
+            }
+            function _configurePromptModal(config) {
+                promptTitle.textContent = config.title;
+                _setPromptMessage(config.message);
+                promptInput.style.display = config.showInput ? 'block' : 'none';
+                if (config.showInput) promptInput.value = config.defaultValue || '';
+                promptCancelBtn.style.display = config.showCancel ? 'inline-block' : 'none';
+                promptOkBtn.textContent = config.okText || '確定';
+                promptCallback = config.callback;
+                showModal('modal-backdrop-prompt');
+                if (config.showInput) setTimeout(() => promptInput.focus(), 100);
+            }
+            function showAlert(title, message) { _configurePromptModal({ title, message, showInput: false, showCancel: false, okText: '確定' }); }
+            function showPrompt(title, message, defaultValue, callback) { _configurePromptModal({ title, message, defaultValue, callback, showInput: true, showCancel: true, okText: '確定' }); }
+            function showConfirm(title, message, callback) { _configurePromptModal({ title, message, callback: (result) => callback(result !== null), showInput: false, showCancel: true, okText: '確認' }); }
+            promptOkBtn.addEventListener('click',()=>{if(promptCallback)promptCallback(promptInput.value);hideModal('modal-backdrop-prompt')});
+            promptCancelBtn.addEventListener('click',()=>{if(promptCallback)promptCallback(null);hideModal('modal-backdrop-prompt')});
+            function showDayDetailModal(dateString){
+                if(isEditMode)return;
+                const date=new Date(dateString);
+                const lunar=getLunarDate(date);
+                const holiday=getHoliday(date);
+                const solarTerm=getSolarTerm(date.getFullYear(),date.getMonth()+1,date.getDate());
+                const constellationInfo = getConstellation(date);
+                const useLed = settingsState.calendar?.useLedFont ?? true;
+                if (useLed) {
+                    const yearSVG = generateLedSvg(String(date.getFullYear()), {height: 22, color: 'white'});
+                    const monthSVG = generateLedSvg(String(date.getMonth() + 1), {height: 22, color: 'white'});
+                    const daySVG = generateLedSvg(String(date.getDate()), {height: 22, color: 'white'});
+                    document.getElementById('modal-gregorian-date').innerHTML = `${yearSVG}<span class="led-text-unit">年</span>${monthSVG}<span class="led-text-unit">月</span>${daySVG}<span class="led-text-unit">日 星期${"日一二三四五六"[date.getDay()]}</span>`;
+                } else {
+                     document.getElementById('modal-gregorian-date').innerHTML = `<span style="font-size: 1.5em; line-height:1.2;">${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 星期${"日一二三四五六"[date.getDay()]}</span>`;
+                }
+                const rocYear = date.getFullYear()-1911;
+                const rocYearHTML = useLed ? generateLedSvg(String(rocYear), {height: 20, color: '#a5b4fc'}) : rocYear;
+                document.getElementById('modal-lunar-date').innerHTML = `民國 ${rocYearHTML} 年 / 農曆 ${lunar.toString}`;
+                const modalConstellationEl = document.getElementById('modal-constellation');
+                if (constellationInfo) {
+                    const text = `星座 ${constellationInfo.sign} (${constellationInfo.range})`;
+                    const fontSize = parseFloat(getComputedStyle(modalConstellationEl).fontSize) || 16;
+                    const color = getComputedStyle(modalConstellationEl).color || 'white';
+                    modalConstellationEl.innerHTML = getLedHTML(text, useLed, { fontSize, color, defaultSpan: false });
+                    modalConstellationEl.style.display = 'block';
+                } else { modalConstellationEl.style.display = 'none'; }
+                const modalHolidayEl=document.getElementById('modal-holiday');
+                modalHolidayEl.textContent=holiday||''; modalHolidayEl.style.display=holiday?'block':'none';
+                if(holiday)modalHolidayEl.dataset.key=holiday;
+                const modalSolarTermEl=document.getElementById('modal-solarterm');
+                modalSolarTermEl.textContent=solarTerm||''; modalSolarTermEl.style.display=solarTerm?'block':'none';
+                if(solarTerm)modalSolarTermEl.dataset.key=solarTerm;
+                const formatTime = (dateStr) => dateStr ? new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '讀取中...';
+                const sunriseTime = Weather.data?.daily?.sunrise?.[0] ? formatTime(Weather.data.daily.sunrise[0]) : '讀取中...';
+                const sunsetTime = Weather.data?.daily?.sunset?.[0] ? formatTime(Weather.data.daily.sunset[0]) : '讀取中...';
+                const isTimeFormat = (str) => /^[\d:]+$/.test(str);
+                const formatTimeForDisplay = (timeStr) => useLed && isTimeFormat(timeStr) ? generateLedSvg(timeStr, {height: 26, color: 'white'}) : timeStr;
+                document.getElementById('modal-sunrise-time').innerHTML = formatTimeForDisplay(sunriseTime);
+                document.getElementById('modal-sunset-time').innerHTML = formatTimeForDisplay(sunsetTime);
+                const moonDetails = moonPhaseData[lunar.day] || { n: '未知', a: '', d: '' };
+                const moonName = moonDetails.a ? `${moonDetails.n}(${moonDetails.a})` : moonDetails.n;
+                document.getElementById('modal-moon-icon').innerHTML = getMoonPhaseSVG(lunar.day, '64px', 'day-detail');
+                document.getElementById('modal-moon-phase-name').textContent = moonName;
+                const moonDescEl = document.getElementById('modal-moon-phase-desc');
+                if (moonDetails.d) {
+                    const fontSize = parseFloat(getComputedStyle(moonDescEl).fontSize) || 16;
+                    const color = getComputedStyle(moonDescEl).color || 'white';
+                    moonDescEl.innerHTML = getLedHTML(moonDetails.d, useLed, { fontSize, color, defaultSpan: false });
+                    moonDescEl.style.display = 'block';
+                } else { moonDescEl.style.display = 'none'; }
+                updateCountdowns(date);
+                showModal('modal-backdrop-day')
+            }
+            function showExplanationModal(title,content){if(isEditMode)return;document.getElementById('explanation-title').textContent=title;document.getElementById('explanation-content').textContent=content;showModal('modal-backdrop-explanation')}
+            function getAllSolarTermsForYear(year){if(!solarTermsCache[year])calculateAndCacheSolarTerms(year);return Object.entries(solarTermsCache[year]).map(([key,name])=>{const[y,m,d]=key.split('-').map(Number);return{date:new Date(y,m-1,d),name}}).sort((a,b)=>a.date-b.date)}
+            function getAllHolidaysForYear(year){
+                let holidays = [];
+                Object.entries(lunarHolidays).forEach(([key, name]) => { [year, year - 1].forEach(lunarYear => { const [m, d] = key.split('-'); const solarDate = lunarToSolar(lunarYear, parseInt(m), parseInt(d)); if (solarDate && solarDate.getFullYear() === year) holidays.push({ date: solarDate, name }); }); });
+                [year, year - 1].forEach(lunarYear => { const eveDate = lunarToSolar(lunarYear, 12, getLunarMonthDays(lunarYear, 12)); if (eveDate && eveDate.getFullYear() === year) holidays.push({ date: eveDate, name: "除夕" }); });
+                Object.entries(floatingHolidays).forEach(([key, name]) => { const [m, week, dayOfWeek] = key.split('-').map(Number); const month = m - 1; let firstOfMonth = new Date(year, month, 1); let holidayDate = new Date(year, month, 1 + ((dayOfWeek - firstOfMonth.getDay() + 7) % 7) + (week - 1) * 7); if (holidayDate.getMonth() === month) holidays.push({ date: holidayDate, name }); });
+                return Array.from(new Map(holidays.map(h => [h.date.toISOString().split('T')[0], h])).values()).sort((a, b) => a.date - b.date);
+            }
+            function updateCountdowns(currentDate){
+                const today = new Date(currentDate); today.setHours(0,0,0,0);
+                const useLed = settingsState.calendar?.useLedFont ?? true;
+                const formatCountdownText=(items,type)=>{
+                    const futureEvents=items.filter(item=>item.date>=today);
+                    if(futureEvents.length===0)return`找不到${today.getFullYear()+1}年的${type}資料`;
+                    const firstEvent=futureEvents[0];
+                    const diffDays=Math.ceil((firstEvent.date.getTime()-today.getTime())/86400000);
+                    const daysHTML = useLed ? generateLedSvg(String(diffDays), {height: 20, color: 'white'}) : `<span style="font-size: 1.2em;">${diffDays}</span>`;
+                    if(diffDays===0){
+                        if(futureEvents[1]) {
+                             const nextDiffDays = Math.ceil((futureEvents[1].date - today) / 86400000);
+                             const nextDaysHTML = useLed ? generateLedSvg(String(nextDiffDays), {height: 20, color: 'white'}) : `<span style="font-size: 1.2em;">${nextDiffDays}</span>`;
+                             return `<div class="countdown-text-container">今天是 ${firstEvent.name}，距離下個${type} [${futureEvents[1].name}] 還有 ${nextDaysHTML} 天</div>`;
+                        }
+                        return `今天是 ${firstEvent.name}！`;
+                    }
+                    return `<div class="countdown-text-container">距離 ${firstEvent.name} 還有 ${daysHTML} 天</div>`;
+                };
+                let allHolidays=[...getAllHolidaysForYear(today.getFullYear()),...getAllHolidaysForYear(today.getFullYear()+1)];
+                let allSolarTerms=[...getAllSolarTermsForYear(today.getFullYear()),...getAllSolarTermsForYear(today.getFullYear()+1)];
+                document.getElementById('countdown-holiday-text').innerHTML=formatCountdownText(allHolidays,'節日');
+                document.getElementById('countdown-solarterm-text').innerHTML=formatCountdownText(allSolarTerms,'節氣');
+            }
+            const pickerYearEl=document.getElementById('picker-year'),pickerMonthGridEl=document.getElementById('picker-month-grid');
+            let pickerYear=new Date().getFullYear();
+            let pickerTarget = null;
+            function renderPicker(year, month, targetDate) {
+                pickerYear = year;
+                let useLed = false;
+                if (pickerTarget) {
+                    const widgetId = pickerTarget.body.closest('.widget-container').id;
+                    const widgetKey = (widgetId === 'calendar-container' ? 'calendar' : (widgetId === 'moon-phase-container' ? 'moonPhase' : null));
+                    if (widgetKey) {
+                        useLed = settingsState[widgetKey]?.useLedFont ?? true;
+                    }
+                }
+                if (useLed) {
+                    const yearColor = getComputedStyle(document.documentElement).getPropertyValue('--year-color').trim() || '#a5b4fc';
+                    pickerYearEl.innerHTML = generateLedSvg(String(year), { height: 28, color: yearColor });
+                } else {
+                    pickerYearEl.textContent = year;
+                }
+                pickerMonthGridEl.innerHTML = '';
+                for (let i = 0; i < 12; i++) {
+                    const cell = document.createElement('div');
+                    const monthNumber = String(i + 1);
+                    const monthText = '月';
+                    if (useLed) {
+                        const pickerColor = getComputedStyle(document.documentElement).getPropertyValue('--month-color').trim() || '#a5b4fc';
+                        const numberHTML = generateLedSvg(monthNumber, { height: 20, color: pickerColor });
+                        cell.innerHTML = `${numberHTML}<span style="color:${pickerColor};">${monthText}</span>`;
+                    } else {
+                        cell.textContent = monthNumber + monthText;
+                    }
+                    cell.classList.add('month-cell');
+                    if (i === month && year === targetDate.getFullYear()) cell.classList.add('selected');
+                    cell.dataset.month = i; pickerMonthGridEl.appendChild(cell);
+                }
+            }
+            function openPickerFor(targetWidget) { if (isEditMode) return; pickerTarget = targetWidget; renderPicker(pickerTarget.currentDate.getFullYear(), pickerTarget.currentDate.getMonth(), pickerTarget.currentDate); showModal('modal-backdrop-picker'); }
+            document.getElementById('picker-prev-year').addEventListener('click', () => { if (pickerYear > 1900 && pickerTarget) renderPicker(--pickerYear, -1, pickerTarget.currentDate); });
+            document.getElementById('picker-next-year').addEventListener('click', () => { if (pickerYear < 2100 && pickerTarget) renderPicker(++pickerYear, -1, pickerTarget.currentDate); });
+            pickerMonthGridEl.addEventListener('click', (e) => {
+                const cell = e.target.closest('.month-cell');
+                if (cell && pickerTarget) { pickerTarget.currentDate = new Date(pickerYear, cell.dataset.month, 1); pickerTarget.render(); hideModal('modal-backdrop-picker'); }
+            });
+            document.body.addEventListener('click',(e)=>{
+                const selectHandle = e.target.closest('.group-select-handle');
+                if (isEditMode && selectHandle) {
+                    e.stopPropagation();
+                    const widget = selectHandle.closest('.widget-container');
+                    if (widget) toggleWidgetSelection(widget);
+                    return;
+                }
+                const resetHandle = e.target.closest('.reset-handle');
+                if (isEditMode && resetHandle) {
+                    e.stopPropagation();
+                    const widgetEl = resetHandle.closest('.widget-container');
+                    if (widgetEl) {
+                        const widgetId = widgetEl.id;
+                        const defaultState = userDefaultLayout.transforms[widgetId];
+                        if (transformStates[widgetId] && defaultState) {
+                            const state = transformStates[widgetId];
+                            const currentWidth = state.width * state.scale;
+                            const currentHeight = state.height * state.scale;
+                            const centerX = state.left + currentWidth / 2;
+                            const centerY = state.top + currentHeight / 2;
+                            state.width = defaultState.width;
+                            state.height = defaultState.height;
+                            state.scale = 1;
+                            state.rotation = 0;
+                            state.left = centerX - (state.width / 2);
+                            state.top = centerY - (state.height / 2);
+                            checkAndClampWidgetBounds(state);
+                            applyTransform(widgetEl, state);
+                            saveCurrentSettings();
+                        }
+                    }
+                    return;
+                }
+                const cell=e.target.closest('.calendar-day');const key=e.target.dataset.key;if(key&&explanations[key]){e.stopPropagation();showExplanationModal(key,explanations[key]);return}if(cell&&cell.closest('#calendar-body')&&cell.dataset.date){showDayDetailModal(cell.dataset.date)}const closeModalBtn=e.target.closest('[data-close-modal]');if(closeModalBtn){hideModal(closeModalBtn.dataset.closeModal)}if(e.target.classList.contains('modal-backdrop')){hideModal(e.target.id)}});
+            document.getElementById('marquee-params-btn').addEventListener('click', () => showModal('modal-backdrop-marquee-params'));
+            document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){['modal-backdrop-day','modal-backdrop-picker','modal-backdrop-explanation','modal-backdrop-settings','modal-backdrop-prompt', 'modal-backdrop-marquee-params'].forEach(hideModal)}});
+            function resetActivityTimeout(){actionButtons.classList.remove('hidden');clearTimeout(activityTimeout);if(!isEditMode){activityTimeout=setTimeout(()=>actionButtons.classList.add('hidden'),3000)}}
+            ['mousemove','mousedown','touchstart','keydown'].forEach(event=>document.addEventListener(event,resetActivityTimeout));
+            document.getElementById('fullscreen-btn').addEventListener('click',()=>{if(!document.fullscreenElement){document.documentElement.requestFullscreen()}else{document.exitFullscreen()}});
+            document.addEventListener('fullscreenchange',()=>{const isFullscreen=!!document.fullscreenElement;document.getElementById('fullscreen-enter-icon').classList.toggle('display-none',isFullscreen);document.getElementById('fullscreen-exit-icon').classList.toggle('display-none',!isFullscreen)});
             // ===================================================================
             // 設定、顏色與儲存
             // 說明: 處理所有設定的載入、套用和儲存邏輯。
@@ -2038,213 +2285,6 @@
                 const id = `moon-clip-${context}-${lunarDay}-${size.replace(/[^a-zA-Z0-9]/g, '')}`;
                 return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" style="filter: drop-shadow(0 0 10px ${light}33);"><defs><clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${r}" /></clipPath></defs><g clip-path="url(#${id})">${base}${terminator}</g></svg>`;
             }
-            // ===================================================================
-            // Modal 彈出視窗與 UI 互動 (Refactored)
-            // ===================================================================
-            function showModal(modalId) {
-                const modal = document.getElementById(modalId);
-                if (modalId === 'modal-backdrop-marquee-params' || modalId === 'modal-backdrop-explanation') {
-                    const useLed = modalId === 'modal-backdrop-marquee-params' ? (settingsState.marqueeGlobal?.useLedFont ?? true) : (settingsState.calendar?.useLedFont ?? true);
-                    if (useLed) applyLedToStaticContent(modal.querySelector('.modal-content'));
-                }
-                modal.classList.add('show');
-            }
-            function hideModal(modalId) { document.getElementById(modalId).classList.remove('show'); }
-            const promptModal=document.getElementById('modal-backdrop-prompt'),promptTitle=document.getElementById('prompt-title'),promptMessage=document.getElementById('prompt-message'),promptInput=document.getElementById('prompt-input'),promptOkBtn=document.getElementById('prompt-ok-btn'),promptCancelBtn=document.getElementById('prompt-cancel-btn');
-            let promptCallback=null;
-            function _setPromptMessage(message) {
-                const el = promptMessage;
-                const useLed = true;
-                el.innerHTML = getLedHTML(message, useLed, { fontSize: parseFloat(getComputedStyle(el).fontSize) || 16, color: getComputedStyle(el).color || '#d1d5db', defaultSpan: false });
-                el.style.display = message ? 'block' : 'none';
-            }
-            function _configurePromptModal(config) {
-                promptTitle.textContent = config.title;
-                _setPromptMessage(config.message);
-                promptInput.style.display = config.showInput ? 'block' : 'none';
-                if (config.showInput) promptInput.value = config.defaultValue || '';
-                promptCancelBtn.style.display = config.showCancel ? 'inline-block' : 'none';
-                promptOkBtn.textContent = config.okText || '確定';
-                promptCallback = config.callback;
-                showModal('modal-backdrop-prompt');
-                if (config.showInput) setTimeout(() => promptInput.focus(), 100);
-            }
-            function showAlert(title, message) { _configurePromptModal({ title, message, showInput: false, showCancel: false, okText: '確定' }); }
-            function showPrompt(title, message, defaultValue, callback) { _configurePromptModal({ title, message, defaultValue, callback, showInput: true, showCancel: true, okText: '確定' }); }
-            function showConfirm(title, message, callback) { _configurePromptModal({ title, message, callback: (result) => callback(result !== null), showInput: false, showCancel: true, okText: '確認' }); }
-            promptOkBtn.addEventListener('click',()=>{if(promptCallback)promptCallback(promptInput.value);hideModal('modal-backdrop-prompt')});
-            promptCancelBtn.addEventListener('click',()=>{if(promptCallback)promptCallback(null);hideModal('modal-backdrop-prompt')});
-            function showDayDetailModal(dateString){
-                if(isEditMode)return;
-                const date=new Date(dateString);
-                const lunar=getLunarDate(date);
-                const holiday=getHoliday(date);
-                const solarTerm=getSolarTerm(date.getFullYear(),date.getMonth()+1,date.getDate());
-                const constellationInfo = getConstellation(date);
-                const useLed = settingsState.calendar?.useLedFont ?? true;
-                if (useLed) {
-                    const yearSVG = generateLedSvg(String(date.getFullYear()), {height: 22, color: 'white'});
-                    const monthSVG = generateLedSvg(String(date.getMonth() + 1), {height: 22, color: 'white'});
-                    const daySVG = generateLedSvg(String(date.getDate()), {height: 22, color: 'white'});
-                    document.getElementById('modal-gregorian-date').innerHTML = `${yearSVG}<span class="led-text-unit">年</span>${monthSVG}<span class="led-text-unit">月</span>${daySVG}<span class="led-text-unit">日 星期${"日一二三四五六"[date.getDay()]}</span>`;
-                } else {
-                     document.getElementById('modal-gregorian-date').innerHTML = `<span style="font-size: 1.5em; line-height:1.2;">${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 星期${"日一二三四五六"[date.getDay()]}</span>`;
-                }
-                const rocYear = date.getFullYear()-1911;
-                const rocYearHTML = useLed ? generateLedSvg(String(rocYear), {height: 20, color: '#a5b4fc'}) : rocYear;
-                document.getElementById('modal-lunar-date').innerHTML = `民國 ${rocYearHTML} 年 / 農曆 ${lunar.toString}`;
-                const modalConstellationEl = document.getElementById('modal-constellation');
-                if (constellationInfo) {
-                    const text = `星座 ${constellationInfo.sign} (${constellationInfo.range})`;
-                    const fontSize = parseFloat(getComputedStyle(modalConstellationEl).fontSize) || 16;
-                    const color = getComputedStyle(modalConstellationEl).color || 'white';
-                    modalConstellationEl.innerHTML = getLedHTML(text, useLed, { fontSize, color, defaultSpan: false });
-                    modalConstellationEl.style.display = 'block';
-                } else { modalConstellationEl.style.display = 'none'; }
-                const modalHolidayEl=document.getElementById('modal-holiday');
-                modalHolidayEl.textContent=holiday||''; modalHolidayEl.style.display=holiday?'block':'none';
-                if(holiday)modalHolidayEl.dataset.key=holiday;
-                const modalSolarTermEl=document.getElementById('modal-solarterm');
-                modalSolarTermEl.textContent=solarTerm||''; modalSolarTermEl.style.display=solarTerm?'block':'none';
-                if(solarTerm)modalSolarTermEl.dataset.key=solarTerm;
-                const formatTime = (dateStr) => dateStr ? new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '讀取中...';
-                const sunriseTime = Weather.data?.daily?.sunrise?.[0] ? formatTime(Weather.data.daily.sunrise[0]) : '讀取中...';
-                const sunsetTime = Weather.data?.daily?.sunset?.[0] ? formatTime(Weather.data.daily.sunset[0]) : '讀取中...';
-                const isTimeFormat = (str) => /^[\d:]+$/.test(str);
-                const formatTimeForDisplay = (timeStr) => useLed && isTimeFormat(timeStr) ? generateLedSvg(timeStr, {height: 26, color: 'white'}) : timeStr;
-                document.getElementById('modal-sunrise-time').innerHTML = formatTimeForDisplay(sunriseTime);
-                document.getElementById('modal-sunset-time').innerHTML = formatTimeForDisplay(sunsetTime);
-                const moonDetails = moonPhaseData[lunar.day] || { n: '未知', a: '', d: '' };
-                const moonName = moonDetails.a ? `${moonDetails.n}(${moonDetails.a})` : moonDetails.n;
-                document.getElementById('modal-moon-icon').innerHTML = getMoonPhaseSVG(lunar.day, '64px', 'day-detail');
-                document.getElementById('modal-moon-phase-name').textContent = moonName;
-                const moonDescEl = document.getElementById('modal-moon-phase-desc');
-                if (moonDetails.d) {
-                    const fontSize = parseFloat(getComputedStyle(moonDescEl).fontSize) || 16;
-                    const color = getComputedStyle(moonDescEl).color || 'white';
-                    moonDescEl.innerHTML = getLedHTML(moonDetails.d, useLed, { fontSize, color, defaultSpan: false });
-                    moonDescEl.style.display = 'block';
-                } else { moonDescEl.style.display = 'none'; }
-                updateCountdowns(date);
-                showModal('modal-backdrop-day')
-            }
-            function showExplanationModal(title,content){if(isEditMode)return;document.getElementById('explanation-title').textContent=title;document.getElementById('explanation-content').textContent=content;showModal('modal-backdrop-explanation')}
-            function getAllSolarTermsForYear(year){if(!solarTermsCache[year])calculateAndCacheSolarTerms(year);return Object.entries(solarTermsCache[year]).map(([key,name])=>{const[y,m,d]=key.split('-').map(Number);return{date:new Date(y,m-1,d),name}}).sort((a,b)=>a.date-b.date)}
-            function getAllHolidaysForYear(year){
-                let holidays = [];
-                Object.entries(lunarHolidays).forEach(([key, name]) => { [year, year - 1].forEach(lunarYear => { const [m, d] = key.split('-'); const solarDate = lunarToSolar(lunarYear, parseInt(m), parseInt(d)); if (solarDate && solarDate.getFullYear() === year) holidays.push({ date: solarDate, name }); }); });
-                [year, year - 1].forEach(lunarYear => { const eveDate = lunarToSolar(lunarYear, 12, getLunarMonthDays(lunarYear, 12)); if (eveDate && eveDate.getFullYear() === year) holidays.push({ date: eveDate, name: "除夕" }); });
-                Object.entries(floatingHolidays).forEach(([key, name]) => { const [m, week, dayOfWeek] = key.split('-').map(Number); const month = m - 1; let firstOfMonth = new Date(year, month, 1); let holidayDate = new Date(year, month, 1 + ((dayOfWeek - firstOfMonth.getDay() + 7) % 7) + (week - 1) * 7); if (holidayDate.getMonth() === month) holidays.push({ date: holidayDate, name }); });
-                return Array.from(new Map(holidays.map(h => [h.date.toISOString().split('T')[0], h])).values()).sort((a, b) => a.date - b.date);
-            }
-            function updateCountdowns(currentDate){
-                const today = new Date(currentDate); today.setHours(0,0,0,0);
-                const useLed = settingsState.calendar?.useLedFont ?? true;
-                const formatCountdownText=(items,type)=>{
-                    const futureEvents=items.filter(item=>item.date>=today);
-                    if(futureEvents.length===0)return`找不到${today.getFullYear()+1}年的${type}資料`;
-                    const firstEvent=futureEvents[0];
-                    const diffDays=Math.ceil((firstEvent.date.getTime()-today.getTime())/86400000);
-                    const daysHTML = useLed ? generateLedSvg(String(diffDays), {height: 20, color: 'white'}) : `<span style="font-size: 1.2em;">${diffDays}</span>`;
-                    if(diffDays===0){
-                        if(futureEvents[1]) {
-                             const nextDiffDays = Math.ceil((futureEvents[1].date - today) / 86400000);
-                             const nextDaysHTML = useLed ? generateLedSvg(String(nextDiffDays), {height: 20, color: 'white'}) : `<span style="font-size: 1.2em;">${nextDiffDays}</span>`;
-                             return `<div class="countdown-text-container">今天是 ${firstEvent.name}，距離下個${type} [${futureEvents[1].name}] 還有 ${nextDaysHTML} 天</div>`;
-                        }
-                        return `今天是 ${firstEvent.name}！`;
-                    }
-                    return `<div class="countdown-text-container">距離 ${firstEvent.name} 還有 ${daysHTML} 天</div>`;
-                };
-                let allHolidays=[...getAllHolidaysForYear(today.getFullYear()),...getAllHolidaysForYear(today.getFullYear()+1)];
-                let allSolarTerms=[...getAllSolarTermsForYear(today.getFullYear()),...getAllSolarTermsForYear(today.getFullYear()+1)];
-                document.getElementById('countdown-holiday-text').innerHTML=formatCountdownText(allHolidays,'節日');
-                document.getElementById('countdown-solarterm-text').innerHTML=formatCountdownText(allSolarTerms,'節氣');
-            }
-            const pickerYearEl=document.getElementById('picker-year'),pickerMonthGridEl=document.getElementById('picker-month-grid');
-            let pickerYear=new Date().getFullYear();
-            let pickerTarget = null;
-            function renderPicker(year, month, targetDate) {
-                pickerYear = year;
-                let useLed = false;
-                if (pickerTarget) {
-                    const widgetId = pickerTarget.body.closest('.widget-container').id;
-                    const widgetKey = (widgetId === 'calendar-container' ? 'calendar' : (widgetId === 'moon-phase-container' ? 'moonPhase' : null));
-                    if (widgetKey) {
-                        useLed = settingsState[widgetKey]?.useLedFont ?? true;
-                    }
-                }
-                if (useLed) {
-                    const yearColor = getComputedStyle(document.documentElement).getPropertyValue('--year-color').trim() || '#a5b4fc';
-                    pickerYearEl.innerHTML = generateLedSvg(String(year), { height: 28, color: yearColor });
-                } else {
-                    pickerYearEl.textContent = year;
-                }
-                pickerMonthGridEl.innerHTML = '';
-                for (let i = 0; i < 12; i++) {
-                    const cell = document.createElement('div');
-                    const monthNumber = String(i + 1);
-                    const monthText = '月';
-                    if (useLed) {
-                        const pickerColor = getComputedStyle(document.documentElement).getPropertyValue('--month-color').trim() || '#a5b4fc';
-                        const numberHTML = generateLedSvg(monthNumber, { height: 20, color: pickerColor });
-                        cell.innerHTML = `${numberHTML}<span style="color:${pickerColor};">${monthText}</span>`;
-                    } else {
-                        cell.textContent = monthNumber + monthText;
-                    }
-                    cell.classList.add('month-cell');
-                    if (i === month && year === targetDate.getFullYear()) cell.classList.add('selected');
-                    cell.dataset.month = i; pickerMonthGridEl.appendChild(cell);
-                }
-            }
-            function openPickerFor(targetWidget) { if (isEditMode) return; pickerTarget = targetWidget; renderPicker(pickerTarget.currentDate.getFullYear(), pickerTarget.currentDate.getMonth(), pickerTarget.currentDate); showModal('modal-backdrop-picker'); }
-            document.getElementById('picker-prev-year').addEventListener('click', () => { if (pickerYear > 1900 && pickerTarget) renderPicker(--pickerYear, -1, pickerTarget.currentDate); });
-            document.getElementById('picker-next-year').addEventListener('click', () => { if (pickerYear < 2100 && pickerTarget) renderPicker(++pickerYear, -1, pickerTarget.currentDate); });
-            pickerMonthGridEl.addEventListener('click', (e) => {
-                const cell = e.target.closest('.month-cell');
-                if (cell && pickerTarget) { pickerTarget.currentDate = new Date(pickerYear, cell.dataset.month, 1); pickerTarget.render(); hideModal('modal-backdrop-picker'); }
-            });
-            document.body.addEventListener('click',(e)=>{
-                const selectHandle = e.target.closest('.group-select-handle');
-                if (isEditMode && selectHandle) {
-                    e.stopPropagation();
-                    const widget = selectHandle.closest('.widget-container');
-                    if (widget) toggleWidgetSelection(widget);
-                    return;
-                }
-                const resetHandle = e.target.closest('.reset-handle');
-                if (isEditMode && resetHandle) {
-                    e.stopPropagation();
-                    const widgetEl = resetHandle.closest('.widget-container');
-                    if (widgetEl) {
-                        const widgetId = widgetEl.id;
-                        const defaultState = userDefaultLayout.transforms[widgetId];
-                        if (transformStates[widgetId] && defaultState) {
-                            const state = transformStates[widgetId];
-                            const currentWidth = state.width * state.scale;
-                            const currentHeight = state.height * state.scale;
-                            const centerX = state.left + currentWidth / 2;
-                            const centerY = state.top + currentHeight / 2;
-                            state.width = defaultState.width;
-                            state.height = defaultState.height;
-                            state.scale = 1;
-                            state.rotation = 0;
-                            state.left = centerX - (state.width / 2);
-                            state.top = centerY - (state.height / 2);
-                            checkAndClampWidgetBounds(state);
-                            applyTransform(widgetEl, state);
-                            saveCurrentSettings();
-                        }
-                    }
-                    return;
-                }
-                const cell=e.target.closest('.calendar-day');const key=e.target.dataset.key;if(key&&explanations[key]){e.stopPropagation();showExplanationModal(key,explanations[key]);return}if(cell&&cell.closest('#calendar-body')&&cell.dataset.date){showDayDetailModal(cell.dataset.date)}const closeModalBtn=e.target.closest('[data-close-modal]');if(closeModalBtn){hideModal(closeModalBtn.dataset.closeModal)}if(e.target.classList.contains('modal-backdrop')){hideModal(e.target.id)}});
-            document.getElementById('marquee-params-btn').addEventListener('click', () => showModal('modal-backdrop-marquee-params'));
-            document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){['modal-backdrop-day','modal-backdrop-picker','modal-backdrop-explanation','modal-backdrop-settings','modal-backdrop-prompt', 'modal-backdrop-marquee-params'].forEach(hideModal)}});
-            function resetActivityTimeout(){actionButtons.classList.remove('hidden');clearTimeout(activityTimeout);if(!isEditMode){activityTimeout=setTimeout(()=>actionButtons.classList.add('hidden'),3000)}}
-            ['mousemove','mousedown','touchstart','keydown'].forEach(event=>document.addEventListener(event,resetActivityTimeout));
-            document.getElementById('fullscreen-btn').addEventListener('click',()=>{if(!document.fullscreenElement){document.documentElement.requestFullscreen()}else{document.exitFullscreen()}});
-            document.addEventListener('fullscreenchange',()=>{const isFullscreen=!!document.fullscreenElement;document.getElementById('fullscreen-enter-icon').classList.toggle('display-none',isFullscreen);document.getElementById('fullscreen-exit-icon').classList.toggle('display-none',!isFullscreen)});
             // ===================================================================
             // 版面配置儲存/載入
             // ===================================================================
