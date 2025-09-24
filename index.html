@@ -725,6 +725,19 @@
         let currentLayoutIndex = -1; // -1 表示目前狀態未對應任何已儲存的版面，或是已被修改
         let nextLayoutIndex = 0; // 用於循序版面切換
 
+        // --- 效能優化：Debounce 函式 ---
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             // ===================================================================
             // 設定、顏色與儲存
@@ -864,6 +877,972 @@
             function applyRandomColors() { document.querySelectorAll('#modal-backdrop-settings .color-picker').forEach(p => { p.value = getRandomHexColor(); p.dispatchEvent(new Event('input', { bubbles: true })); }); }
             document.getElementById('random-colors-btn').addEventListener('click', applyRandomColors);
             document.getElementById('default-settings-btn').addEventListener('click', applyDefaultSettings);
+            // ===================================================================
+            // 動態跑馬燈相關函式
+            // ===================================================================
+            function createMarqueeElement(index) {
+                const template = document.getElementById('marquee-container-0');
+                if (!template) { console.error("跑馬燈模板 'marquee-container-0' 找不到!"); return null; }
+                const newMarquee = template.cloneNode(true);
+                newMarquee.id = `marquee-container-${index}`;
+                newMarquee.style.display = 'none';
+                document.body.appendChild(newMarquee);
+                return newMarquee;
+            }
+            function syncMarqueeDOMElements() {
+                const desiredCount = settingsState.marquees.length;
+                const existingWidgets = document.querySelectorAll('.marquee-widget');
+                let currentCount = existingWidgets.length;
+                while (currentCount < desiredCount) { createMarqueeElement(currentCount); currentCount++; }
+                if (currentCount > desiredCount) { for (let i = desiredCount; i < currentCount; i++) { const elToRemove = document.getElementById(`marquee-container-${i}`); if (elToRemove) elToRemove.remove(); } }
+            }
+            document.getElementById('add-marquee-btn').addEventListener('click', () => {
+                const selectedIndex = parseInt(marqueeSelector.value, 10) || 0;
+                const newIndex = settingsState.marquees.length;
+                const sourceSettings = settingsState.marquees[selectedIndex];
+                const sourceTransform = transformStates[`marquee-container-${selectedIndex}`];
+                const newSettings = JSON.parse(JSON.stringify(sourceSettings));
+                const newTransform = JSON.parse(JSON.stringify(sourceTransform));
+                newTransform.top += (sourceTransform.height * sourceTransform.scale) + 10;
+                newTransform.visible = true;
+                settingsState.marquees.push(newSettings);
+                transformStates[`marquee-container-${newIndex}`] = newTransform;
+                const newElement = createMarqueeElement(newIndex);
+                MarqueeManager.syncInstances();
+                updateMarqueeSelectorUI();
+                marqueeSelector.value = newIndex;
+                loadMarqueeSettingsToUI(newIndex);
+                applyTransform(newElement, newTransform);
+                MarqueeManager.rebuildAnimationByIndex(newIndex);
+                saveCurrentSettings();
+                showAlert('成功', `已新增跑馬燈組別 ${newIndex + 1}。`);
+            });
+            document.getElementById('remove-marquee-btn').addEventListener('click', () => {
+                const selectedIndex = parseInt(marqueeSelector.value, 10);
+                if (selectedIndex === 0 || settingsState.marquees.length <= 1) { showAlert('提示', '無法刪除預設的跑馬燈組別。'); return; }
+                settingsState.marquees.splice(selectedIndex, 1);
+                for (let i = selectedIndex; i < settingsState.marquees.length; i++) { transformStates[`marquee-container-${i}`] = transformStates[`marquee-container-${i + 1}`]; }
+                delete transformStates[`marquee-container-${settingsState.marquees.length}`];
+                syncMarqueeDOMElements();
+                document.querySelectorAll('.marquee-widget').forEach((el, i) => { el.id = `marquee-container-${i}`; });
+                MarqueeManager.syncInstances();
+                MarqueeManager.rebuildAllAnimations();
+                const newIndex = Math.max(0, selectedIndex - 1);
+                marqueeSelector.value = newIndex;
+                updateMarqueeSelectorUI();
+                marqueeSelector.value = newIndex;
+                loadMarqueeSettingsToUI(newIndex);
+                saveCurrentSettings();
+                showAlert('成功', `已刪除跑馬燈組別 ${selectedIndex + 1}。`);
+            });
+            // --- 農曆轉換核心演算法 ---
+            function getLunarYearDays(y){let i,sum=348;for(i=0x8000;i>0x8;i>>=1)sum+=(lunarInfo[y-1900]&i)?1:0;return sum+getLunarLeapDays(y)}
+            function getLunarLeapMonth(y){return lunarInfo[y-1900]&0xf}
+            function getLunarLeapDays(y){return getLunarLeapMonth(y)?((lunarInfo[y-1900]&0x10000)?30:29):0}
+            function getLunarMonthDays(y,m){return(lunarInfo[y-1900]&(0x10000>>m))?30:29}
+            function toChinaDate(d) {
+                if (d < 1 || d > 30) return "";
+                const n1 = "一二三四五六七八九";
+                if (d <= 10) return "初" + (d === 10 ? "十" : n1[d-1]);
+                if (d < 20) return "十" + n1[(d % 10) - 1];
+                if (d === 20) return "二十";
+                if (d < 30) return "廿" + n1[(d % 10) - 1];
+                return "三十";
+            }
+            let lunarDateCache={};
+            function getLunarDate(date){
+                const cleanDate = new Date(date);
+                cleanDate.setHours(0, 0, 0, 0);
+                const key=cleanDate.toISOString().split('T')[0];
+                if(lunarDateCache[key])return lunarDateCache[key];
+                let i,temp=0;const baseDate=new Date(1900,0,31);
+                let offset=(cleanDate-baseDate)/86400000;
+                for(i=1900;i<2101&&offset>0;i++){temp=getLunarYearDays(i);offset-=temp}if(offset<0){offset+=temp;i--}const year=i;const leapMonth=getLunarLeapMonth(year);let isLeap=false;for(i=1;i<13&&offset>0;i++){temp=getLunarMonthDays(year,i);offset-=temp;if(offset<0){break}if(leapMonth>0&&i===leapMonth){temp=getLunarLeapDays(year);offset-=temp;if(offset<0){isLeap=true;break}}}if(offset<0){offset+=temp}const month=i;
+                const day=Math.round(offset)+1;
+                const monthStr=(isLeap?'閏':'')+"正二三四五六七八九十冬臘"[month-1]+'月';
+                const result={year:year,month:month,day:day,isLeap:isLeap,toString:monthStr+toChinaDate(day),dayString:toChinaDate(day)};
+                lunarDateCache[key]=result;return result
+            }
+            function lunarToSolar(lunarYear,lunarMonth,lunarDay,isLeap=false){if(lunarYear<1900||lunarYear>2100)return null;const leap=getLunarLeapMonth(lunarYear);if(isLeap&&leap!==lunarMonth)return null;let daysOffset=0;for(let y=1900;y<lunarYear;y++){daysOffset+=getLunarYearDays(y)}for(let m=1;m<lunarMonth;m++){daysOffset+=getLunarMonthDays(lunarYear,m);if(leap>0&&m===leap){daysOffset+=getLunarLeapDays(lunarYear)}}if(isLeap){daysOffset+=getLunarMonthDays(lunarYear,lunarMonth)}daysOffset+=lunarDay-1;const baseDate=new Date(1900,0,31);return new Date(baseDate.getTime()+daysOffset*86400000)}
+            let solarTermsCache={};
+            function calculateAndCacheSolarTerms(year){if(year<2000||year>2099){solarTermsCache[year]={};return}const yearMap={};const Y=year-2000;solarTermConstants.forEach(([name,month,C])=>{const day=Math.floor(Y*0.2422+C)-Math.floor(Y/4);yearMap[`${year}-${month}-${day}`]=name});solarTermsCache[year]=yearMap}
+            function getSolarTerm(year,month,day){if(!solarTermsCache[year]){calculateAndCacheSolarTerms(year)}return solarTermsCache[year][`${year}-${month}-${day}`]||null}
+            function getHoliday(date) {
+                const month = date.getMonth() + 1, dayOfMonth = date.getDate(), dayOfWeek = date.getDay();
+                const gKey = `${month}-${dayOfMonth}`;
+                if (gregorianHolidays[gKey]) return gregorianHolidays[gKey];
+                const weekOfMonth = Math.ceil(dayOfMonth / 7);
+                const fKey = `${month}-${weekOfMonth}-${dayOfWeek}`;
+                if (floatingHolidays[fKey]) return floatingHolidays[fKey];
+                const l = getLunarDate(date);
+                if (l.day > 0) {
+                    if (l.month === 12 && l.day === getLunarMonthDays(l.year, 12)) return "除夕";
+                    const lKey = `${l.month}-${l.day}`;
+                    if (lunarHolidays[lKey]) return lunarHolidays[lKey];
+                }
+                return null;
+            }
+            function getDailyGanzhi(date) {
+                const cleanDate = new Date(date); cleanDate.setHours(0, 0, 0, 0);
+                const baseDate = new Date(1900, 0, 31);
+                const offset = Math.floor((cleanDate - baseDate) / 86400000);
+                const dayStemIndex = (6 + (offset + 60000)) % 10;
+                return { stemIndex: dayStemIndex };
+            }
+            // --- 星座計算 ---
+            function getConstellation(date) { const m = date.getMonth() + 1, d = date.getDate(); for (let i = 0; i < signs.length; i++) { if (m < signs[i].m || (m === signs[i].m && d < signs[i].d)) return signs[i]; } return signs[0]; }
+            // --- 時間輔助工具 ---
+            const ShichenHelper = {
+                hourStemStart: [0, 2, 4, 6, 8, 0, 2, 4, 6, 8],
+                getData(date) {
+                    const h = date.getHours(); const branchIndex = Math.floor(((h + 1) % 24) / 2);
+                    const dayStemIndex = getDailyGanzhi(date).stemIndex;
+                    const hourStemIndex = (this.hourStemStart[dayStemIndex] + branchIndex) % 10;
+                    return { name: `${dizhi[branchIndex]}時`, char: dizhi[branchIndex], gz: `${tiangan[hourStemIndex]}${dizhi[branchIndex]}` };
+                }
+            };
+            const TimeHelper = {
+                timeRanges: [{h:23,p:'深夜'},{h:19,p:'夜晚'},{h:17,p:'傍晚'},{h:13,p:'下午'},{h:12,p:'中午'},{h:9,p:'上午'},{h:5,p:'清晨'},{h:0,p:'凌晨'}],
+                getPeriodText(hour) { return this.timeRanges.find(range => hour >= range.h)?.p || ''; },
+            };
+            // --- 全局 DOM 元素與狀態 ---
+            const allWidgetContainers = () => document.querySelectorAll('.widget-container');
+            const actionButtons = document.getElementById('action-buttons');
+            const editToolbar = document.getElementById('edit-toolbar');
+            let isEditMode = false, activityTimeout, transformStates = {}, settingsState = {}, isWidgetAnimating = {};
+            let selectedWidgets = new Set(), groupMoveHandle = null, groupRotateHandle = null, initialGroupTransforms = {};
+            // --- 跑馬燈參數與顏色變數的映射表 ---
+            const marqueeParamColorMap = {
+                '%YYYY%': '--year-color', '%ROC_YY%': '--year-color', '%MM%': '--month-color', '%DD%': '--day-color',
+                '%WEEKDAY%': '--week-color', '%W_SHORT%': '--week-color', '%HH%': '--led-hour-color', '%hh%': '--led-hour-color',
+                '%mm%': '--led-minute-color', '%ss%': '--led-second-color', '%ap_c%': '--led-period-color', '%L_GZ%': '--lunar-color',
+                '%L_SX%': '--lunar-color', '%LM_C%': '--lunar-color', '%LD_C%': '--lunar-color', '%WEATHER_LOC%': '--holiday-color',
+                '%WEATHER_DESC%': '--holiday-color', '%TEMP%': '--holiday-color', '%SUNRISE%': '--solarterm-color',
+                '%SUNSET%': '--solarterm-color', '%MOON_PHASE%': '--moon-header-color', '%MOON_ICON%': '--moon-header-color',
+                '%MOON_DAY%': '--moon-header-color', '%CONSTELLATION%': '--solarterm-color',
+                '%SHICHEN_GZ%': '--lunar-color', '%SHICHEN_NAME%': '--lunar-color', '%SHICHEN_CHAR%': '--lunar-color'
+            };
+            // --- 預設設定 ---
+            const userDefaultLayout = {
+                "transforms": {
+                    "calendar-container": { "visible": true, "width": 500, "height": 400, "left": 310, "top": 80, "scale": 1, "rotation": 0 },
+                    "moon-phase-container": { "visible": false, "width": 500, "height": 400, "left": 10, "top": 80, "scale": 1, "rotation": 0 },
+                    "led-clock-container": { "visible": true, "width": 300, "height": 98, "left": 10, "top": 80, "scale": 1, "rotation": 0 },
+                    "analog-clock-container": { "visible": true, "width": 300, "height": 300, "left": 10, "top": 170, "scale": 1, "rotation": 0 },
+                    "marquee-container-0": { "visible": true, "width": 800, "height": 80, "left": 10, "top": 10, "scale": 1, "rotation": 0 }
+                },
+                "settings": {
+                    "calendar": { "visible": true, "showMoonIcon": true, "useLedFont": true, "colors": { "--bg-primary": "#000000", "--year-color": "#FF7000", "--month-color": "#3070a0", "--week-color": "#8830d0", "--day-color": "#ffffff", "--lunar-color": "#FFFF00", "--bg-secondary": "transparent", "--bg-hover": "rgba(55, 65, 81, 0.5)", "--border-color": "#374151", "--text-primary": "#F3F4F6", "--text-secondary": "#9CA3AF", "--text-muted": "#6B7280", "--holiday-color": "#6ee7b7", "--solarterm-color": "#fcd34d", "--yi-color": "#34D399", "--ji-color": "#F87171" } },
+                    "ledClock": { "visible": true, "colonBlink": true, "colors": { "--led-hour-color": "#00ff00", "--led-minute-color": "#00ff00", "--led-second-color": "#00ff00", "--led-colon-color": "#00ff00", "--led-period-color": "#00ff00" } },
+                    "analogClock": { "visible": true, "useLedFont": true, "smoothSeconds": false, "colors": { "--analog-face-color": "transparent", "--analog-hand-color": "#ffffff", "--analog-second-hand-color": "#ff3333", "--analog-tick-color": "#cccccc", "--analog-number-color": "#ffffff" } },
+                    "moonPhase": { "visible": false, "useLedFont": true, "colors": { "--moon-light-color": "#f0e68c", "--moon-dark-color": "#222222", "--moon-header-color": "#a78bfa", "--moon-desc-color": "#d1d5db", "--moon-highlight-color": "#fcd34d" } },
+                    "marquees": [
+                        { "text": "%YYYY%/%ROC_YY%年%MM%月%DD%日%W_SHORT%%ap_c%%hh%%C(#00FF00, :)%%mm%%br%%C(#FFFF00, 農曆)%%LM_C%%LD_C%%br%%SHICHEN_NAME%%L_GZ%%L_SX%%MOON_ICON%%CONSTELLATION%%br%%WEATHER_LOC%%WEATHER_DESC%%TEMP%°C%br%日出%SUNRISE%%br%日落%SUNSET%", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }
+                    ],
+                    "marqueeGlobal": { "useLedFont": true },
+                    "location": "taiwan",
+                    "timedEffect": { "enabled": true, "intervalSeconds": 10, "type": "slide", "isRandom": false, "transitionEnabled": false }
+                }
+            };
+            // ===================================================================
+            // LED 時鐘模組
+            // ===================================================================
+            const LedClock = {
+                svg: document.getElementById('led-clock-svg'), digits: {}, colons: {}, periodTextElement: null,
+                lastTime: { h: -1, m: -1, s: -1 },
+                segmentMap: [[1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],[0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1]],
+                segmentTransforms: ['translate(0, 0)','translate(132, 20) rotate(90)','translate(132, 140) rotate(90)','translate(0, 240)','translate(12, 140) rotate(90)','translate(12, 20) rotate(90)','translate(0, 120)'],
+                baseViewBoxWidth: 0, aspectRatio: 0,
+                createDigit(id, x, parentGroup, segmentClass) { const group = document.createElementNS('http://www.w3.org/2000/svg', 'g'); group.setAttribute('id', id); group.setAttribute('transform', `translate(${x}, 0)`); for (let i = 0; i < 7; i++) { const use = document.createElementNS('http://www.w3.org/2000/svg', 'use'); use.setAttribute('href', '#segment-shape'); use.setAttribute('class', `segment ${segmentClass}`); use.setAttribute('data-segment', String.fromCharCode(97 + i)); use.setAttribute('transform', this.segmentTransforms[i]); group.appendChild(use); } parentGroup.appendChild(group); return group; },
+                createColon(id, x, parentGroup) { const group = document.createElementNS('http://www.w3.org/2000/svg', 'g'); group.setAttribute('id', id); group.setAttribute('transform', `translate(${x}, 0)`); ['translate(0, 60)', 'translate(0, 180)'].forEach(transform => { const dot = document.createElementNS('http://www.w3.org/2000/svg', 'use'); dot.setAttribute('href', '#colon-dot-shape'); dot.setAttribute('class', 'colon'); dot.setAttribute('transform', transform); group.appendChild(dot); }); parentGroup.appendChild(group); return group; },
+                init() {
+                    this.svg.innerHTML = ''; const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs'); defs.innerHTML = `<polygon id="segment-shape" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="colon-dot-shape" x="-16" y="0" width="32" height="32" rx="5" ry="5" />`; this.svg.appendChild(defs); const digitWidth=160, colonWidth=48, digitSpacing=2, hourMinuteSpacing=0, secondsScale=0.25, minuteSecondSpacing=8; const viewportGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g'); this.svg.appendChild(viewportGroup); let currentX = 0; this.digits.h1 = this.createDigit('digit-h1', currentX, viewportGroup, 'segment-h'); currentX += digitWidth + digitSpacing; this.digits.h2 = this.createDigit('digit-h2', currentX, viewportGroup, 'segment-h'); currentX += digitWidth + hourMinuteSpacing; this.colons.h = this.createColon('colon-h', currentX, viewportGroup); currentX += colonWidth + hourMinuteSpacing; this.digits.m1 = this.createDigit('digit-m1', currentX, viewportGroup, 'segment-m'); currentX += digitWidth + digitSpacing; this.digits.m2 = this.createDigit('digit-m2', currentX, viewportGroup, 'segment-m'); const mainDigitsWidth = currentX + digitWidth; const secondsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g'); viewportGroup.appendChild(secondsGroup); this.digits.s1 = this.createDigit('digit-s1', 0, secondsGroup, 'segment-s'); this.digits.s2 = this.createDigit('digit-s2', digitWidth + digitSpacing, secondsGroup, 'segment-s'); this.periodTextElement = document.createElementNS('http://www.w3.org/2000/svg', 'text'); this.periodTextElement.setAttribute('class', 'period-text'); this.periodTextElement.setAttribute('dominant-baseline', 'hanging'); viewportGroup.appendChild(this.periodTextElement); const mainDigitHeight = 240 + 32; const scaledSecondsHeight = mainDigitHeight * secondsScale; const totalContentWidth = mainDigitsWidth + minuteSecondSpacing + Math.max((digitWidth * 2 + digitSpacing) * secondsScale, 110); this.baseViewBoxWidth = totalContentWidth + 20; this.aspectRatio = this.baseViewBoxWidth / mainDigitHeight; this.svg.setAttribute('viewBox', `0 0 ${this.baseViewBoxWidth} ${mainDigitHeight}`); viewportGroup.setAttribute('transform', 'translate(20, 0)'); secondsGroup.setAttribute('transform', `translate(${mainDigitsWidth + minuteSecondSpacing}, ${mainDigitHeight - scaledSecondsHeight}) scale(${secondsScale})`);
+                    this.periodTextElement.setAttribute('x', mainDigitsWidth + minuteSecondSpacing - 20);
+                    this.periodTextElement.setAttribute('y', 0); 
+                    this.updateTimeDisplay(new Date()); // 首次渲染
+                },
+                updateDigit(digitElement, number) { const pattern = this.segmentMap[number]; digitElement.querySelectorAll('.segment').forEach((segment, i) => { segment.style.opacity = pattern[i] ? '1' : '0.1'; }); },
+                updateTimeDisplay(now) {
+                    const s = now.getSeconds();
+                    const m = now.getMinutes();
+                    const h = now.getHours();
+
+                    if (s !== this.lastTime.s) {
+                        const sStr = String(s).padStart(2, '0');
+                        this.updateDigit(this.digits.s1, parseInt(sStr[0]));
+                        this.updateDigit(this.digits.s2, parseInt(sStr[1]));
+                        this.lastTime.s = s;
+                    }
+
+                    if (m !== this.lastTime.m) {
+                        const mStr = String(m).padStart(2, '0');
+                        this.updateDigit(this.digits.m1, parseInt(mStr[0]));
+                        this.updateDigit(this.digits.m2, parseInt(mStr[1]));
+                        this.lastTime.m = m;
+                    }
+
+                    if (h !== this.lastTime.h) {
+                        if (this.periodTextElement) { this.periodTextElement.textContent = TimeHelper.getPeriodText(h); }
+                        let h12 = h % 12; if (h12 === 0) h12 = 12;
+                        const hStr = String(h12).padStart(2, '0');
+                        this.updateDigit(this.digits.h1, parseInt(hStr[0]));
+                        this.updateDigit(this.digits.h2, parseInt(hStr[1]));
+                        this.lastTime.h = h;
+                    }
+                },
+                updatePerSecond(now) {
+                    this.updateTimeDisplay(now);
+                    const shouldBlink = settingsState.ledClock?.colonBlink ?? true;
+                    const colonOpacity = shouldBlink ? (now.getSeconds() % 2 === 0 ? '1' : '0.2') : '1';
+                    this.colons.h.querySelectorAll('.colon').forEach(c => c.style.opacity = colonOpacity);
+                },
+                triggerSlideEffect() {
+                    let targets = [];
+                    allWidgetContainers().forEach(el => {
+                        if (transformStates[el.id]?.visible && !el.classList.contains('marquee-widget')) targets.push(el.id);
+                    });
+                    MarqueeManager.instances.forEach(instance => {
+                        if (transformStates[instance.container.id]?.visible && !instance.isScrolling) targets.push(instance.container.id);
+                    });
+                    if (targets.length === 0) return;
+                    const move = { up: 'translateY(-100vh)', down: 'translateY(100vh)', left: 'translateX(-100vw)', right: 'translateX(100vw)' };
+                    const directions = Object.keys(move);
+                    const duration = 700;
+                    targets.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (!el || isWidgetAnimating[id]) return;
+                        const direction = directions[Math.floor(Math.random() * directions.length)];
+                        isWidgetAnimating[id] = true;
+                        const originalTransform = el.style.transform;
+                        const originalTransition = el.style.transition;
+                        el.style.transition = `transform ${duration}ms ease-in-out`;
+                        el.style.transform = `${originalTransform} ${move[direction]}`;
+                        setTimeout(() => {
+                            el.style.transition = 'none';
+                            el.style.transform = originalTransform;
+                            setTimeout(() => {
+                                el.style.transition = originalTransition;
+                                isWidgetAnimating[id] = false;
+                            }, 50);
+                        }, duration);
+                    });
+                }
+            };
+            // ===================================================================
+            // 月曆與月相曆模組 (工廠模式)
+            // ===================================================================
+            function createCalendarWidget(options) {
+                const { bodyId, yearHeaderId, backgroundMonthId, prevBtnId, nextBtnId, todayBtnId, onCellRender, onHeaderClick, getSetting } = options;
+                const body = document.getElementById(bodyId), yearHeader = document.getElementById(yearHeaderId), backgroundMonth = document.getElementById(backgroundMonthId);
+                const widget = {
+                    body: body, currentDate: new Date(),
+                    init() {
+                        document.getElementById(prevBtnId).addEventListener('click', () => { if (!isEditMode) { this.currentDate.setMonth(this.currentDate.getMonth() - 1); this.render(); } });
+                        document.getElementById(nextBtnId).addEventListener('click', () => { if (!isEditMode) { this.currentDate.setMonth(this.currentDate.getMonth() + 1); this.render(); } });
+                        document.getElementById(todayBtnId).addEventListener('click', () => { if (!isEditMode) { this.currentDate = new Date(); this.render(); } });
+                        if (onHeaderClick) yearHeader.addEventListener('click', () => onHeaderClick(this));
+                        this.render();
+                    },
+                    render() {
+                        body.innerHTML = '';
+                        const year = this.currentDate.getFullYear(), month = this.currentDate.getMonth();
+                        const widgetSettings = getSetting() || {};
+                        const useLedHeader = widgetSettings.useLedFont ?? true;
+                        const yearColor = getComputedStyle(document.documentElement).getPropertyValue('--year-color').trim() || '#FF7000';
+                        renderCalendarTitle(yearHeader, year, useLedHeader, 26, yearColor, '26px', yearColor);
+                        const widgetId = body.closest('.widget-container').id;
+                        const widgetState = transformStates[widgetId];
+                        if (useLedHeader && widgetState) {
+                             const monthColor = getComputedStyle(document.documentElement).getPropertyValue('--month-color').trim() || '#3070a0';
+                             backgroundMonth.innerHTML = generateLedSvg(String(month + 1), { height: widgetState.height * 0.7, color: monthColor });
+                        } else {
+                             backgroundMonth.textContent = month + 1;
+                        }
+                        const firstDayOfMonth = new Date(year, month, 1);
+                        const startDayOfWeek = firstDayOfMonth.getDay();
+                        const startDate = new Date(year, month, 1 - startDayOfWeek);
+                        const today = new Date(); today.setHours(0, 0, 0, 0);
+                        for (let i = 0; i < 42; i++) {
+                            const currentCellDate = new Date(startDate);
+                            currentCellDate.setDate(startDate.getDate() + i);
+                            const cell = document.createElement('div');
+                            cell.className = `calendar-day ${currentCellDate.getMonth() !== month ? 'other-month' : ''} ${currentCellDate.getTime() === today.getTime() ? 'today' : ''}`;
+                            onCellRender(cell, currentCellDate, widgetSettings);
+                            body.appendChild(cell);
+                        }
+                    }
+                };
+                return widget;
+            }
+            const calendarCellRenderer = (cell, date, settings) => {
+                const day = date.getDate(), lunar = getLunarDate(date), solarTerm = getSolarTerm(date.getFullYear(), date.getMonth() + 1, day), holiday = getHoliday(date);
+                const showMoonIcon = settings.showMoonIcon ?? true, useLed = settings.useLedFont ?? true;
+                const textDetailsHTML = `<div class="lunar-date">${lunar.day === 1 ? lunar.toString.substring(0, lunar.isLeap ? 3 : 2) : lunar.dayString}</div>
+                    ${solarTerm ? `<div class="solarterm-text truncate" data-key="${solarTerm}">${solarTerm}</div>` : ''}
+                    ${holiday ? `<div class="holiday-text truncate" data-key="${holiday}">${holiday}</div>` : ''}`;
+                const dayColor = getComputedStyle(document.documentElement).getPropertyValue('--day-color').trim();
+                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvg(String(day), {height: 20, color: dayColor})}</div>` : `<div class="day-number-wrapper" style="font-size: 1.5em; line-height: 1.2; color: ${dayColor}; display: flex; align-items: center; justify-content: center; height: 20px; font-weight: 700;">${day}</div>`;
+                if (showMoonIcon) {
+                    cell.classList.add('with-moon-icon');
+                    cell.innerHTML = `<div class="day-text-content">${dayNumberHTML}<div class="space-y-px">${textDetailsHTML}</div></div><div class="day-moon-container">${MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '28px', `main-cal-${Math.random()}`)}</div>`;
+                } else {
+                    cell.classList.remove('with-moon-icon');
+                    cell.innerHTML = `${dayNumberHTML}<div class="space-y-px">${textDetailsHTML}</div>`;
+                }
+                cell.dataset.date = date.toISOString();
+                if (isEditMode) cell.classList.add('edit-mode-active');
+            };
+            const moonPhaseCellRenderer = (cell, date, settings) => {
+                const lunar = getLunarDate(date), useLed = settings.useLedFont ?? true, dayColor = getComputedStyle(document.documentElement).getPropertyValue('--day-color').trim() || '#ffffff', day = date.getDate();
+                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvg(String(day), { height: 20, color: dayColor })}</div>` : `<div class="day-number-wrapper" style="font-size: 1.2em; line-height: 1; color: ${dayColor}; font-weight: bold;">${day}</div>`;
+                const lunarDateText = lunar.day === 1 ? lunar.toString.substring(0, lunar.isLeap ? 3 : 2) : lunar.dayString;
+                cell.innerHTML = `${dayNumberHTML}<div class="moon-icon-small">${MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '100%', `grid-${Math.random()}`)}</div><div class="lunar-date">${lunarDateText}</div>`;
+                cell.addEventListener('click', () => { if(!isEditMode) showDayDetailModal(date.toISOString()); });
+            };
+            // ===================================================================
+            // 指針時鐘模組
+            // ===================================================================
+            const AnalogClock = {
+                lastSecond: -1,
+                hourHand: document.querySelector('#analog-clock-container .hour-hand'),
+                minuteHand: document.querySelector('#analog-clock-container .minute-hand'),
+                secondHand: document.querySelector('#analog-clock-container .second-hand'),
+                ticksContainer: document.getElementById('ticks-container'),
+                animationFrameId: null,
+                init() {
+                    this.ticksContainer.innerHTML = '';
+                    const useLed = settingsState.analogClock?.useLedFont ?? true;
+                    for (let i = 1; i <= 60; i++) {
+                        const isHour = i % 5 === 0, rotation = i * 6;
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'tick-wrapper'; wrapper.style.transform = `rotate(${rotation}deg)`;
+                        const tick = document.createElement('div');
+                        tick.className = isHour ? 'tick tick-hour' : 'tick tick-minute';
+                        wrapper.appendChild(tick);
+                        if (isHour) {
+                            wrapper.style.setProperty('--rotation', `${rotation}deg`);
+                            const numDiv = document.createElement('div'); numDiv.className = 'number';
+                            const numberText = String(i / 5);
+                            const numberColor = getComputedStyle(document.documentElement).getPropertyValue('--analog-number-color').trim() || '#ffffff';
+                            if (useLed) {
+                                const clockState = transformStates['analog-clock-container'];
+                                const svgHeight = clockState ? clockState.width * 0.08 : 16;
+                                numDiv.innerHTML = `<div>${generateLedSvg(numberText, { height: svgHeight, color: numberColor })}</div>`;
+                            } else {
+                                numDiv.innerHTML = `<div style="transform: rotate(calc(-1 * var(--rotation))); color: ${numberColor}; font-size: 1.2em; font-weight: bold;">${numberText}</div>`;
+                            }
+                            wrapper.appendChild(numDiv);
+                        }
+                        this.ticksContainer.appendChild(wrapper);
+                    }
+                    this.updateTime(new Date()); // 首次渲染
+                },
+                updateTime(now) {
+                    const smooth = settingsState.analogClock?.smoothSeconds ?? false;
+                    const s = smooth ? now.getSeconds() + now.getMilliseconds() / 1000 : now.getSeconds();
+                    const m = now.getMinutes() + s / 60;
+                    const h = now.getHours() % 12 + m / 60;
+                    this.hourHand.style.transform = `translateX(-50%) rotate(${(h / 12) * 360}deg)`;
+                    this.minuteHand.style.transform = `translateX(-50%) rotate(${(m / 60) * 360}deg)`;
+                    this.secondHand.style.transform = `translateX(-50%) rotate(${(s / 60) * 360}deg)`;
+                },
+                updatePerSecond(now) {
+                    if (settingsState.analogClock?.smoothSeconds) return;
+                    this.updateTime(now);
+                },
+                updateAnimationFrame(now) {
+                    if (!settingsState.analogClock?.smoothSeconds) return;
+                    this.updateTime(now);
+                }
+            };
+            // ===================================================================
+            // LED 數字 SVG 產生器
+            // ===================================================================
+            function generateLedSvg(text, config = {}) {
+                const { height = 24, color = '#FFFFFF', letterSpacing = 16 } = config;
+                const id_suffix = Math.random().toString(36).substring(2, 9);
+                const segmentId = `led-segment-${id_suffix}`, colonId = `led-colon-${id_suffix}`;
+                const segmentMap = [[1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],[0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1]];
+                const segmentTransforms = ['translate(0, 0)','translate(132, 20) rotate(90)','translate(132, 140) rotate(90)','translate(0, 240)','translate(12, 140) rotate(90)','translate(12, 20) rotate(90)','translate(0, 120)'];
+                const digitBaseWidth = 144, digitBaseHeight = 272, colonBaseWidth = 48;
+                let svgContent = '', currentX = 0;
+                for (const char of String(text)) {
+                    if (/\d/.test(char)) {
+                        const digit = parseInt(char, 10);
+                        if (digit >= 0 && digit <= 9) {
+                            const pattern = segmentMap[digit];
+                            let digitGroup = `<g transform="translate(${currentX}, 0)">`;
+                            for (let i = 0; i < 7; i++) digitGroup += `<use href="#${segmentId}" opacity="${pattern[i] ? '1' : '0.1'}" transform="${segmentTransforms[i]}" />`;
+                            digitGroup += `</g>`; svgContent += digitGroup;
+                        }
+                        currentX += digitBaseWidth + letterSpacing;
+                    } else if (char === ':') {
+                        svgContent += `<g transform="translate(${currentX}, 0)"><use href="#${colonId}" transform="translate(0, 60)" /><use href="#${colonId}" transform="translate(0, 180)" /></g>`;
+                        currentX += colonBaseWidth + letterSpacing;
+                    } else if (['/', '-', '.'].includes(char)) {
+                        const separatorWidth = 60, entity = { '/': '/', '-': '—', '.': '.' }[char];
+                        svgContent += `<text x="${currentX + separatorWidth / 2}" y="${digitBaseHeight / 2}" text-anchor="middle" dominant-baseline="central" font-size="${digitBaseHeight * 0.9}" font-family="'Courier New', Courier, monospace" font-weight="bold">${entity}</text>`;
+                        currentX += separatorWidth + letterSpacing;
+                    }
+                }
+                const totalWidth = currentX > 0 ? currentX - letterSpacing : 0;
+                if (totalWidth === 0) return '';
+                const padding = 16, finalWidth = ((totalWidth + padding * 2) / digitBaseHeight) * height;
+                return `<svg viewBox="-${padding} 0 ${totalWidth + padding * 2} ${digitBaseHeight}" data-text="${text}" height="${height}px" width="${finalWidth}px" fill="${color}" style="vertical-align: middle; display: inline-block;"><defs><polygon id="${segmentId}" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="${colonId}" x="-16" y="0" width="32" height="32" rx="5" ry="5" /></defs>${svgContent}</svg>`.replace(/\n\s*/g, '');
+            }
+            function getLedHTML(text, useLed, options = {}) {
+                if (!useLed) return String(text).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                const { color = '#FFFFFF', fontSize = 16, heightMultiplier = 1.1, defaultSpan = true } = options;
+                let resultHTML = '';
+                const parts = String(text).split(/(\d+[\d:./-]*)/);
+                parts.forEach(part => {
+                    if (/^\d+[\d:./-]*$/.test(part) && part.trim() !== '') {
+                        resultHTML += generateLedSvg(part, { height: fontSize * heightMultiplier, color: color });
+                    } else if (part) {
+                        const escapedPart = part.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                        resultHTML += defaultSpan ? `<span style="color:${color};">${escapedPart}</span>` : escapedPart;
+                    }
+                });
+                return resultHTML;
+            }
+            function applyLedToStaticContent(containerElement) {
+                if (containerElement.dataset.ledProcessed) return;
+                const walker = document.createTreeWalker(containerElement, NodeFilter.SHOW_TEXT, null, false);
+                const nodesToProcess = [];
+                let node;
+                while (node = walker.nextNode()) {
+                    if (node.parentElement.closest('script, style, svg, [data-led-processed]')) continue;
+                    if (/\d/.test(node.nodeValue)) nodesToProcess.push(node);
+                }
+                nodesToProcess.forEach(node => {
+                    const parent = node.parentNode;
+                    if (!parent) return;
+                    const parts = node.nodeValue.split(/(\d+[\d:./-]*)/);
+                    if (parts.length <= 1) return;
+                    const fragment = document.createDocumentFragment();
+                    parts.forEach(part => {
+                        if (/^\d+[\d:./-]*$/.test(part) && part.trim() !== '') {
+                            const color = getComputedStyle(parent).color || '#FFFFFF';
+                            const fontSize = parseFloat(getComputedStyle(parent).fontSize) || 16;
+                            const template = document.createElement('template');
+                            const svgHTML = generateLedSvg(part, { height: fontSize * 1.1, color: color }).trim();
+                            if (svgHTML) {
+                                template.innerHTML = svgHTML;
+                                if (template.content.firstChild) {
+                                    template.content.firstChild.dataset.ledProcessed = 'true';
+                                    fragment.appendChild(template.content.firstChild);
+                                }
+                            } else { fragment.appendChild(document.createTextNode(part)); }
+                        } else if (part) { fragment.appendChild(document.createTextNode(part)); }
+                    });
+                    parent.replaceChild(fragment, node);
+                });
+                containerElement.dataset.ledProcessed = 'true';
+            }
+            // ===================================================================
+            // 統一的日曆標題渲染函數
+            // ===================================================================
+            function renderCalendarTitle(element, year, useLed, ledHeight, ledColor, defaultFontSize, defaultColor) {
+                element.innerHTML = useLed
+                    ? generateLedSvg(String(year), {height: ledHeight, color: ledColor})
+                    : `<span style="font-size: ${defaultFontSize}; color: ${defaultColor}; line-height: 1; font-weight: 700;">${year}</span>`;
+            }
+            // ===================================================================
+            // LED 數字 SVG 產生器 (優化版本)
+            // ===================================================================
+            const ledSegmentMapForUpdate = [[1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],[0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1]];
+            function updateLedSvgContent(svg, text) {
+                if (!svg) return;
+                const digits = svg.querySelectorAll('.led-digit-group');
+                const textDigits = String(text).replace(/[^0-9]/g, '');
+                
+                digits.forEach((digitGroup, index) => {
+                    const digit = parseInt(textDigits[index], 10);
+                    if (!isNaN(digit)) {
+                        const pattern = ledSegmentMapForUpdate[digit];
+                        digitGroup.querySelectorAll('.segment').forEach((segment, i) => {
+                            segment.style.opacity = pattern[i] ? '1' : '0.1';
+                        });
+                    }
+                });
+                svg.dataset.text = text;
+            }
+            function createLedSvgElement(text, config = {}) {
+                const { height = 24, color = '#FFFFFF', letterSpacing = 16 } = config;
+                const id_suffix = Math.random().toString(36).substring(2, 9);
+                const segmentId = `led-segment-${id_suffix}`, colonId = `led-colon-${id_suffix}`;
+                const ledSegmentTransforms = ['translate(0, 0)','translate(132, 20) rotate(90)','translate(132, 140) rotate(90)','translate(0, 240)','translate(12, 140) rotate(90)','translate(12, 20) rotate(90)','translate(0, 120)'];
+                const ledDigitBaseWidth = 144, ledDigitBaseHeight = 272, ledColonBaseWidth = 48;
+
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('fill', color);
+                svg.style.verticalAlign = 'middle';
+                svg.style.display = 'inline-block';
+                
+                const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                defs.innerHTML = `<polygon id="${segmentId}" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="${colonId}" x="-16" y="0" width="32" height="32" rx="5" ry="5" />`;
+                svg.appendChild(defs);
+
+                let currentX = 0;
+                const textStr = String(text);
+
+                for (const char of textStr) {
+                    if (/\d/.test(char)) {
+                        const digit = parseInt(char, 10);
+                        const digitGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                        digitGroup.setAttribute('class', 'led-digit-group');
+                        digitGroup.setAttribute('transform', `translate(${currentX}, 0)`);
+                        const pattern = ledSegmentMapForUpdate[digit];
+                        for (let i = 0; i < 7; i++) {
+                            const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                            use.setAttribute('href', `#${segmentId}`);
+                            use.setAttribute('class', 'segment');
+                            use.style.opacity = pattern[i] ? '1' : '0.1';
+                            use.setAttribute('transform', ledSegmentTransforms[i]);
+                            digitGroup.appendChild(use);
+                        }
+                        svg.appendChild(digitGroup);
+                        currentX += ledDigitBaseWidth + letterSpacing;
+                    } else if (char === ':') {
+                        const colonGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                        colonGroup.setAttribute('transform', `translate(${currentX}, 0)`);
+                        ['translate(0, 60)', 'translate(0, 180)'].forEach(transform => {
+                            const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                            use.setAttribute('href', `#${colonId}`);
+                            use.setAttribute('transform', transform);
+                            colonGroup.appendChild(use);
+                        });
+                        svg.appendChild(colonGroup);
+                        currentX += ledColonBaseWidth + letterSpacing;
+                    }
+                }
+
+                const totalWidth = currentX > 0 ? currentX - letterSpacing : 0;
+                if (totalWidth === 0) return null;
+
+                const padding = 16;
+                const finalWidth = ((totalWidth + padding * 2) / ledDigitBaseHeight) * height;
+
+                svg.setAttribute('viewBox', `-${padding} 0 ${totalWidth + padding * 2} ${ledDigitBaseHeight}`);
+                svg.setAttribute('height', `${height}px`);
+                svg.setAttribute('width', `${finalWidth}px`);
+                svg.dataset.text = text;
+
+                return svg;
+            }
+            // ===================================================================
+            // 跑馬燈模組 (Class)
+            // ===================================================================
+            class MarqueeInstance {
+                constructor(containerId, index) {
+                    this.container = document.getElementById(containerId);
+                    this.mainContainer = this.container.querySelector('main');
+                    this.innerDiv = this.container.querySelector('.marquee-inner');
+                    this.index = index;
+                    this.animationStyleTag = document.createElement('style');
+                    document.head.appendChild(this.animationStyleTag);
+                    this.rebuildTimeout = null;
+                    this.isScrolling = false;
+
+                    // 參數與更新頻率的映射
+                    this.paramToFrequency = {
+                        s: ['%ss%', '%s%'],
+                        m: ['%mm%', '%m%', '%HH%', '%H%', '%hh%', '%h%', '%AP%', '%ap%', '%ap_c%', '%SHICHEN_GZ%', '%SHICHEN_NAME%', '%SHICHEN_CHAR%'],
+                        d: ['%YYYY%', '%YY%', '%ROC_YY%', '%MM%', '%M%', '%DD%', '%D%', '%WEEKDAY%', '%W_SHORT%', '%W_CHAR%', '%W_NUM%', '%CONSTELLATION%', '%L_GZ%', '%L_SX%', '%LM_C%', '%LD_C%', '%MOON_PHASE%', '%MOON_ICON%', '%MOON_DAY%'],
+                        w: ['%WEATHER_LOC%', '%WEATHER_DESC%', '%TEMP%', '%SUNRISE%', '%SUNSET%']
+                    };
+                    // 根據頻率分類儲存對應的 span 元素
+                    this.spansByFrequency = { s: [], m: [], d: [], w: [] };
+                }
+
+                _categorizeSpans() {
+                    this.spansByFrequency = { s: [], m: [], d: [], w: [] };
+                    this.innerDiv.querySelectorAll('[data-time-key]').forEach(span => {
+                        const key = span.dataset.timeKey;
+                        if (this.paramToFrequency.s.includes(key)) this.spansByFrequency.s.push(span);
+                        else if (this.paramToFrequency.m.includes(key)) this.spansByFrequency.m.push(span);
+                        else if (this.paramToFrequency.d.includes(key)) this.spansByFrequency.d.push(span);
+                        else if (this.paramToFrequency.w.includes(key)) this.spansByFrequency.w.push(span);
+                    });
+                }
+                
+                buildInitialFragment(text) {
+                    const settings = settingsState.marquees[this.index];
+                    const useLedGlobal = settingsState.marqueeGlobal?.useLedFont ?? true;
+                    const defaultColor = settings.colors?.default || '#FFFFFF';
+                    const isVertical = settings.vertical;
+
+                    const fragment = document.createDocumentFragment();
+                    let currentContainer = isVertical ? document.createElement('div') : fragment;
+                    if (isVertical) fragment.appendChild(currentContainer);
+
+                    const replacements = MarqueeManager._cachedReplacements;
+                    const paramRegex = new RegExp(`%C\\(#([0-9a-fA-F]{6}),\\s*([^%)]+)\\)%|${Object.keys(marqueeParamColorMap).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')}|%br%`, 'g');
+                    const ledParams = ['%HH%', '%H%', '%hh%', '%h%', '%mm%', '%m%', '%ss%', '%s%', '%ROC_YY%', '%YYYY%', '%YY%', '%MM%', '%M%', '%DD%', '%D%', '%TEMP%', '%SUNRISE%', '%SUNSET%'];
+                    let lastIndex = 0, match;
+
+                    const processChunk = (chunk, container) => {
+                        const span = document.createElement('span');
+                        span.style.color = defaultColor;
+                        span.textContent = chunk.replace(/ /g, '\u00A0');
+                        container.appendChild(span);
+                    };
+
+                    while ((match = paramRegex.exec(text)) !== null) {
+                        if (match.index > lastIndex) {
+                            processChunk(text.substring(lastIndex, match.index), currentContainer);
+                        }
+
+                        const param = match[0], colorHex = match[1], colorText = match[2];
+
+                        if (colorHex && colorText) {
+                            const span = document.createElement('span');
+                            span.style.color = `#${colorHex}`;
+                            span.textContent = colorText.replace(/ /g, '\u00A0');
+                            currentContainer.appendChild(span);
+                        } else if (param === '%br%') {
+                            if (isVertical) {
+                                currentContainer = document.createElement('div');
+                                fragment.appendChild(currentContainer);
+                            }
+                        } else if (replacements[param] !== undefined) {
+                            const span = document.createElement('span');
+                            span.dataset.timeKey = param;
+                            const cssVar = marqueeParamColorMap[param];
+                            const color = cssVar ? getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() : defaultColor;
+                            const replacementContent = String(replacements[param] || '');
+                            
+                            if (useLedGlobal && ledParams.includes(param) && /^[\d:.]+$/.test(replacementContent)) {
+                                const widgetState = transformStates[this.container.id];
+                                const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
+                                const svgElement = createLedSvgElement(replacementContent, { height: svgHeight, color: color });
+                                if (svgElement) span.appendChild(svgElement);
+                            } else if (param === '%MOON_ICON%') {
+                                span.innerHTML = replacementContent;
+                            } else {
+                                span.style.color = color;
+                                span.textContent = replacementContent;
+                            }
+                            currentContainer.appendChild(span);
+                        }
+                        lastIndex = paramRegex.lastIndex;
+                    }
+
+                    if (lastIndex < text.length) {
+                        processChunk(text.substring(lastIndex), currentContainer);
+                    }
+                    return fragment;
+                }
+
+                updateContent(status, replacements) {
+                    const useLed = settingsState.marqueeGlobal?.useLedFont ?? true;
+                    const ledParams = ['%HH%', '%H%', '%hh%', '%h%', '%mm%', '%m%', '%ss%', '%s%', '%ROC_YY%', '%YYYY%', '%YY%', '%MM%', '%M%', '%DD%', '%D%', '%TEMP%', '%SUNRISE%', '%SUNSET%'];
+                    
+                    const updateSpan = (span) => {
+                        const key = span.dataset.timeKey;
+                        if (replacements[key] === undefined) return;
+                        const newText = String(replacements[key]);
+
+                        if (useLed && ledParams.includes(key) && /^[\d:.]+$/.test(newText)) {
+                            const svgEl = span.querySelector('svg');
+                            if (svgEl && svgEl.dataset.text !== newText) {
+                                updateLedSvgContent(svgEl, newText);
+                            }
+                        } else if (key === '%MOON_ICON%') {
+                            if (span.innerHTML !== newText) span.innerHTML = newText;
+                        } else {
+                            if (span.textContent !== newText) span.textContent = newText;
+                        }
+                    };
+                    
+                    if (status.s) this.spansByFrequency.s.forEach(updateSpan);
+                    if (status.m) this.spansByFrequency.m.forEach(updateSpan);
+                    if (status.d) this.spansByFrequency.d.forEach(updateSpan);
+                    if (status.w) this.spansByFrequency.w.forEach(updateSpan);
+                }
+
+                rebuildAnimation() {
+                    clearTimeout(this.rebuildTimeout);
+                    this.innerDiv.style.animation = ''; this.isScrolling = false;
+                    const settings = settingsState.marquees[this.index]; if (!settings) return;
+                    if (/^%WEATHER_|%SUNRISE%|%SUNSET%|%TEMP%/.test(settings.text) && !weatherDataLoaded) {
+                        this.innerDiv.style.transform = 'translateX(0) translateY(0)';
+                        this.innerDiv.innerHTML = '';
+                        this.innerDiv.appendChild(this.buildInitialFragment(settings.text));
+                        return;
+                    }
+                    this.rebuildTimeout = setTimeout(() => {
+                        this.animationStyleTag.innerHTML = ''; this.innerDiv.innerHTML = '';
+                        this.innerDiv.style.transform = 'translateX(0) translateY(0) translateZ(0)';
+                        if (!settings.text || !settings.text.trim()) return;
+                        const { text, vertical: isVertical, speed, direction } = settings;
+                        this.innerDiv.style.flexDirection = isVertical ? 'column' : 'row';
+                        this.innerDiv.style.width = isVertical ? '100%' : 'fit-content';
+                        this.mainContainer.style.alignItems = isVertical ? 'flex-start' : 'center';
+                        const instance1 = document.createElement('div');
+                        instance1.className = 'marquee-text-instance';
+                        instance1.style.whiteSpace = isVertical ? 'normal' : 'nowrap';
+                        instance1.style.textAlign = isVertical ? 'center' : 'left';
+                        if (isVertical) instance1.style.display = 'block';
+                        
+                        instance1.appendChild(this.buildInitialFragment(text));
+                        this.innerDiv.appendChild(instance1);
+
+                        instance1.getBoundingClientRect();
+                        const contentMeasure = isVertical ? instance1.offsetHeight : instance1.offsetWidth;
+                        const containerMeasure = isVertical ? this.mainContainer.offsetHeight : this.mainContainer.offsetWidth;
+                        
+                        if (contentMeasure <= containerMeasure) {
+                            this.isScrolling = false;
+                            if (!isVertical && instance1.scrollWidth > this.mainContainer.clientWidth) {
+                                this.container.style.fontSize = `${parseFloat(getComputedStyle(this.container).fontSize) * (this.mainContainer.clientWidth / instance1.scrollWidth) * 0.98}px`;
+                            }
+                        } else {
+                            this.isScrolling = true;
+                            this.innerDiv.appendChild(instance1.cloneNode(true));
+                        }
+                        
+                        this._categorizeSpans();
+
+                        if (!this.isScrolling) return;
+                        
+                        const travelDistance = contentMeasure; if (travelDistance <= 0) return;
+                        const duration = travelDistance / (parseInt(speed, 10) || 80);
+                        const animName = `marquee-${this.index}-${Date.now()}`;
+                        let fromTransform, toTransform;
+                        switch(direction) {
+                            case 'right': fromTransform = `translateX(-${travelDistance}px)`; toTransform = `translateX(0px)`; break;
+                            case 'up': fromTransform = `translateY(0px)`; toTransform = `translateY(-${travelDistance}px)`; break;
+                            case 'down': fromTransform = `translateY(-${travelDistance}px)`; toTransform = `translateY(0px)`; break;
+                            default: fromTransform = `translateX(0px)`; toTransform = `translateX(-${travelDistance}px)`; break;
+                        }
+                        this.animationStyleTag.innerHTML = `@keyframes ${animName} { from { transform: ${fromTransform} translateZ(0); } to { transform: ${toTransform} translateZ(0); }}`;
+                        this.innerDiv.style.animation = `${animName} ${duration}s linear infinite`;
+                        this.innerDiv.style.animationPlayState = isEditMode ? 'paused' : 'running';
+                    }, 50);
+                }
+                 setPlayState(shouldPlay) { this.innerDiv.style.animationPlayState = shouldPlay ? 'running' : 'paused'; }
+            }
+            // ===================================================================
+            // 月相 SVG 產生器
+            // ===================================================================
+            function getMoonPhaseSVG(lunarDay, size = '100px', context = 'widget') {
+                const phase = (lunarDay - 1) / 29.53, r = 50, cx = 50, cy = 50;
+                const light = getComputedStyle(document.documentElement).getPropertyValue('--moon-light-color').trim() || '#f0e68c';
+                const dark = getComputedStyle(document.documentElement).getPropertyValue('--moon-dark-color').trim() || '#222222';
+                const cos_angle = Math.cos(phase * 2 * Math.PI + Math.PI);
+                const base = phase > 0.5 ? `<rect x="0" y="0" width="${cx}" height="${r*2}" fill="${light}" /><rect x="${cx}" y="0" width="${cx}" height="${r*2}" fill="${dark}" />` : `<rect x="0" y="0" width="${cx}" height="${r*2}" fill="${dark}" /><rect x="${cx}" y="0" width="${cx}" height="${r*2}" fill="${light}" />`;
+                const terminator = `<ellipse cx="${cx}" cy="${cy}" rx="${r * Math.abs(cos_angle)}" ry="${r}" fill="${cos_angle > 0 ? light : dark}" />`;
+                const id = `moon-clip-${context}-${lunarDay}-${size.replace(/[^a-zA-Z0-9]/g, '')}`;
+                return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" style="filter: drop-shadow(0 0 10px ${light}33);"><defs><clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${r}" /></clipPath></defs><g clip-path="url(#${id})">${base}${terminator}</g></svg>`;
+            }
+            // ===================================================================
+            // Modal 彈出視窗與 UI 互動 (Refactored)
+            // ===================================================================
+            function showModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modalId === 'modal-backdrop-marquee-params' || modalId === 'modal-backdrop-explanation') {
+                    const useLed = modalId === 'modal-backdrop-marquee-params' ? (settingsState.marqueeGlobal?.useLedFont ?? true) : (settingsState.calendar?.useLedFont ?? true);
+                    if (useLed) applyLedToStaticContent(modal.querySelector('.modal-content'));
+                }
+                modal.classList.add('show');
+            }
+            function hideModal(modalId) { document.getElementById(modalId).classList.remove('show'); }
+            const promptModal=document.getElementById('modal-backdrop-prompt'),promptTitle=document.getElementById('prompt-title'),promptMessage=document.getElementById('prompt-message'),promptInput=document.getElementById('prompt-input'),promptOkBtn=document.getElementById('prompt-ok-btn'),promptCancelBtn=document.getElementById('prompt-cancel-btn');
+            let promptCallback=null;
+            function _setPromptMessage(message) {
+                const el = promptMessage;
+                const useLed = true;
+                el.innerHTML = getLedHTML(message, useLed, { fontSize: parseFloat(getComputedStyle(el).fontSize) || 16, color: getComputedStyle(el).color || '#d1d5db', defaultSpan: false });
+                el.style.display = message ? 'block' : 'none';
+            }
+            function _configurePromptModal(config) {
+                promptTitle.textContent = config.title;
+                _setPromptMessage(config.message);
+                promptInput.style.display = config.showInput ? 'block' : 'none';
+                if (config.showInput) promptInput.value = config.defaultValue || '';
+                promptCancelBtn.style.display = config.showCancel ? 'inline-block' : 'none';
+                promptOkBtn.textContent = config.okText || '確定';
+                promptCallback = config.callback;
+                showModal('modal-backdrop-prompt');
+                if (config.showInput) setTimeout(() => promptInput.focus(), 100);
+            }
+            function showAlert(title, message) { _configurePromptModal({ title, message, showInput: false, showCancel: false, okText: '確定' }); }
+            function showPrompt(title, message, defaultValue, callback) { _configurePromptModal({ title, message, defaultValue, callback, showInput: true, showCancel: true, okText: '確定' }); }
+            function showConfirm(title, message, callback) { _configurePromptModal({ title, message, callback: (result) => callback(result !== null), showInput: false, showCancel: true, okText: '確認' }); }
+            promptOkBtn.addEventListener('click',()=>{if(promptCallback)promptCallback(promptInput.value);hideModal('modal-backdrop-prompt')});
+            promptCancelBtn.addEventListener('click',()=>{if(promptCallback)promptCallback(null);hideModal('modal-backdrop-prompt')});
+            function showDayDetailModal(dateString){
+                if(isEditMode)return;
+                const date=new Date(dateString);
+                const lunar=getLunarDate(date);
+                const holiday=getHoliday(date);
+                const solarTerm=getSolarTerm(date.getFullYear(),date.getMonth()+1,date.getDate());
+                const constellationInfo = getConstellation(date);
+                const useLed = settingsState.calendar?.useLedFont ?? true;
+                if (useLed) {
+                    const yearSVG = generateLedSvg(String(date.getFullYear()), {height: 22, color: 'white'});
+                    const monthSVG = generateLedSvg(String(date.getMonth() + 1), {height: 22, color: 'white'});
+                    const daySVG = generateLedSvg(String(date.getDate()), {height: 22, color: 'white'});
+                    document.getElementById('modal-gregorian-date').innerHTML = `${yearSVG}<span class="led-text-unit">年</span>${monthSVG}<span class="led-text-unit">月</span>${daySVG}<span class="led-text-unit">日 星期${"日一二三四五六"[date.getDay()]}</span>`;
+                } else {
+                     document.getElementById('modal-gregorian-date').innerHTML = `<span style="font-size: 1.5em; line-height:1.2;">${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 星期${"日一二三四五六"[date.getDay()]}</span>`;
+                }
+                const rocYear = date.getFullYear()-1911;
+                const rocYearHTML = useLed ? generateLedSvg(String(rocYear), {height: 20, color: '#a5b4fc'}) : rocYear;
+                document.getElementById('modal-lunar-date').innerHTML = `民國 ${rocYearHTML} 年 / 農曆 ${lunar.toString}`;
+                const modalConstellationEl = document.getElementById('modal-constellation');
+                if (constellationInfo) {
+                    const text = `星座 ${constellationInfo.sign} (${constellationInfo.range})`;
+                    const fontSize = parseFloat(getComputedStyle(modalConstellationEl).fontSize) || 16;
+                    const color = getComputedStyle(modalConstellationEl).color || 'white';
+                    modalConstellationEl.innerHTML = getLedHTML(text, useLed, { fontSize, color, defaultSpan: false });
+                    modalConstellationEl.style.display = 'block';
+                } else { modalConstellationEl.style.display = 'none'; }
+                const modalHolidayEl=document.getElementById('modal-holiday');
+                modalHolidayEl.textContent=holiday||''; modalHolidayEl.style.display=holiday?'block':'none';
+                if(holiday)modalHolidayEl.dataset.key=holiday;
+                const modalSolarTermEl=document.getElementById('modal-solarterm');
+                modalSolarTermEl.textContent=solarTerm||''; modalSolarTermEl.style.display=solarTerm?'block':'none';
+                if(solarTerm)modalSolarTermEl.dataset.key=solarTerm;
+                const formatTime = (dateStr) => dateStr ? new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '讀取中...';
+                const sunriseTime = Weather.data?.daily?.sunrise?.[0] ? formatTime(Weather.data.daily.sunrise[0]) : '讀取中...';
+                const sunsetTime = Weather.data?.daily?.sunset?.[0] ? formatTime(Weather.data.daily.sunset[0]) : '讀取中...';
+                const isTimeFormat = (str) => /^[\d:]+$/.test(str);
+                const formatTimeForDisplay = (timeStr) => useLed && isTimeFormat(timeStr) ? generateLedSvg(timeStr, {height: 26, color: 'white'}) : timeStr;
+                document.getElementById('modal-sunrise-time').innerHTML = formatTimeForDisplay(sunriseTime);
+                document.getElementById('modal-sunset-time').innerHTML = formatTimeForDisplay(sunsetTime);
+                const moonDetails = moonPhaseData[lunar.day] || { n: '未知', a: '', d: '' };
+                const moonName = moonDetails.a ? `${moonDetails.n}(${moonDetails.a})` : moonDetails.n;
+                document.getElementById('modal-moon-icon').innerHTML = getMoonPhaseSVG(lunar.day, '64px', 'day-detail');
+                document.getElementById('modal-moon-phase-name').textContent = moonName;
+                const moonDescEl = document.getElementById('modal-moon-phase-desc');
+                if (moonDetails.d) {
+                    const fontSize = parseFloat(getComputedStyle(moonDescEl).fontSize) || 16;
+                    const color = getComputedStyle(moonDescEl).color || 'white';
+                    moonDescEl.innerHTML = getLedHTML(moonDetails.d, useLed, { fontSize, color, defaultSpan: false });
+                    moonDescEl.style.display = 'block';
+                } else { moonDescEl.style.display = 'none'; }
+                updateCountdowns(date);
+                showModal('modal-backdrop-day')
+            }
+            function showExplanationModal(title,content){if(isEditMode)return;document.getElementById('explanation-title').textContent=title;document.getElementById('explanation-content').textContent=content;showModal('modal-backdrop-explanation')}
+            function getAllSolarTermsForYear(year){if(!solarTermsCache[year])calculateAndCacheSolarTerms(year);return Object.entries(solarTermsCache[year]).map(([key,name])=>{const[y,m,d]=key.split('-').map(Number);return{date:new Date(y,m-1,d),name}}).sort((a,b)=>a.date-b.date)}
+            function getAllHolidaysForYear(year){
+                let holidays = [];
+                Object.entries(lunarHolidays).forEach(([key, name]) => { [year, year - 1].forEach(lunarYear => { const [m, d] = key.split('-'); const solarDate = lunarToSolar(lunarYear, parseInt(m), parseInt(d)); if (solarDate && solarDate.getFullYear() === year) holidays.push({ date: solarDate, name }); }); });
+                [year, year - 1].forEach(lunarYear => { const eveDate = lunarToSolar(lunarYear, 12, getLunarMonthDays(lunarYear, 12)); if (eveDate && eveDate.getFullYear() === year) holidays.push({ date: eveDate, name: "除夕" }); });
+                Object.entries(floatingHolidays).forEach(([key, name]) => { const [m, week, dayOfWeek] = key.split('-').map(Number); const month = m - 1; let firstOfMonth = new Date(year, month, 1); let holidayDate = new Date(year, month, 1 + ((dayOfWeek - firstOfMonth.getDay() + 7) % 7) + (week - 1) * 7); if (holidayDate.getMonth() === month) holidays.push({ date: holidayDate, name }); });
+                return Array.from(new Map(holidays.map(h => [h.date.toISOString().split('T')[0], h])).values()).sort((a, b) => a.date - b.date);
+            }
+            function updateCountdowns(currentDate){
+                const today = new Date(currentDate); today.setHours(0,0,0,0);
+                const useLed = settingsState.calendar?.useLedFont ?? true;
+                const formatCountdownText=(items,type)=>{
+                    const futureEvents=items.filter(item=>item.date>=today);
+                    if(futureEvents.length===0)return`找不到${today.getFullYear()+1}年的${type}資料`;
+                    const firstEvent=futureEvents[0];
+                    const diffDays=Math.ceil((firstEvent.date.getTime()-today.getTime())/86400000);
+                    const daysHTML = useLed ? generateLedSvg(String(diffDays), {height: 20, color: 'white'}) : `<span style="font-size: 1.2em;">${diffDays}</span>`;
+                    if(diffDays===0){
+                        if(futureEvents[1]) {
+                             const nextDiffDays = Math.ceil((futureEvents[1].date - today) / 86400000);
+                             const nextDaysHTML = useLed ? generateLedSvg(String(nextDiffDays), {height: 20, color: 'white'}) : `<span style="font-size: 1.2em;">${nextDiffDays}</span>`;
+                             return `<div class="countdown-text-container">今天是 ${firstEvent.name}，距離下個${type} [${futureEvents[1].name}] 還有 ${nextDaysHTML} 天</div>`;
+                        }
+                        return `今天是 ${firstEvent.name}！`;
+                    }
+                    return `<div class="countdown-text-container">距離 ${firstEvent.name} 還有 ${daysHTML} 天</div>`;
+                };
+                let allHolidays=[...getAllHolidaysForYear(today.getFullYear()),...getAllHolidaysForYear(today.getFullYear()+1)];
+                let allSolarTerms=[...getAllSolarTermsForYear(today.getFullYear()),...getAllSolarTermsForYear(today.getFullYear()+1)];
+                document.getElementById('countdown-holiday-text').innerHTML=formatCountdownText(allHolidays,'節日');
+                document.getElementById('countdown-solarterm-text').innerHTML=formatCountdownText(allSolarTerms,'節氣');
+            }
+            const pickerYearEl=document.getElementById('picker-year'),pickerMonthGridEl=document.getElementById('picker-month-grid');
+            let pickerYear=new Date().getFullYear();
+            let pickerTarget = null;
+            function renderPicker(year, month, targetDate) {
+                pickerYear = year;
+                let useLed = false;
+                if (pickerTarget) {
+                    const widgetId = pickerTarget.body.closest('.widget-container').id;
+                    const widgetKey = (widgetId === 'calendar-container' ? 'calendar' : (widgetId === 'moon-phase-container' ? 'moonPhase' : null));
+                    if (widgetKey) {
+                        useLed = settingsState[widgetKey]?.useLedFont ?? true;
+                    }
+                }
+                if (useLed) {
+                    const yearColor = getComputedStyle(document.documentElement).getPropertyValue('--year-color').trim() || '#a5b4fc';
+                    pickerYearEl.innerHTML = generateLedSvg(String(year), { height: 28, color: yearColor });
+                } else {
+                    pickerYearEl.textContent = year;
+                }
+                pickerMonthGridEl.innerHTML = '';
+                for (let i = 0; i < 12; i++) {
+                    const cell = document.createElement('div');
+                    const monthNumber = String(i + 1);
+                    const monthText = '月';
+                    if (useLed) {
+                        const pickerColor = getComputedStyle(document.documentElement).getPropertyValue('--month-color').trim() || '#a5b4fc';
+                        const numberHTML = generateLedSvg(monthNumber, { height: 20, color: pickerColor });
+                        cell.innerHTML = `${numberHTML}<span style="color:${pickerColor};">${monthText}</span>`;
+                    } else {
+                        cell.textContent = monthNumber + monthText;
+                    }
+                    cell.classList.add('month-cell');
+                    if (i === month && year === targetDate.getFullYear()) cell.classList.add('selected');
+                    cell.dataset.month = i; pickerMonthGridEl.appendChild(cell);
+                }
+            }
+            function openPickerFor(targetWidget) { if (isEditMode) return; pickerTarget = targetWidget; renderPicker(pickerTarget.currentDate.getFullYear(), pickerTarget.currentDate.getMonth(), pickerTarget.currentDate); showModal('modal-backdrop-picker'); }
+            document.getElementById('picker-prev-year').addEventListener('click', () => { if (pickerYear > 1900 && pickerTarget) renderPicker(--pickerYear, -1, pickerTarget.currentDate); });
+            document.getElementById('picker-next-year').addEventListener('click', () => { if (pickerYear < 2100 && pickerTarget) renderPicker(++pickerYear, -1, pickerTarget.currentDate); });
+            pickerMonthGridEl.addEventListener('click', (e) => {
+                const cell = e.target.closest('.month-cell');
+                if (cell && pickerTarget) { pickerTarget.currentDate = new Date(pickerYear, cell.dataset.month, 1); pickerTarget.render(); hideModal('modal-backdrop-picker'); }
+            });
+            document.body.addEventListener('click',(e)=>{
+                const selectHandle = e.target.closest('.group-select-handle');
+                if (isEditMode && selectHandle) {
+                    e.stopPropagation();
+                    const widget = selectHandle.closest('.widget-container');
+                    if (widget) toggleWidgetSelection(widget);
+                    return;
+                }
+                const resetHandle = e.target.closest('.reset-handle');
+                if (isEditMode && resetHandle) {
+                    e.stopPropagation();
+                    const widgetEl = resetHandle.closest('.widget-container');
+                    if (widgetEl) {
+                        const widgetId = widgetEl.id;
+                        const defaultState = userDefaultLayout.transforms[widgetId];
+                        if (transformStates[widgetId] && defaultState) {
+                            const state = transformStates[widgetId];
+                            const currentWidth = state.width * state.scale;
+                            const currentHeight = state.height * state.scale;
+                            const centerX = state.left + currentWidth / 2;
+                            const centerY = state.top + currentHeight / 2;
+                            state.width = defaultState.width;
+                            state.height = defaultState.height;
+                            state.scale = 1;
+                            state.rotation = 0;
+                            state.left = centerX - (state.width / 2);
+                            state.top = centerY - (state.height / 2);
+                            checkAndClampWidgetBounds(state);
+                            applyTransform(widgetEl, state);
+                            saveCurrentSettings();
+                        }
+                    }
+                    return;
+                }
+                const cell=e.target.closest('.calendar-day');const key=e.target.dataset.key;if(key&&explanations[key]){e.stopPropagation();showExplanationModal(key,explanations[key]);return}if(cell&&cell.closest('#calendar-body')&&cell.dataset.date){showDayDetailModal(cell.dataset.date)}const closeModalBtn=e.target.closest('[data-close-modal]');if(closeModalBtn){hideModal(closeModalBtn.dataset.closeModal)}if(e.target.classList.contains('modal-backdrop')){hideModal(e.target.id)}});
+            document.getElementById('marquee-params-btn').addEventListener('click', () => showModal('modal-backdrop-marquee-params'));
+            document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){['modal-backdrop-day','modal-backdrop-picker','modal-backdrop-explanation','modal-backdrop-settings','modal-backdrop-prompt', 'modal-backdrop-marquee-params'].forEach(hideModal)}});
+            function resetActivityTimeout(){actionButtons.classList.remove('hidden');clearTimeout(activityTimeout);if(!isEditMode){activityTimeout=setTimeout(()=>actionButtons.classList.add('hidden'),3000)}}
+            ['mousemove','mousedown','touchstart','keydown'].forEach(event=>document.addEventListener(event,resetActivityTimeout));
+            document.getElementById('fullscreen-btn').addEventListener('click',()=>{if(!document.fullscreenElement){document.documentElement.requestFullscreen()}else{document.exitFullscreen()}});
+            document.addEventListener('fullscreenchange',()=>{const isFullscreen=!!document.fullscreenElement;document.getElementById('fullscreen-enter-icon').classList.toggle('display-none',isFullscreen);document.getElementById('fullscreen-exit-icon').classList.toggle('display-none',!isFullscreen)});
             // ===================================================================
             // 編輯模式與拖曳縮放
             // 說明: 處理編輯模式下的所有互動，包括拖曳、縮放、還原尺寸等。
@@ -1019,7 +1998,7 @@
                         if (activeHandle === 'scale') {
                             initialDist = Math.hypot(startX - scaleCenterX, startY - scaleCenterY);
                         } else { // 'rotate'
-                            const startAngle = Math.atan2(startY - scaleCenterY, currentX - scaleCenterX) * (180 / Math.PI);
+                            const startAngle = Math.atan2(startY - scaleCenterY, startX - scaleCenterX) * (180 / Math.PI);
                             initialTransformState.startAngle = startAngle;
                         }
                     }
@@ -1555,906 +2534,6 @@
                 transitionEnabledToggle.addEventListener('change', updateSetting);
             }
             // ===================================================================
-            // 動態跑馬燈相關函式
-            // ===================================================================
-            function createMarqueeElement(index) {
-                const template = document.getElementById('marquee-container-0');
-                if (!template) { console.error("跑馬燈模板 'marquee-container-0' 找不到!"); return null; }
-                const newMarquee = template.cloneNode(true);
-                newMarquee.id = `marquee-container-${index}`;
-                newMarquee.style.display = 'none';
-                document.body.appendChild(newMarquee);
-                return newMarquee;
-            }
-            function syncMarqueeDOMElements() {
-                const desiredCount = settingsState.marquees.length;
-                const existingWidgets = document.querySelectorAll('.marquee-widget');
-                let currentCount = existingWidgets.length;
-                while (currentCount < desiredCount) { createMarqueeElement(currentCount); currentCount++; }
-                if (currentCount > desiredCount) { for (let i = desiredCount; i < currentCount; i++) { const elToRemove = document.getElementById(`marquee-container-${i}`); if (elToRemove) elToRemove.remove(); } }
-            }
-            document.getElementById('add-marquee-btn').addEventListener('click', () => {
-                const selectedIndex = parseInt(marqueeSelector.value, 10) || 0;
-                const newIndex = settingsState.marquees.length;
-                const sourceSettings = settingsState.marquees[selectedIndex];
-                const sourceTransform = transformStates[`marquee-container-${selectedIndex}`];
-                const newSettings = JSON.parse(JSON.stringify(sourceSettings));
-                const newTransform = JSON.parse(JSON.stringify(sourceTransform));
-                newTransform.top += (sourceTransform.height * sourceTransform.scale) + 10;
-                newTransform.visible = true;
-                settingsState.marquees.push(newSettings);
-                transformStates[`marquee-container-${newIndex}`] = newTransform;
-                const newElement = createMarqueeElement(newIndex);
-                MarqueeManager.syncInstances();
-                updateMarqueeSelectorUI();
-                marqueeSelector.value = newIndex;
-                loadMarqueeSettingsToUI(newIndex);
-                applyTransform(newElement, newTransform);
-                MarqueeManager.rebuildAnimationByIndex(newIndex);
-                saveCurrentSettings();
-                showAlert('成功', `已新增跑馬燈組別 ${newIndex + 1}。`);
-            });
-            document.getElementById('remove-marquee-btn').addEventListener('click', () => {
-                const selectedIndex = parseInt(marqueeSelector.value, 10);
-                if (selectedIndex === 0 || settingsState.marquees.length <= 1) { showAlert('提示', '無法刪除預設的跑馬燈組別。'); return; }
-                settingsState.marquees.splice(selectedIndex, 1);
-                for (let i = selectedIndex; i < settingsState.marquees.length; i++) { transformStates[`marquee-container-${i}`] = transformStates[`marquee-container-${i + 1}`]; }
-                delete transformStates[`marquee-container-${settingsState.marquees.length}`];
-                syncMarqueeDOMElements();
-                document.querySelectorAll('.marquee-widget').forEach((el, i) => { el.id = `marquee-container-${i}`; });
-                MarqueeManager.syncInstances();
-                MarqueeManager.rebuildAllAnimations();
-                const newIndex = Math.max(0, selectedIndex - 1);
-                marqueeSelector.value = newIndex;
-                updateMarqueeSelectorUI();
-                marqueeSelector.value = newIndex;
-                loadMarqueeSettingsToUI(newIndex);
-                saveCurrentSettings();
-                showAlert('成功', `已刪除跑馬燈組別 ${selectedIndex + 1}。`);
-            });
-            // --- 農曆轉換核心演算法 ---
-            function getLunarYearDays(y){let i,sum=348;for(i=0x8000;i>0x8;i>>=1)sum+=(lunarInfo[y-1900]&i)?1:0;return sum+getLunarLeapDays(y)}
-            function getLunarLeapMonth(y){return lunarInfo[y-1900]&0xf}
-            function getLunarLeapDays(y){return getLunarLeapMonth(y)?((lunarInfo[y-1900]&0x10000)?30:29):0}
-            function getLunarMonthDays(y,m){return(lunarInfo[y-1900]&(0x10000>>m))?30:29}
-            function toChinaDate(d) {
-                if (d < 1 || d > 30) return "";
-                const n1 = "一二三四五六七八九";
-                if (d <= 10) return "初" + (d === 10 ? "十" : n1[d-1]);
-                if (d < 20) return "十" + n1[(d % 10) - 1];
-                if (d === 20) return "二十";
-                if (d < 30) return "廿" + n1[(d % 10) - 1];
-                return "三十";
-            }
-            let lunarDateCache={};
-            function getLunarDate(date){
-                const cleanDate = new Date(date);
-                cleanDate.setHours(0, 0, 0, 0);
-                const key=cleanDate.toISOString().split('T')[0];
-                if(lunarDateCache[key])return lunarDateCache[key];
-                let i,temp=0;const baseDate=new Date(1900,0,31);
-                let offset=(cleanDate-baseDate)/86400000;
-                for(i=1900;i<2101&&offset>0;i++){temp=getLunarYearDays(i);offset-=temp}if(offset<0){offset+=temp;i--}const year=i;const leapMonth=getLunarLeapMonth(year);let isLeap=false;for(i=1;i<13&&offset>0;i++){temp=getLunarMonthDays(year,i);offset-=temp;if(offset<0){break}if(leapMonth>0&&i===leapMonth){temp=getLunarLeapDays(year);offset-=temp;if(offset<0){isLeap=true;break}}}if(offset<0){offset+=temp}const month=i;
-                const day=Math.round(offset)+1;
-                const monthStr=(isLeap?'閏':'')+"正二三四五六七八九十冬臘"[month-1]+'月';
-                const result={year:year,month:month,day:day,isLeap:isLeap,toString:monthStr+toChinaDate(day),dayString:toChinaDate(day)};
-                lunarDateCache[key]=result;return result
-            }
-            function lunarToSolar(lunarYear,lunarMonth,lunarDay,isLeap=false){if(lunarYear<1900||lunarYear>2100)return null;const leap=getLunarLeapMonth(lunarYear);if(isLeap&&leap!==lunarMonth)return null;let daysOffset=0;for(let y=1900;y<lunarYear;y++){daysOffset+=getLunarYearDays(y)}for(let m=1;m<lunarMonth;m++){daysOffset+=getLunarMonthDays(lunarYear,m);if(leap>0&&m===leap){daysOffset+=getLunarLeapDays(lunarYear)}}if(isLeap){daysOffset+=getLunarMonthDays(lunarYear,lunarMonth)}daysOffset+=lunarDay-1;const baseDate=new Date(1900,0,31);return new Date(baseDate.getTime()+daysOffset*86400000)}
-            let solarTermsCache={};
-            function calculateAndCacheSolarTerms(year){if(year<2000||year>2099){solarTermsCache[year]={};return}const yearMap={};const Y=year-2000;solarTermConstants.forEach(([name,month,C])=>{const day=Math.floor(Y*0.2422+C)-Math.floor(Y/4);yearMap[`${year}-${month}-${day}`]=name});solarTermsCache[year]=yearMap}
-            function getSolarTerm(year,month,day){if(!solarTermsCache[year]){calculateAndCacheSolarTerms(year)}return solarTermsCache[year][`${year}-${month}-${day}`]||null}
-            function getHoliday(date) {
-                const month = date.getMonth() + 1, dayOfMonth = date.getDate(), dayOfWeek = date.getDay();
-                const gKey = `${month}-${dayOfMonth}`;
-                if (gregorianHolidays[gKey]) return gregorianHolidays[gKey];
-                const weekOfMonth = Math.ceil(dayOfMonth / 7);
-                const fKey = `${month}-${weekOfMonth}-${dayOfWeek}`;
-                if (floatingHolidays[fKey]) return floatingHolidays[fKey];
-                const l = getLunarDate(date);
-                if (l.day > 0) {
-                    if (l.month === 12 && l.day === getLunarMonthDays(l.year, 12)) return "除夕";
-                    const lKey = `${l.month}-${l.day}`;
-                    if (lunarHolidays[lKey]) return lunarHolidays[lKey];
-                }
-                return null;
-            }
-            function getDailyGanzhi(date) {
-                const cleanDate = new Date(date); cleanDate.setHours(0, 0, 0, 0);
-                const baseDate = new Date(1900, 0, 31);
-                const offset = Math.floor((cleanDate - baseDate) / 86400000);
-                const dayStemIndex = (6 + (offset + 60000)) % 10;
-                return { stemIndex: dayStemIndex };
-            }
-            // --- 星座計算 ---
-            function getConstellation(date) { const m = date.getMonth() + 1, d = date.getDate(); for (let i = 0; i < signs.length; i++) { if (m < signs[i].m || (m === signs[i].m && d < signs[i].d)) return signs[i]; } return signs[0]; }
-            // --- 時間輔助工具 ---
-            const ShichenHelper = {
-                hourStemStart: [0, 2, 4, 6, 8, 0, 2, 4, 6, 8],
-                getData(date) {
-                    const h = date.getHours(); const branchIndex = Math.floor(((h + 1) % 24) / 2);
-                    const dayStemIndex = getDailyGanzhi(date).stemIndex;
-                    const hourStemIndex = (this.hourStemStart[dayStemIndex] + branchIndex) % 10;
-                    return { name: `${dizhi[branchIndex]}時`, char: dizhi[branchIndex], gz: `${tiangan[hourStemIndex]}${dizhi[branchIndex]}` };
-                }
-            };
-            const TimeHelper = {
-                timeRanges: [{h:23,p:'深夜'},{h:19,p:'夜晚'},{h:17,p:'傍晚'},{h:13,p:'下午'},{h:12,p:'中午'},{h:9,p:'上午'},{h:5,p:'清晨'},{h:0,p:'凌晨'}],
-                getPeriodText(hour) { return this.timeRanges.find(range => hour >= range.h)?.p || ''; },
-            };
-            // --- 全局 DOM 元素與狀態 ---
-            const allWidgetContainers = () => document.querySelectorAll('.widget-container');
-            const actionButtons = document.getElementById('action-buttons');
-            const editToolbar = document.getElementById('edit-toolbar');
-            let isEditMode = false, activityTimeout, transformStates = {}, settingsState = {}, isWidgetAnimating = {};
-            let selectedWidgets = new Set(), groupMoveHandle = null, groupRotateHandle = null, initialGroupTransforms = {};
-            // --- 跑馬燈參數與顏色變數的映射表 ---
-            const marqueeParamColorMap = {
-                '%YYYY%': '--year-color', '%ROC_YY%': '--year-color', '%MM%': '--month-color', '%DD%': '--day-color',
-                '%WEEKDAY%': '--week-color', '%W_SHORT%': '--week-color', '%HH%': '--led-hour-color', '%hh%': '--led-hour-color',
-                '%mm%': '--led-minute-color', '%ss%': '--led-second-color', '%ap_c%': '--led-period-color', '%L_GZ%': '--lunar-color',
-                '%L_SX%': '--lunar-color', '%LM_C%': '--lunar-color', '%LD_C%': '--lunar-color', '%WEATHER_LOC%': '--holiday-color',
-                '%WEATHER_DESC%': '--holiday-color', '%TEMP%': '--holiday-color', '%SUNRISE%': '--solarterm-color',
-                '%SUNSET%': '--solarterm-color', '%MOON_PHASE%': '--moon-header-color', '%MOON_ICON%': '--moon-header-color',
-                '%MOON_DAY%': '--moon-header-color', '%CONSTELLATION%': '--solarterm-color',
-                '%SHICHEN_GZ%': '--lunar-color', '%SHICHEN_NAME%': '--lunar-color', '%SHICHEN_CHAR%': '--lunar-color'
-            };
-            // --- 預設設定 ---
-            const userDefaultLayout = {
-                "transforms": {
-                    "calendar-container": { "visible": true, "width": 500, "height": 400, "left": 310, "top": 80, "scale": 1, "rotation": 0 },
-                    "moon-phase-container": { "visible": false, "width": 500, "height": 400, "left": 10, "top": 80, "scale": 1, "rotation": 0 },
-                    "led-clock-container": { "visible": true, "width": 300, "height": 98, "left": 10, "top": 80, "scale": 1, "rotation": 0 },
-                    "analog-clock-container": { "visible": true, "width": 300, "height": 300, "left": 10, "top": 170, "scale": 1, "rotation": 0 },
-                    "marquee-container-0": { "visible": true, "width": 800, "height": 80, "left": 10, "top": 10, "scale": 1, "rotation": 0 }
-                },
-                "settings": {
-                    "calendar": { "visible": true, "showMoonIcon": true, "useLedFont": true, "colors": { "--bg-primary": "#000000", "--year-color": "#FF7000", "--month-color": "#3070a0", "--week-color": "#8830d0", "--day-color": "#ffffff", "--lunar-color": "#FFFF00", "--bg-secondary": "transparent", "--bg-hover": "rgba(55, 65, 81, 0.5)", "--border-color": "#374151", "--text-primary": "#F3F4F6", "--text-secondary": "#9CA3AF", "--text-muted": "#6B7280", "--holiday-color": "#6ee7b7", "--solarterm-color": "#fcd34d", "--yi-color": "#34D399", "--ji-color": "#F87171" } },
-                    "ledClock": { "visible": true, "colonBlink": true, "colors": { "--led-hour-color": "#00ff00", "--led-minute-color": "#00ff00", "--led-second-color": "#00ff00", "--led-colon-color": "#00ff00", "--led-period-color": "#00ff00" } },
-                    "analogClock": { "visible": true, "useLedFont": true, "smoothSeconds": false, "colors": { "--analog-face-color": "transparent", "--analog-hand-color": "#ffffff", "--analog-second-hand-color": "#ff3333", "--analog-tick-color": "#cccccc", "--analog-number-color": "#ffffff" } },
-                    "moonPhase": { "visible": false, "useLedFont": true, "colors": { "--moon-light-color": "#f0e68c", "--moon-dark-color": "#222222", "--moon-header-color": "#a78bfa", "--moon-desc-color": "#d1d5db", "--moon-highlight-color": "#fcd34d" } },
-                    "marquees": [
-                        { "text": "%YYYY%/%ROC_YY%年%MM%月%DD%日%W_SHORT%%ap_c%%hh%%C(#00FF00, :)%%mm%%br%%C(#FFFF00, 農曆)%%LM_C%%LD_C%%br%%SHICHEN_NAME%%L_GZ%%L_SX%%MOON_ICON%%CONSTELLATION%%br%%WEATHER_LOC%%WEATHER_DESC%%TEMP%°C%br%日出%SUNRISE%%br%日落%SUNSET%", "speed": 80, "vertical": false, "direction": "left", "colors": {"default":"#FFFFFF"} }
-                    ],
-                    "marqueeGlobal": { "useLedFont": true },
-                    "location": "taiwan",
-                    "timedEffect": { "enabled": true, "intervalSeconds": 10, "type": "slide", "isRandom": false, "transitionEnabled": false }
-                }
-            };
-            // ===================================================================
-            // LED 時鐘模組
-            // ===================================================================
-const LedClock = {
-                svg: document.getElementById('led-clock-svg'), digits: {}, colons: {}, periodTextElement: null,
-                lastTime: { h: -1, m: -1, s: -1 },
-                segmentMap: [[1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],[0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1]],
-                segmentTransforms: ['translate(0, 0)','translate(132, 20) rotate(90)','translate(132, 140) rotate(90)','translate(0, 240)','translate(12, 140) rotate(90)','translate(12, 20) rotate(90)','translate(0, 120)'],
-                baseViewBoxWidth: 0, aspectRatio: 0,
-                createDigit(id, x, parentGroup, segmentClass) { const group = document.createElementNS('http://www.w3.org/2000/svg', 'g'); group.setAttribute('id', id); group.setAttribute('transform', `translate(${x}, 0)`); for (let i = 0; i < 7; i++) { const use = document.createElementNS('http://www.w3.org/2000/svg', 'use'); use.setAttribute('href', '#segment-shape'); use.setAttribute('class', `segment ${segmentClass}`); use.setAttribute('data-segment', String.fromCharCode(97 + i)); use.setAttribute('transform', this.segmentTransforms[i]); group.appendChild(use); } parentGroup.appendChild(group); return group; },
-                createColon(id, x, parentGroup) { const group = document.createElementNS('http://www.w3.org/2000/svg', 'g'); group.setAttribute('id', id); group.setAttribute('transform', `translate(${x}, 0)`); ['translate(0, 60)', 'translate(0, 180)'].forEach(transform => { const dot = document.createElementNS('http://www.w3.org/2000/svg', 'use'); dot.setAttribute('href', '#colon-dot-shape'); dot.setAttribute('class', 'colon'); dot.setAttribute('transform', transform); group.appendChild(dot); }); parentGroup.appendChild(group); return group; },
-                init() {
-                    this.svg.innerHTML = ''; const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs'); defs.innerHTML = `<polygon id="segment-shape" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="colon-dot-shape" x="-16" y="0" width="32" height="32" rx="5" ry="5" />`; this.svg.appendChild(defs); const digitWidth=160, colonWidth=48, digitSpacing=2, hourMinuteSpacing=0, secondsScale=0.25, minuteSecondSpacing=8; const viewportGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g'); this.svg.appendChild(viewportGroup); let currentX = 0; this.digits.h1 = this.createDigit('digit-h1', currentX, viewportGroup, 'segment-h'); currentX += digitWidth + digitSpacing; this.digits.h2 = this.createDigit('digit-h2', currentX, viewportGroup, 'segment-h'); currentX += digitWidth + hourMinuteSpacing; this.colons.h = this.createColon('colon-h', currentX, viewportGroup); currentX += colonWidth + hourMinuteSpacing; this.digits.m1 = this.createDigit('digit-m1', currentX, viewportGroup, 'segment-m'); currentX += digitWidth + digitSpacing; this.digits.m2 = this.createDigit('digit-m2', currentX, viewportGroup, 'segment-m'); const mainDigitsWidth = currentX + digitWidth; const secondsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g'); viewportGroup.appendChild(secondsGroup); this.digits.s1 = this.createDigit('digit-s1', 0, secondsGroup, 'segment-s'); this.digits.s2 = this.createDigit('digit-s2', digitWidth + digitSpacing, secondsGroup, 'segment-s'); this.periodTextElement = document.createElementNS('http://www.w3.org/2000/svg', 'text'); this.periodTextElement.setAttribute('class', 'period-text'); this.periodTextElement.setAttribute('dominant-baseline', 'hanging'); viewportGroup.appendChild(this.periodTextElement); const mainDigitHeight = 240 + 32; const scaledSecondsHeight = mainDigitHeight * secondsScale; const totalContentWidth = mainDigitsWidth + minuteSecondSpacing + Math.max((digitWidth * 2 + digitSpacing) * secondsScale, 110); this.baseViewBoxWidth = totalContentWidth + 20; this.aspectRatio = this.baseViewBoxWidth / mainDigitHeight; this.svg.setAttribute('viewBox', `0 0 ${this.baseViewBoxWidth} ${mainDigitHeight}`); viewportGroup.setAttribute('transform', 'translate(20, 0)'); secondsGroup.setAttribute('transform', `translate(${mainDigitsWidth + minuteSecondSpacing}, ${mainDigitHeight - scaledSecondsHeight}) scale(${secondsScale})`);
-                    this.periodTextElement.setAttribute('x', mainDigitsWidth + minuteSecondSpacing - 20);
-                    this.periodTextElement.setAttribute('y', 0); this.update(); setInterval(() => this.update(), 1000);
-                },
-                updateDigit(digitElement, number) { const pattern = this.segmentMap[number]; digitElement.querySelectorAll('.segment').forEach((segment, i) => { segment.style.opacity = pattern[i] ? '1' : '0.1'; }); },
-                update() {
-                    const now = new Date();
-                    const s = now.getSeconds();
-
-                    // --- 每秒執行的部分 ---
-                    if (s !== this.lastTime.s) {
-                        // 處理定時特效
-                        const effectSettings = settingsState.timedEffect;
-                        if (!isEditMode && effectSettings && effectSettings.enabled && s % effectSettings.intervalSeconds === 0) {
-                            if (Object.values(isWidgetAnimating).some(v => v)) return;
-
-                            if (effectSettings.type === 'layoutSwitch') {
-                                if (layouts.length >= 2) {
-                                    if (effectSettings.isRandom) {
-                                        let randomIndex;
-                                        do { randomIndex = Math.floor(Math.random() * layouts.length); } while (layouts.length > 1 && randomIndex === currentLayoutIndex);
-                                        currentLayoutIndex = randomIndex;
-                                    } else {
-                                        currentLayoutIndex = nextLayoutIndex;
-                                        nextLayoutIndex = (nextLayoutIndex + 1) % layouts.length;
-                                    }
-                                    const useTransition = settingsState.timedEffect?.transitionEnabled ?? false;
-                                    if (useTransition) { animateLayoutChange(layouts[currentLayoutIndex], 1000, true); } 
-                                    else { applyLayout(layouts[currentLayoutIndex], { ignoreTimedEffect: true }); saveCurrentSettings(true); }
-                                }
-                            } else if (effectSettings.type === 'slide') {
-                                this.triggerSlideEffect();
-                            }
-                        }
-
-                        // 更新秒數顯示和冒號閃爍
-                        const sStr = String(s).padStart(2, '0');
-                        this.updateDigit(this.digits.s1, parseInt(sStr[0]));
-                        this.updateDigit(this.digits.s2, parseInt(sStr[1]));
-                        const shouldBlink = settingsState.ledClock?.colonBlink ?? true;
-                        const colonOpacity = shouldBlink ? (s % 2 === 0 ? '1' : '0.2') : '1';
-                        this.colons.h.querySelectorAll('.colon').forEach(c => c.style.opacity = colonOpacity);
-                        this.lastTime.s = s;
-                    }
-
-                    // --- 每分鐘執行的部分 ---
-                    const m = now.getMinutes();
-                    if (m !== this.lastTime.m) {
-                        const mStr = String(m).padStart(2, '0');
-                        this.updateDigit(this.digits.m1, parseInt(mStr[0]));
-                        this.updateDigit(this.digits.m2, parseInt(mStr[1]));
-                        this.lastTime.m = m;
-                    }
-
-                    // --- 每小時執行的部分 ---
-                    const h = now.getHours();
-                    if (h !== this.lastTime.h) {
-                        if (this.periodTextElement) { this.periodTextElement.textContent = TimeHelper.getPeriodText(h); }
-                        let h12 = h % 12; if (h12 === 0) h12 = 12;
-                        const hStr = String(h12).padStart(2, '0');
-                        this.updateDigit(this.digits.h1, parseInt(hStr[0]));
-                        this.updateDigit(this.digits.h2, parseInt(hStr[1]));
-                        this.lastTime.h = h;
-                    }
-                },
-                triggerSlideEffect() {
-                    let targets = [];
-                    allWidgetContainers().forEach(el => {
-                        if (transformStates[el.id]?.visible && !el.classList.contains('marquee-widget')) targets.push(el.id);
-                    });
-                    MarqueeManager.instances.forEach(instance => {
-                        if (transformStates[instance.container.id]?.visible && !instance.isScrolling) targets.push(instance.container.id);
-                    });
-                    if (targets.length === 0) return;
-                    const move = { up: 'translateY(-100vh)', down: 'translateY(100vh)', left: 'translateX(-100vw)', right: 'translateX(100vw)' };
-                    const directions = Object.keys(move);
-                    const duration = 700;
-                    targets.forEach(id => {
-                        const el = document.getElementById(id);
-                        if (!el || isWidgetAnimating[id]) return;
-                        const direction = directions[Math.floor(Math.random() * directions.length)];
-                        isWidgetAnimating[id] = true;
-                        const originalTransform = el.style.transform;
-                        const originalTransition = el.style.transition;
-                        el.style.transition = `transform ${duration}ms ease-in-out`;
-                        el.style.transform = `${originalTransform} ${move[direction]}`;
-                        setTimeout(() => {
-                            el.style.transition = 'none';
-                            el.style.transform = originalTransform;
-                            setTimeout(() => {
-                                el.style.transition = originalTransition;
-                                isWidgetAnimating[id] = false;
-                            }, 50);
-                        }, duration);
-                    });
-                }
-            };
-            // ===================================================================
-            // 月曆與月相曆模組 (工廠模式)
-            // ===================================================================
-            function createCalendarWidget(options) {
-                const { bodyId, yearHeaderId, backgroundMonthId, prevBtnId, nextBtnId, todayBtnId, onCellRender, onHeaderClick, getSetting } = options;
-                const body = document.getElementById(bodyId), yearHeader = document.getElementById(yearHeaderId), backgroundMonth = document.getElementById(backgroundMonthId);
-                const widget = {
-                    body: body, currentDate: new Date(),
-                    init() {
-                        document.getElementById(prevBtnId).addEventListener('click', () => { if (!isEditMode) { this.currentDate.setMonth(this.currentDate.getMonth() - 1); this.render(); } });
-                        document.getElementById(nextBtnId).addEventListener('click', () => { if (!isEditMode) { this.currentDate.setMonth(this.currentDate.getMonth() + 1); this.render(); } });
-                        document.getElementById(todayBtnId).addEventListener('click', () => { if (!isEditMode) { this.currentDate = new Date(); this.render(); } });
-                        if (onHeaderClick) yearHeader.addEventListener('click', () => onHeaderClick(this));
-                        this.render();
-                    },
-                    render() {
-                        body.innerHTML = '';
-                        const year = this.currentDate.getFullYear(), month = this.currentDate.getMonth();
-                        const widgetSettings = getSetting() || {};
-                        const useLedHeader = widgetSettings.useLedFont ?? true;
-                        const yearColor = getComputedStyle(document.documentElement).getPropertyValue('--year-color').trim() || '#FF7000';
-                        renderCalendarTitle(yearHeader, year, useLedHeader, 26, yearColor, '26px', yearColor);
-                        const widgetId = body.closest('.widget-container').id;
-                        const widgetState = transformStates[widgetId];
-                        if (useLedHeader && widgetState) {
-                             const monthColor = getComputedStyle(document.documentElement).getPropertyValue('--month-color').trim() || '#3070a0';
-                             backgroundMonth.innerHTML = generateLedSvg(String(month + 1), { height: widgetState.height * 0.7, color: monthColor });
-                        } else {
-                             backgroundMonth.textContent = month + 1;
-                        }
-                        const firstDayOfMonth = new Date(year, month, 1);
-                        const startDayOfWeek = firstDayOfMonth.getDay();
-                        const startDate = new Date(year, month, 1 - startDayOfWeek);
-                        const today = new Date(); today.setHours(0, 0, 0, 0);
-                        for (let i = 0; i < 42; i++) {
-                            const currentCellDate = new Date(startDate);
-                            currentCellDate.setDate(startDate.getDate() + i);
-                            const cell = document.createElement('div');
-                            cell.className = `calendar-day ${currentCellDate.getMonth() !== month ? 'other-month' : ''} ${currentCellDate.getTime() === today.getTime() ? 'today' : ''}`;
-                            onCellRender(cell, currentCellDate, widgetSettings);
-                            body.appendChild(cell);
-                        }
-                    }
-                };
-                return widget;
-            }
-            const calendarCellRenderer = (cell, date, settings) => {
-                const day = date.getDate(), lunar = getLunarDate(date), solarTerm = getSolarTerm(date.getFullYear(), date.getMonth() + 1, day), holiday = getHoliday(date);
-                const showMoonIcon = settings.showMoonIcon ?? true, useLed = settings.useLedFont ?? true;
-                const textDetailsHTML = `<div class="lunar-date">${lunar.day === 1 ? lunar.toString.substring(0, lunar.isLeap ? 3 : 2) : lunar.dayString}</div>
-                    ${solarTerm ? `<div class="solarterm-text truncate" data-key="${solarTerm}">${solarTerm}</div>` : ''}
-                    ${holiday ? `<div class="holiday-text truncate" data-key="${holiday}">${holiday}</div>` : ''}`;
-                const dayColor = getComputedStyle(document.documentElement).getPropertyValue('--day-color').trim();
-                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvg(String(day), {height: 20, color: dayColor})}</div>` : `<div class="day-number-wrapper" style="font-size: 1.5em; line-height: 1.2; color: ${dayColor}; display: flex; align-items: center; justify-content: center; height: 20px; font-weight: 700;">${day}</div>`;
-                if (showMoonIcon) {
-                    cell.classList.add('with-moon-icon');
-                    cell.innerHTML = `<div class="day-text-content">${dayNumberHTML}<div class="space-y-px">${textDetailsHTML}</div></div><div class="day-moon-container">${MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '28px', `main-cal-${Math.random()}`)}</div>`;
-                } else {
-                    cell.classList.remove('with-moon-icon');
-                    cell.innerHTML = `${dayNumberHTML}<div class="space-y-px">${textDetailsHTML}</div>`;
-                }
-                cell.dataset.date = date.toISOString();
-                if (isEditMode) cell.classList.add('edit-mode-active');
-            };
-            const moonPhaseCellRenderer = (cell, date, settings) => {
-                const lunar = getLunarDate(date), useLed = settings.useLedFont ?? true, dayColor = getComputedStyle(document.documentElement).getPropertyValue('--day-color').trim() || '#ffffff', day = date.getDate();
-                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvg(String(day), { height: 20, color: dayColor })}</div>` : `<div class="day-number-wrapper" style="font-size: 1.2em; line-height: 1; color: ${dayColor}; font-weight: bold;">${day}</div>`;
-                const lunarDateText = lunar.day === 1 ? lunar.toString.substring(0, lunar.isLeap ? 3 : 2) : lunar.dayString;
-                cell.innerHTML = `${dayNumberHTML}<div class="moon-icon-small">${MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '100%', `grid-${Math.random()}`)}</div><div class="lunar-date">${lunarDateText}</div>`;
-                cell.addEventListener('click', () => { if(!isEditMode) showDayDetailModal(date.toISOString()); });
-            };
-            // ===================================================================
-            // 指針時鐘模組
-            // ===================================================================
-            const AnalogClock = {
-                lastSecond: -1,
-                hourHand: document.querySelector('#analog-clock-container .hour-hand'),
-                minuteHand: document.querySelector('#analog-clock-container .minute-hand'),
-                secondHand: document.querySelector('#analog-clock-container .second-hand'),
-                ticksContainer: document.getElementById('ticks-container'),
-                animationFrameId: null,
-                init() {
-                    this.ticksContainer.innerHTML = '';
-                    const useLed = settingsState.analogClock?.useLedFont ?? true;
-                    for (let i = 1; i <= 60; i++) {
-                        const isHour = i % 5 === 0, rotation = i * 6;
-                        const wrapper = document.createElement('div');
-                        wrapper.className = 'tick-wrapper'; wrapper.style.transform = `rotate(${rotation}deg)`;
-                        const tick = document.createElement('div');
-                        tick.className = isHour ? 'tick tick-hour' : 'tick tick-minute';
-                        wrapper.appendChild(tick);
-                        if (isHour) {
-                            wrapper.style.setProperty('--rotation', `${rotation}deg`);
-                            const numDiv = document.createElement('div'); numDiv.className = 'number';
-                            const numberText = String(i / 5);
-                            const numberColor = getComputedStyle(document.documentElement).getPropertyValue('--analog-number-color').trim() || '#ffffff';
-                            if (useLed) {
-                                const clockState = transformStates['analog-clock-container'];
-                                const svgHeight = clockState ? clockState.width * 0.08 : 16;
-                                numDiv.innerHTML = `<div>${generateLedSvg(numberText, { height: svgHeight, color: numberColor })}</div>`;
-                            } else {
-                                numDiv.innerHTML = `<div style="transform: rotate(calc(-1 * var(--rotation))); color: ${numberColor}; font-size: 1.2em; font-weight: bold;">${numberText}</div>`;
-                            }
-                            wrapper.appendChild(numDiv);
-                        }
-                        this.ticksContainer.appendChild(wrapper);
-                    }
-                    if (!this.animationFrameId) this.update();
-                },
-                update() {
-                    const now = new Date();
-                    const smooth = settingsState.analogClock?.smoothSeconds ?? false;
-
-                    // 當平滑秒針關閉時，只在秒數變更時才更新
-                    if (!smooth) {
-                        const currentSecond = now.getSeconds();
-                        if (currentSecond === this.lastSecond) {
-                            this.animationFrameId = requestAnimationFrame(() => this.update());
-                            return; // 秒數未變，跳過此次更新
-                        }
-                        this.lastSecond = currentSecond;
-                    }
-
-                    const s = smooth ? now.getSeconds() + now.getMilliseconds() / 1000 : now.getSeconds();
-                    const m = now.getMinutes() + s / 60;
-                    const h = now.getHours() % 12 + m / 60;
-                    this.hourHand.style.transform = `translateX(-50%) rotate(${(h / 12) * 360}deg)`;
-                    this.minuteHand.style.transform = `translateX(-50%) rotate(${(m / 60) * 360}deg)`;
-                    this.secondHand.style.transform = `translateX(-50%) rotate(${(s / 60) * 360}deg)`;
-                    this.animationFrameId = requestAnimationFrame(() => this.update());
-                }
-            };
-            // ===================================================================
-            // LED 數字 SVG 產生器
-            // ===================================================================
-            function generateLedSvg(text, config = {}) {
-                const { height = 24, color = '#FFFFFF', letterSpacing = 16 } = config;
-                const id_suffix = Math.random().toString(36).substring(2, 9);
-                const segmentId = `led-segment-${id_suffix}`, colonId = `led-colon-${id_suffix}`;
-                const segmentMap = [[1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],[0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1]];
-                const segmentTransforms = ['translate(0, 0)','translate(132, 20) rotate(90)','translate(132, 140) rotate(90)','translate(0, 240)','translate(12, 140) rotate(90)','translate(12, 20) rotate(90)','translate(0, 120)'];
-                const digitBaseWidth = 144, digitBaseHeight = 272, colonBaseWidth = 48;
-                let svgContent = '', currentX = 0;
-                for (const char of String(text)) {
-                    if (/\d/.test(char)) {
-                        const digit = parseInt(char, 10);
-                        if (digit >= 0 && digit <= 9) {
-                            const pattern = segmentMap[digit];
-                            let digitGroup = `<g transform="translate(${currentX}, 0)">`;
-                            for (let i = 0; i < 7; i++) digitGroup += `<use href="#${segmentId}" opacity="${pattern[i] ? '1' : '0.1'}" transform="${segmentTransforms[i]}" />`;
-                            digitGroup += `</g>`; svgContent += digitGroup;
-                        }
-                        currentX += digitBaseWidth + letterSpacing;
-                    } else if (char === ':') {
-                        svgContent += `<g transform="translate(${currentX}, 0)"><use href="#${colonId}" transform="translate(0, 60)" /><use href="#${colonId}" transform="translate(0, 180)" /></g>`;
-                        currentX += colonBaseWidth + letterSpacing;
-                    } else if (['/', '-', '.'].includes(char)) {
-                        const separatorWidth = 60, entity = { '/': '/', '-': '—', '.': '.' }[char];
-                        svgContent += `<text x="${currentX + separatorWidth / 2}" y="${digitBaseHeight / 2}" text-anchor="middle" dominant-baseline="central" font-size="${digitBaseHeight * 0.9}" font-family="'Courier New', Courier, monospace" font-weight="bold">${entity}</text>`;
-                        currentX += separatorWidth + letterSpacing;
-                    }
-                }
-                const totalWidth = currentX > 0 ? currentX - letterSpacing : 0;
-                if (totalWidth === 0) return '';
-                const padding = 16, finalWidth = ((totalWidth + padding * 2) / digitBaseHeight) * height;
-                return `<svg viewBox="-${padding} 0 ${totalWidth + padding * 2} ${digitBaseHeight}" data-text="${text}" height="${height}px" width="${finalWidth}px" fill="${color}" style="vertical-align: middle; display: inline-block;"><defs><polygon id="${segmentId}" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="${colonId}" x="-16" y="0" width="32" height="32" rx="5" ry="5" /></defs>${svgContent}</svg>`.replace(/\n\s*/g, '');
-            }
-            function getLedHTML(text, useLed, options = {}) {
-                if (!useLed) return String(text).replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                const { color = '#FFFFFF', fontSize = 16, heightMultiplier = 1.1, defaultSpan = true } = options;
-                let resultHTML = '';
-                const parts = String(text).split(/(\d+[\d:./-]*)/);
-                parts.forEach(part => {
-                    if (/^\d+[\d:./-]*$/.test(part) && part.trim() !== '') {
-                        resultHTML += generateLedSvg(part, { height: fontSize * heightMultiplier, color: color });
-                    } else if (part) {
-                        const escapedPart = part.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                        resultHTML += defaultSpan ? `<span style="color:${color};">${escapedPart}</span>` : escapedPart;
-                    }
-                });
-                return resultHTML;
-            }
-            function applyLedToStaticContent(containerElement) {
-                if (containerElement.dataset.ledProcessed) return;
-                const walker = document.createTreeWalker(containerElement, NodeFilter.SHOW_TEXT, null, false);
-                const nodesToProcess = [];
-                let node;
-                while (node = walker.nextNode()) {
-                    if (node.parentElement.closest('script, style, svg, [data-led-processed]')) continue;
-                    if (/\d/.test(node.nodeValue)) nodesToProcess.push(node);
-                }
-                nodesToProcess.forEach(node => {
-                    const parent = node.parentNode;
-                    if (!parent) return;
-                    const parts = node.nodeValue.split(/(\d+[\d:./-]*)/);
-                    if (parts.length <= 1) return;
-                    const fragment = document.createDocumentFragment();
-                    parts.forEach(part => {
-                        if (/^\d+[\d:./-]*$/.test(part) && part.trim() !== '') {
-                            const color = getComputedStyle(parent).color || '#FFFFFF';
-                            const fontSize = parseFloat(getComputedStyle(parent).fontSize) || 16;
-                            const template = document.createElement('template');
-                            const svgHTML = generateLedSvg(part, { height: fontSize * 1.1, color: color }).trim();
-                            if (svgHTML) {
-                                template.innerHTML = svgHTML;
-                                if (template.content.firstChild) {
-                                    template.content.firstChild.dataset.ledProcessed = 'true';
-                                    fragment.appendChild(template.content.firstChild);
-                                }
-                            } else { fragment.appendChild(document.createTextNode(part)); }
-                        } else if (part) { fragment.appendChild(document.createTextNode(part)); }
-                    });
-                    parent.replaceChild(fragment, node);
-                });
-                containerElement.dataset.ledProcessed = 'true';
-            }
-            // ===================================================================
-            // 統一的日曆標題渲染函數
-            // ===================================================================
-            function renderCalendarTitle(element, year, useLed, ledHeight, ledColor, defaultFontSize, defaultColor) {
-                element.innerHTML = useLed
-                    ? generateLedSvg(String(year), {height: ledHeight, color: ledColor})
-                    : `<span style="font-size: ${defaultFontSize}; color: ${defaultColor}; line-height: 1; font-weight: 700;">${year}</span>`;
-            }
-            // ===================================================================
-            // 跑馬燈模組 (Class)
-            // ===================================================================
-class MarqueeInstance {
-                constructor(containerId, index) {
-                    this.container = document.getElementById(containerId);
-                    this.mainContainer = this.container.querySelector('main');
-                    this.innerDiv = this.container.querySelector('.marquee-inner');
-                    this.index = index;
-                    this.animationStyleTag = document.createElement('style');
-                    document.head.appendChild(this.animationStyleTag);
-                    this.rebuildTimeout = null;
-                    this.isScrolling = false;
-
-                    // 參數與更新頻率的映射
-                    this.paramToFrequency = {
-                        s: ['%ss%', '%s%'],
-                        m: ['%mm%', '%m%', '%HH%', '%H%', '%hh%', '%h%', '%AP%', '%ap%', '%ap_c%', '%SHICHEN_GZ%', '%SHICHEN_NAME%', '%SHICHEN_CHAR%'],
-                        d: ['%YYYY%', '%YY%', '%ROC_YY%', '%MM%', '%M%', '%DD%', '%D%', '%WEEKDAY%', '%W_SHORT%', '%W_CHAR%', '%W_NUM%', '%CONSTELLATION%', '%L_GZ%', '%L_SX%', '%LM_C%', '%LD_C%', '%MOON_PHASE%', '%MOON_ICON%', '%MOON_DAY%'],
-                        w: ['%WEATHER_LOC%', '%WEATHER_DESC%', '%TEMP%', '%SUNRISE%', '%SUNSET%']
-                    };
-                    // 根據頻率分類儲存對應的 span 元素
-                    this.spansByFrequency = { s: [], m: [], d: [], w: [] };
-                }
-
-                // 新增：將跑馬燈內的參數 span 元素進行分類儲存
-                _categorizeSpans() {
-                    this.spansByFrequency = { s: [], m: [], d: [], w: [] };
-                    this.innerDiv.querySelectorAll('[data-time-key]').forEach(span => {
-                        const key = span.dataset.timeKey;
-                        if (this.paramToFrequency.s.includes(key)) this.spansByFrequency.s.push(span);
-                        else if (this.paramToFrequency.m.includes(key)) this.spansByFrequency.m.push(span);
-                        else if (this.paramToFrequency.d.includes(key)) this.spansByFrequency.d.push(span);
-                        else if (this.paramToFrequency.w.includes(key)) this.spansByFrequency.w.push(span);
-                    });
-                }
-
-                buildInitialHTML(text) {
-                    const settings = settingsState.marquees[this.index], isVertical = settings.vertical, useLedGlobal = settingsState.marqueeGlobal?.useLedFont ?? true, defaultColor = (settings.colors && settings.colors.default) ? settings.colors.default : '#FFFFFF';
-                    const processMarqueeChunk = (chunk) => {
-                        if (!useLedGlobal) return `<span class="marquee-plain-text" style="color:${defaultColor}">${chunk.replace(/ /g, '\u00A0')}</span>`;
-                        let processedHTML = '';
-                        const parts = chunk.split(/(\d+[\d:.]*)/);
-                        for (const part of parts) {
-                            if (/^\d+[\d:.]*$/.test(part) && part.trim() !== '') {
-                                const widgetState = transformStates[this.container.id];
-                                const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
-                                processedHTML += generateLedSvg(part, { height: svgHeight, color: defaultColor });
-                            } else if (part) {
-                                processedHTML += `<span class="marquee-plain-text" style="color:${defaultColor}">${part.replace(/ /g, '\u00A0')}</span>`;
-                            }
-                        }
-                        return processedHTML;
-                    };
-                    // 不再呼叫 getReplacements()，而是使用 Manager 提供的快取
-                    const replacements = MarqueeManager._cachedReplacements;
-                    const paramRegex = new RegExp(`%C\\(#([0-9a-fA-F]{6}),\\s*([^%)]+)\\)%|${Object.keys(marqueeParamColorMap).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')}|%br%`, 'g');
-                    let resultHTML = '', lastIndex = 0, match;
-                    const ledParams = ['%HH%', '%H%', '%hh%', '%h%', '%mm%', '%m%', '%ss%', '%s%', '%ROC_YY%', '%YYYY%', '%YY%', '%MM%', '%M%', '%DD%', '%D%', '%TEMP%', '%SUNRISE%', '%SUNSET%'];
-                    while ((match = paramRegex.exec(text)) !== null) {
-                        if (match.index > lastIndex) { resultHTML += processMarqueeChunk(text.substring(lastIndex, match.index)); }
-                        const param = match[0], colorHex = match[1], colorText = match[2];
-                        if (colorHex && colorText) {
-                            if (useLedGlobal && /^[\d:]+$/.test(colorText)) {
-                                const widgetState = transformStates[this.container.id];
-                                const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
-                                resultHTML += `<span>${generateLedSvg(colorText, { height: svgHeight, color: '#' + colorHex })}</span>`;
-                            } else {
-                                resultHTML += `<span class="marquee-plain-text" style="color:#${colorHex}">${colorText.replace(/ /g, '\u00A0')}</span>`;
-                            }
-                        } else if (param === '%br%') {
-                            if (isVertical) resultHTML += '</div><div>';
-                        } else if (replacements[param] !== undefined) { // 確保 replacements 有值
-                            const cssVar = marqueeParamColorMap[param];
-                            const color = cssVar ? getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() : defaultColor;
-                            const replacementContent = String(replacements[param] || '');
-                            if (useLedGlobal && ledParams.includes(param) && /^[\d:]+$/.test(replacementContent)) {
-                                const widgetState = transformStates[this.container.id];
-                                const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
-                                resultHTML += `<span data-time-key="${param}">${generateLedSvg(replacementContent, { height: svgHeight, color: color })}</span>`;
-                            } else if (param === '%MOON_ICON%') {
-                                resultHTML += `<span data-time-key="${param}">${replacementContent}</span>`;
-                            } else {
-                                resultHTML += `<span data-time-key="${param}" style="color:${color}">${replacementContent}</span>`;
-                            }
-                        }
-                        lastIndex = paramRegex.lastIndex;
-                    }
-                    if (lastIndex < text.length) { resultHTML += processMarqueeChunk(text.substring(lastIndex)); }
-                    return isVertical ? `<div>${resultHTML}</div>` : resultHTML;
-                }
-
-                // 修改：接收狀態和快取資料，進行目標式更新
-                updateContent(status, replacements) {
-                    const updateSpan = (span) => {
-                        const key = span.dataset.timeKey;
-                        if (replacements[key] === undefined) return;
-                        const useLed = settingsState.marqueeGlobal?.useLedFont ?? true;
-                        const ledParams = ['%HH%', '%H%', '%hh%', '%h%', '%mm%', '%m%', '%ss%', '%s%', '%ROC_YY%', '%YYYY%', '%YY%', '%MM%', '%M%', '%DD%', '%D%', '%TEMP%', '%SUNRISE%', '%SUNSET%'];
-                        const newText = String(replacements[key]);
-                        if (useLed && ledParams.includes(key) && /^[\d:]+$/.test(newText)) {
-                            const svgEl = span.querySelector('svg');
-                            if (!svgEl || svgEl.dataset.text !== newText) {
-                                 const widgetState = transformStates[this.container.id];
-                                 const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
-                                 const color = svgEl ? svgEl.getAttribute('fill') : (marqueeParamColorMap[key] ? getComputedStyle(document.documentElement).getPropertyValue(marqueeParamColorMap[key]).trim() : '#FFFFFF');
-                                 span.innerHTML = generateLedSvg(newText, { height: svgHeight, color: color });
-                            }
-                        } else if (key === '%MOON_ICON%') {
-                            if (span.innerHTML !== newText) span.innerHTML = newText;
-                        } else {
-                            if (span.textContent !== newText) span.textContent = newText;
-                        }
-                    };
-                    
-                    if (status.s) this.spansByFrequency.s.forEach(updateSpan);
-                    if (status.m) this.spansByFrequency.m.forEach(updateSpan);
-                    if (status.d) this.spansByFrequency.d.forEach(updateSpan);
-                    if (status.w) this.spansByFrequency.w.forEach(updateSpan);
-                }
-
-                rebuildAnimation() {
-                    clearTimeout(this.rebuildTimeout);
-                    this.innerDiv.style.animation = ''; this.isScrolling = false;
-                    const settings = settingsState.marquees[this.index]; if (!settings) return;
-                    if (/^%WEATHER_|%SUNRISE%|%SUNSET%|%TEMP%/.test(settings.text) && !weatherDataLoaded) {
-                        this.innerDiv.style.transform = 'translateX(0) translateY(0)';
-                        this.innerDiv.innerHTML = `<div class="marquee-text-instance">${this.buildInitialHTML(settings.text)}</div>`;
-                        return;
-                    }
-                    this.rebuildTimeout = setTimeout(() => {
-                        this.animationStyleTag.innerHTML = ''; this.innerDiv.innerHTML = '';
-                        this.innerDiv.style.transform = 'translateX(0) translateY(0) translateZ(0)';
-                        if (!settings.text || !settings.text.trim()) return;
-                        const { text, vertical: isVertical, speed, direction } = settings;
-                        this.innerDiv.style.flexDirection = isVertical ? 'column' : 'row';
-                        this.innerDiv.style.width = isVertical ? '100%' : 'fit-content';
-                        this.mainContainer.style.alignItems = isVertical ? 'flex-start' : 'center';
-                        const instance1 = document.createElement('div');
-                        instance1.className = 'marquee-text-instance';
-                        instance1.style.whiteSpace = isVertical ? 'normal' : 'nowrap';
-                        instance1.style.textAlign = isVertical ? 'center' : 'left';
-                        if (isVertical) instance1.style.display = 'block';
-                        instance1.innerHTML = this.buildInitialHTML(text);
-                        this.innerDiv.appendChild(instance1);
-                        instance1.getBoundingClientRect();
-                        const contentMeasure = isVertical ? instance1.offsetHeight : instance1.offsetWidth;
-                        const containerMeasure = isVertical ? this.mainContainer.offsetHeight : this.mainContainer.offsetWidth;
-                        if (contentMeasure <= containerMeasure) {
-                            this.isScrolling = false;
-                            if (!isVertical && instance1.scrollWidth > this.mainContainer.clientWidth) {
-                                this.container.style.fontSize = `${parseFloat(getComputedStyle(this.container).fontSize) * (this.mainContainer.clientWidth / instance1.scrollWidth) * 0.98}px`;
-                            }
-                        } else {
-                            this.isScrolling = true;
-                            this.innerDiv.appendChild(instance1.cloneNode(true));
-                        }
-                        
-                        // 建立完 HTML 後，立即對 span 進行分類
-                        this._categorizeSpans();
-
-                        if (!this.isScrolling) return; // 如果不需要滾動，後續動畫邏輯可省略
-                        
-                        const travelDistance = contentMeasure; if (travelDistance <= 0) return;
-                        const duration = travelDistance / (parseInt(speed, 10) || 80);
-                        const animName = `marquee-${this.index}-${Date.now()}`;
-                        let fromTransform, toTransform;
-                        switch(direction) {
-                            case 'right': fromTransform = `translateX(-${travelDistance}px)`; toTransform = `translateX(0px)`; break;
-                            case 'up': fromTransform = `translateY(0px)`; toTransform = `translateY(-${travelDistance}px)`; break;
-                            case 'down': fromTransform = `translateY(-${travelDistance}px)`; toTransform = `translateY(0px)`; break;
-                            default: fromTransform = `translateX(0px)`; toTransform = `translateX(-${travelDistance}px)`; break;
-                        }
-                        this.animationStyleTag.innerHTML = `@keyframes ${animName} { from { transform: ${fromTransform} translateZ(0); } to { transform: ${toTransform} translateZ(0); }}`;
-                        this.innerDiv.style.animation = `${animName} ${duration}s linear infinite`;
-                        this.innerDiv.style.animationPlayState = isEditMode ? 'paused' : 'running';
-                    }, 50);
-                }
-                 setPlayState(shouldPlay) { this.innerDiv.style.animationPlayState = shouldPlay ? 'running' : 'paused'; }
-            }
-            // ===================================================================
-            // 月相 SVG 產生器
-            // ===================================================================
-            function getMoonPhaseSVG(lunarDay, size = '100px', context = 'widget') {
-                const phase = (lunarDay - 1) / 29.53, r = 50, cx = 50, cy = 50;
-                const light = getComputedStyle(document.documentElement).getPropertyValue('--moon-light-color').trim() || '#f0e68c';
-                const dark = getComputedStyle(document.documentElement).getPropertyValue('--moon-dark-color').trim() || '#222222';
-                const cos_angle = Math.cos(phase * 2 * Math.PI + Math.PI);
-                const base = phase > 0.5 ? `<rect x="0" y="0" width="${cx}" height="${r*2}" fill="${light}" /><rect x="${cx}" y="0" width="${cx}" height="${r*2}" fill="${dark}" />` : `<rect x="0" y="0" width="${cx}" height="${r*2}" fill="${dark}" /><rect x="${cx}" y="0" width="${cx}" height="${r*2}" fill="${light}" />`;
-                const terminator = `<ellipse cx="${cx}" cy="${cy}" rx="${r * Math.abs(cos_angle)}" ry="${r}" fill="${cos_angle > 0 ? light : dark}" />`;
-                const id = `moon-clip-${context}-${lunarDay}-${size.replace(/[^a-zA-Z0-9]/g, '')}`;
-                return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" style="filter: drop-shadow(0 0 10px ${light}33);"><defs><clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${r}" /></clipPath></defs><g clip-path="url(#${id})">${base}${terminator}</g></svg>`;
-            }
-            // ===================================================================
-            // Modal 彈出視窗與 UI 互動 (Refactored)
-            // ===================================================================
-            function showModal(modalId) {
-                const modal = document.getElementById(modalId);
-                if (modalId === 'modal-backdrop-marquee-params' || modalId === 'modal-backdrop-explanation') {
-                    const useLed = modalId === 'modal-backdrop-marquee-params' ? (settingsState.marqueeGlobal?.useLedFont ?? true) : (settingsState.calendar?.useLedFont ?? true);
-                    if (useLed) applyLedToStaticContent(modal.querySelector('.modal-content'));
-                }
-                modal.classList.add('show');
-            }
-            function hideModal(modalId) { document.getElementById(modalId).classList.remove('show'); }
-            const promptModal=document.getElementById('modal-backdrop-prompt'),promptTitle=document.getElementById('prompt-title'),promptMessage=document.getElementById('prompt-message'),promptInput=document.getElementById('prompt-input'),promptOkBtn=document.getElementById('prompt-ok-btn'),promptCancelBtn=document.getElementById('prompt-cancel-btn');
-            let promptCallback=null;
-            function _setPromptMessage(message) {
-                const el = promptMessage;
-                const useLed = true;
-                el.innerHTML = getLedHTML(message, useLed, { fontSize: parseFloat(getComputedStyle(el).fontSize) || 16, color: getComputedStyle(el).color || '#d1d5db', defaultSpan: false });
-                el.style.display = message ? 'block' : 'none';
-            }
-            function _configurePromptModal(config) {
-                promptTitle.textContent = config.title;
-                _setPromptMessage(config.message);
-                promptInput.style.display = config.showInput ? 'block' : 'none';
-                if (config.showInput) promptInput.value = config.defaultValue || '';
-                promptCancelBtn.style.display = config.showCancel ? 'inline-block' : 'none';
-                promptOkBtn.textContent = config.okText || '確定';
-                promptCallback = config.callback;
-                showModal('modal-backdrop-prompt');
-                if (config.showInput) setTimeout(() => promptInput.focus(), 100);
-            }
-            function showAlert(title, message) { _configurePromptModal({ title, message, showInput: false, showCancel: false, okText: '確定' }); }
-            function showPrompt(title, message, defaultValue, callback) { _configurePromptModal({ title, message, defaultValue, callback, showInput: true, showCancel: true, okText: '確定' }); }
-            function showConfirm(title, message, callback) { _configurePromptModal({ title, message, callback: (result) => callback(result !== null), showInput: false, showCancel: true, okText: '確認' }); }
-            promptOkBtn.addEventListener('click',()=>{if(promptCallback)promptCallback(promptInput.value);hideModal('modal-backdrop-prompt')});
-            promptCancelBtn.addEventListener('click',()=>{if(promptCallback)promptCallback(null);hideModal('modal-backdrop-prompt')});
-            function showDayDetailModal(dateString){
-                if(isEditMode)return;
-                const date=new Date(dateString);
-                const lunar=getLunarDate(date);
-                const holiday=getHoliday(date);
-                const solarTerm=getSolarTerm(date.getFullYear(),date.getMonth()+1,date.getDate());
-                const constellationInfo = getConstellation(date);
-                const useLed = settingsState.calendar?.useLedFont ?? true;
-                if (useLed) {
-                    const yearSVG = generateLedSvg(String(date.getFullYear()), {height: 22, color: 'white'});
-                    const monthSVG = generateLedSvg(String(date.getMonth() + 1), {height: 22, color: 'white'});
-                    const daySVG = generateLedSvg(String(date.getDate()), {height: 22, color: 'white'});
-                    document.getElementById('modal-gregorian-date').innerHTML = `${yearSVG}<span class="led-text-unit">年</span>${monthSVG}<span class="led-text-unit">月</span>${daySVG}<span class="led-text-unit">日 星期${"日一二三四五六"[date.getDay()]}</span>`;
-                } else {
-                     document.getElementById('modal-gregorian-date').innerHTML = `<span style="font-size: 1.5em; line-height:1.2;">${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 星期${"日一二三四五六"[date.getDay()]}</span>`;
-                }
-                const rocYear = date.getFullYear()-1911;
-                const rocYearHTML = useLed ? generateLedSvg(String(rocYear), {height: 20, color: '#a5b4fc'}) : rocYear;
-                document.getElementById('modal-lunar-date').innerHTML = `民國 ${rocYearHTML} 年 / 農曆 ${lunar.toString}`;
-                const modalConstellationEl = document.getElementById('modal-constellation');
-                if (constellationInfo) {
-                    const text = `星座 ${constellationInfo.sign} (${constellationInfo.range})`;
-                    const fontSize = parseFloat(getComputedStyle(modalConstellationEl).fontSize) || 16;
-                    const color = getComputedStyle(modalConstellationEl).color || 'white';
-                    modalConstellationEl.innerHTML = getLedHTML(text, useLed, { fontSize, color, defaultSpan: false });
-                    modalConstellationEl.style.display = 'block';
-                } else { modalConstellationEl.style.display = 'none'; }
-                const modalHolidayEl=document.getElementById('modal-holiday');
-                modalHolidayEl.textContent=holiday||''; modalHolidayEl.style.display=holiday?'block':'none';
-                if(holiday)modalHolidayEl.dataset.key=holiday;
-                const modalSolarTermEl=document.getElementById('modal-solarterm');
-                modalSolarTermEl.textContent=solarTerm||''; modalSolarTermEl.style.display=solarTerm?'block':'none';
-                if(solarTerm)modalSolarTermEl.dataset.key=solarTerm;
-                const formatTime = (dateStr) => dateStr ? new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '讀取中...';
-                const sunriseTime = Weather.data?.daily?.sunrise?.[0] ? formatTime(Weather.data.daily.sunrise[0]) : '讀取中...';
-                const sunsetTime = Weather.data?.daily?.sunset?.[0] ? formatTime(Weather.data.daily.sunset[0]) : '讀取中...';
-                const isTimeFormat = (str) => /^[\d:]+$/.test(str);
-                const formatTimeForDisplay = (timeStr) => useLed && isTimeFormat(timeStr) ? generateLedSvg(timeStr, {height: 26, color: 'white'}) : timeStr;
-                document.getElementById('modal-sunrise-time').innerHTML = formatTimeForDisplay(sunriseTime);
-                document.getElementById('modal-sunset-time').innerHTML = formatTimeForDisplay(sunsetTime);
-                const moonDetails = moonPhaseData[lunar.day] || { n: '未知', a: '', d: '' };
-                const moonName = moonDetails.a ? `${moonDetails.n}(${moonDetails.a})` : moonDetails.n;
-                document.getElementById('modal-moon-icon').innerHTML = getMoonPhaseSVG(lunar.day, '64px', 'day-detail');
-                document.getElementById('modal-moon-phase-name').textContent = moonName;
-                const moonDescEl = document.getElementById('modal-moon-phase-desc');
-                if (moonDetails.d) {
-                    const fontSize = parseFloat(getComputedStyle(moonDescEl).fontSize) || 16;
-                    const color = getComputedStyle(moonDescEl).color || 'white';
-                    moonDescEl.innerHTML = getLedHTML(moonDetails.d, useLed, { fontSize, color, defaultSpan: false });
-                    moonDescEl.style.display = 'block';
-                } else { moonDescEl.style.display = 'none'; }
-                updateCountdowns(date);
-                showModal('modal-backdrop-day')
-            }
-            function showExplanationModal(title,content){if(isEditMode)return;document.getElementById('explanation-title').textContent=title;document.getElementById('explanation-content').textContent=content;showModal('modal-backdrop-explanation')}
-            function getAllSolarTermsForYear(year){if(!solarTermsCache[year])calculateAndCacheSolarTerms(year);return Object.entries(solarTermsCache[year]).map(([key,name])=>{const[y,m,d]=key.split('-').map(Number);return{date:new Date(y,m-1,d),name}}).sort((a,b)=>a.date-b.date)}
-            function getAllHolidaysForYear(year){
-                let holidays = [];
-                Object.entries(lunarHolidays).forEach(([key, name]) => { [year, year - 1].forEach(lunarYear => { const [m, d] = key.split('-'); const solarDate = lunarToSolar(lunarYear, parseInt(m), parseInt(d)); if (solarDate && solarDate.getFullYear() === year) holidays.push({ date: solarDate, name }); }); });
-                [year, year - 1].forEach(lunarYear => { const eveDate = lunarToSolar(lunarYear, 12, getLunarMonthDays(lunarYear, 12)); if (eveDate && eveDate.getFullYear() === year) holidays.push({ date: eveDate, name: "除夕" }); });
-                Object.entries(floatingHolidays).forEach(([key, name]) => { const [m, week, dayOfWeek] = key.split('-').map(Number); const month = m - 1; let firstOfMonth = new Date(year, month, 1); let holidayDate = new Date(year, month, 1 + ((dayOfWeek - firstOfMonth.getDay() + 7) % 7) + (week - 1) * 7); if (holidayDate.getMonth() === month) holidays.push({ date: holidayDate, name }); });
-                return Array.from(new Map(holidays.map(h => [h.date.toISOString().split('T')[0], h])).values()).sort((a, b) => a.date - b.date);
-            }
-            function updateCountdowns(currentDate){
-                const today = new Date(currentDate); today.setHours(0,0,0,0);
-                const useLed = settingsState.calendar?.useLedFont ?? true;
-                const formatCountdownText=(items,type)=>{
-                    const futureEvents=items.filter(item=>item.date>=today);
-                    if(futureEvents.length===0)return`找不到${today.getFullYear()+1}年的${type}資料`;
-                    const firstEvent=futureEvents[0];
-                    const diffDays=Math.ceil((firstEvent.date.getTime()-today.getTime())/86400000);
-                    const daysHTML = useLed ? generateLedSvg(String(diffDays), {height: 20, color: 'white'}) : `<span style="font-size: 1.2em;">${diffDays}</span>`;
-                    if(diffDays===0){
-                        if(futureEvents[1]) {
-                             const nextDiffDays = Math.ceil((futureEvents[1].date - today) / 86400000);
-                             const nextDaysHTML = useLed ? generateLedSvg(String(nextDiffDays), {height: 20, color: 'white'}) : `<span style="font-size: 1.2em;">${nextDiffDays}</span>`;
-                             return `<div class="countdown-text-container">今天是 ${firstEvent.name}，距離下個${type} [${futureEvents[1].name}] 還有 ${nextDaysHTML} 天</div>`;
-                        }
-                        return `今天是 ${firstEvent.name}！`;
-                    }
-                    return `<div class="countdown-text-container">距離 ${firstEvent.name} 還有 ${daysHTML} 天</div>`;
-                };
-                let allHolidays=[...getAllHolidaysForYear(today.getFullYear()),...getAllHolidaysForYear(today.getFullYear()+1)];
-                let allSolarTerms=[...getAllSolarTermsForYear(today.getFullYear()),...getAllSolarTermsForYear(today.getFullYear()+1)];
-                document.getElementById('countdown-holiday-text').innerHTML=formatCountdownText(allHolidays,'節日');
-                document.getElementById('countdown-solarterm-text').innerHTML=formatCountdownText(allSolarTerms,'節氣');
-            }
-            const pickerYearEl=document.getElementById('picker-year'),pickerMonthGridEl=document.getElementById('picker-month-grid');
-            let pickerYear=new Date().getFullYear();
-            let pickerTarget = null;
-            function renderPicker(year, month, targetDate) {
-                pickerYear = year;
-                let useLed = false;
-                if (pickerTarget) {
-                    const widgetId = pickerTarget.body.closest('.widget-container').id;
-                    const widgetKey = (widgetId === 'calendar-container' ? 'calendar' : (widgetId === 'moon-phase-container' ? 'moonPhase' : null));
-                    if (widgetKey) {
-                        useLed = settingsState[widgetKey]?.useLedFont ?? true;
-                    }
-                }
-                if (useLed) {
-                    const yearColor = getComputedStyle(document.documentElement).getPropertyValue('--year-color').trim() || '#a5b4fc';
-                    pickerYearEl.innerHTML = generateLedSvg(String(year), { height: 28, color: yearColor });
-                } else {
-                    pickerYearEl.textContent = year;
-                }
-                pickerMonthGridEl.innerHTML = '';
-                for (let i = 0; i < 12; i++) {
-                    const cell = document.createElement('div');
-                    const monthNumber = String(i + 1);
-                    const monthText = '月';
-                    if (useLed) {
-                        const pickerColor = getComputedStyle(document.documentElement).getPropertyValue('--month-color').trim() || '#a5b4fc';
-                        const numberHTML = generateLedSvg(monthNumber, { height: 20, color: pickerColor });
-                        cell.innerHTML = `${numberHTML}<span style="color:${pickerColor};">${monthText}</span>`;
-                    } else {
-                        cell.textContent = monthNumber + monthText;
-                    }
-                    cell.classList.add('month-cell');
-                    if (i === month && year === targetDate.getFullYear()) cell.classList.add('selected');
-                    cell.dataset.month = i; pickerMonthGridEl.appendChild(cell);
-                }
-            }
-            function openPickerFor(targetWidget) { if (isEditMode) return; pickerTarget = targetWidget; renderPicker(pickerTarget.currentDate.getFullYear(), pickerTarget.currentDate.getMonth(), pickerTarget.currentDate); showModal('modal-backdrop-picker'); }
-            document.getElementById('picker-prev-year').addEventListener('click', () => { if (pickerYear > 1900 && pickerTarget) renderPicker(--pickerYear, -1, pickerTarget.currentDate); });
-            document.getElementById('picker-next-year').addEventListener('click', () => { if (pickerYear < 2100 && pickerTarget) renderPicker(++pickerYear, -1, pickerTarget.currentDate); });
-            pickerMonthGridEl.addEventListener('click', (e) => {
-                const cell = e.target.closest('.month-cell');
-                if (cell && pickerTarget) { pickerTarget.currentDate = new Date(pickerYear, cell.dataset.month, 1); pickerTarget.render(); hideModal('modal-backdrop-picker'); }
-            });
-            document.body.addEventListener('click',(e)=>{
-                const selectHandle = e.target.closest('.group-select-handle');
-                if (isEditMode && selectHandle) {
-                    e.stopPropagation();
-                    const widget = selectHandle.closest('.widget-container');
-                    if (widget) toggleWidgetSelection(widget);
-                    return;
-                }
-                const resetHandle = e.target.closest('.reset-handle');
-                if (isEditMode && resetHandle) {
-                    e.stopPropagation();
-                    const widgetEl = resetHandle.closest('.widget-container');
-                    if (widgetEl) {
-                        const widgetId = widgetEl.id;
-                        const defaultState = userDefaultLayout.transforms[widgetId];
-                        if (transformStates[widgetId] && defaultState) {
-                            const state = transformStates[widgetId];
-                            const currentWidth = state.width * state.scale;
-                            const currentHeight = state.height * state.scale;
-                            const centerX = state.left + currentWidth / 2;
-                            const centerY = state.top + currentHeight / 2;
-                            state.width = defaultState.width;
-                            state.height = defaultState.height;
-                            state.scale = 1;
-                            state.rotation = 0;
-                            state.left = centerX - (state.width / 2);
-                            state.top = centerY - (state.height / 2);
-                            checkAndClampWidgetBounds(state);
-                            applyTransform(widgetEl, state);
-                            saveCurrentSettings();
-                        }
-                    }
-                    return;
-                }
-                const cell=e.target.closest('.calendar-day');const key=e.target.dataset.key;if(key&&explanations[key]){e.stopPropagation();showExplanationModal(key,explanations[key]);return}if(cell&&cell.closest('#calendar-body')&&cell.dataset.date){showDayDetailModal(cell.dataset.date)}const closeModalBtn=e.target.closest('[data-close-modal]');if(closeModalBtn){hideModal(closeModalBtn.dataset.closeModal)}if(e.target.classList.contains('modal-backdrop')){hideModal(e.target.id)}});
-            document.getElementById('marquee-params-btn').addEventListener('click', () => showModal('modal-backdrop-marquee-params'));
-            document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){['modal-backdrop-day','modal-backdrop-picker','modal-backdrop-explanation','modal-backdrop-settings','modal-backdrop-prompt', 'modal-backdrop-marquee-params'].forEach(hideModal)}});
-            function resetActivityTimeout(){actionButtons.classList.remove('hidden');clearTimeout(activityTimeout);if(!isEditMode){activityTimeout=setTimeout(()=>actionButtons.classList.add('hidden'),3000)}}
-            ['mousemove','mousedown','touchstart','keydown'].forEach(event=>document.addEventListener(event,resetActivityTimeout));
-            document.getElementById('fullscreen-btn').addEventListener('click',()=>{if(!document.fullscreenElement){document.documentElement.requestFullscreen()}else{document.exitFullscreen()}});
-            document.addEventListener('fullscreenchange',()=>{const isFullscreen=!!document.fullscreenElement;document.getElementById('fullscreen-enter-icon').classList.toggle('display-none',isFullscreen);document.getElementById('fullscreen-exit-icon').classList.toggle('display-none',!isFullscreen)});
-            // ===================================================================
             // 應用程式初始化
             // ===================================================================
             function initializeWidgetControls() {
@@ -2486,7 +2565,7 @@ class MarqueeInstance {
                 getSetting: () => settingsState.moonPhase
             });
             MoonPhaseWidget.getMoonPhaseSVG = getMoonPhaseSVG;
-const MarqueeManager = {
+            const MarqueeManager = {
                 instances: [],
                 _lastUpdateTime: { s: -1, m: -1, d: -1 },
                 _cachedReplacements: {},
@@ -2494,22 +2573,17 @@ const MarqueeManager = {
 
                 init() {
                     this.syncInstances();
-                    // 首次執行以填滿快取
                     this._updateCacheAndGetStatus();
-                    setInterval(() => this.updateAllContent(), 1000);
                 },
-
                 _updateCacheAndGetStatus() {
                     const now = new Date();
                     const s = now.getSeconds(), m = now.getMinutes(), d = now.getDate();
                     const status = { s: false, m: false, d: false, w: this._weatherDataChanged };
 
-                    // 依賴鍊：如果日期變了，分鐘和秒鐘也必定需要更新
                     if (d !== this._lastUpdateTime.d) status.d = true;
                     if (status.d || m !== this._lastUpdateTime.m) status.m = true;
                     if (status.m || s !== this._lastUpdateTime.s) status.s = true;
 
-                    // 根據狀態更新對應的快取資料
                     if (status.s) {
                         this._cachedReplacements['%ss%'] = String(s).padStart(2, '0');
                         this._cachedReplacements['%s%'] = s;
@@ -2570,7 +2644,7 @@ const MarqueeManager = {
                     return status;
                 },
 
-                updateAllContent() {
+                updatePerSecond(now) {
                     const status = this._updateCacheAndGetStatus();
                     if (status.s || status.m || status.d || status.w) {
                         this.instances.forEach(inst => inst.updateContent(status, this._cachedReplacements));
@@ -2580,6 +2654,59 @@ const MarqueeManager = {
                 rebuildAllAnimations() { this.instances.forEach(inst => inst.rebuildAnimation()); },
                 rebuildAnimationByIndex(index) { if (this.instances[index]) this.instances[index].rebuildAnimation(); },
                 setPlayState(shouldPlay) { this.instances.forEach(inst => inst.setPlayState(shouldPlay)); }
+            };
+            const GlobalTimer = {
+                lastTime: { s: -1, m: -1, d: -1 },
+                subscribers: {
+                    perSecond: [LedClock, MarqueeManager, AnalogClock],
+                    perFrame: [AnalogClock],
+                },
+                start() {
+                    requestAnimationFrame(() => this.loop());
+                },
+                loop() {
+                    const now = new Date();
+                    const s = now.getSeconds();
+
+                    if (s !== this.lastTime.s) {
+                        this.lastTime.s = s;
+                        this.subscribers.perSecond.forEach(module => {
+                            if (typeof module.updatePerSecond === 'function') {
+                                module.updatePerSecond(now);
+                            }
+                        });
+
+                        const effectSettings = settingsState.timedEffect;
+                        if (!isEditMode && effectSettings && effectSettings.enabled && s % effectSettings.intervalSeconds === 0) {
+                             if (Object.values(isWidgetAnimating).some(v => v)) return;
+                             if (effectSettings.type === 'layoutSwitch') {
+                                if (layouts.length >= 2) {
+                                    if (effectSettings.isRandom) {
+                                        let randomIndex;
+                                        do { randomIndex = Math.floor(Math.random() * layouts.length); } while (layouts.length > 1 && randomIndex === currentLayoutIndex);
+                                        currentLayoutIndex = randomIndex;
+                                    } else {
+                                        currentLayoutIndex = nextLayoutIndex;
+                                        nextLayoutIndex = (nextLayoutIndex + 1) % layouts.length;
+                                    }
+                                    const useTransition = settingsState.timedEffect?.transitionEnabled ?? false;
+                                    if (useTransition) { animateLayoutChange(layouts[currentLayoutIndex], 1000, true); } 
+                                    else { applyLayout(layouts[currentLayoutIndex], { ignoreTimedEffect: true }); saveCurrentSettings(true); }
+                                }
+                            } else if (effectSettings.type === 'slide') {
+                                LedClock.triggerSlideEffect();
+                            }
+                        }
+                    }
+
+                    this.subscribers.perFrame.forEach(module => {
+                        if (typeof module.updateAnimationFrame === 'function') {
+                            module.updateAnimationFrame(now);
+                        }
+                    });
+
+                    requestAnimationFrame(() => this.loop());
+                }
             };
             (async function initializeApp() {
                 const autoSavedLayout = localStorage.getItem('widgets_autosave');
@@ -2605,6 +2732,7 @@ const MarqueeManager = {
                 AnalogClock.init();
                 Weather.init(); 
                 MarqueeManager.init();
+                GlobalTimer.start();
                 
                 updateLocationSelectors();
                 
@@ -2616,7 +2744,13 @@ const MarqueeManager = {
                 
                 saveCurrentSettings(); 
                 
-                window.addEventListener('resize', () => { ensureWidgetsInBounds(); MarqueeManager.rebuildAllAnimations(); saveCurrentSettings(); });
+                const debouncedResizeHandler = debounce(() => {
+                    ensureWidgetsInBounds();
+                    MarqueeManager.rebuildAllAnimations();
+                    saveCurrentSettings();
+                }, 250);
+                window.addEventListener('resize', debouncedResizeHandler);
+                
                 document.fonts.ready.then(() => { ensureWidgetsInBounds(); MarqueeManager.rebuildAllAnimations(); });
             })();
         });
