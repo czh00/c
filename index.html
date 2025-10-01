@@ -47,11 +47,7 @@
             box-sizing: border-box;
             border-radius: inherit; /* 繼承容器的圓角設定 */
         }
-
-        .widget-container.selected-for-group::after {
-            border-color: rgba(255, 255, 0, 0.8) !important;
-        }
-
+        
         .widget-content-wrapper {
             width: 100%; height: 100%; flex-grow: 1;
             display: flex; flex-direction: column;
@@ -128,6 +124,7 @@
         .countdown-text-container svg { vertical-align: middle; }
         #moon-detail-icon svg { width: 120px; height: 120px; }
         /* --- LED 時鐘 spezifische樣式 --- */
+        #led-clock-container .resize-handle-w, #led-clock-container .resize-handle-h { display: none !important; }
         #led-clock-container svg { width: 100%; height: 100%; overflow: visible; }
         #led-clock-container .segment { transition: opacity 0.2s ease-in-out; }
         #led-clock-container .segment-h { fill: var(--led-hour-color); }
@@ -154,11 +151,17 @@
         .number { position: absolute; top: 6%; left: 0; width: 100%; height: 10%; display: flex; align-items: center; justify-content: center; }
         .number > div { transform: rotate(calc(-1 * var(--rotation))); display: flex; align-items: center; justify-content: center; }
         /* --- 跑馬燈 spezifische樣式 --- */
-        .marquee-widget main { display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 100%; overflow: hidden; transform: translateZ(0); -webkit-transform: translateZ(0); }
-        .marquee-inner { display: flex; width: fit-content; height: fit-content; will-change: transform; transform: translateZ(0); font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; -webkit-backface-visibility: hidden; backface-visibility: hidden; perspective: 1000px; margin-right: auto; }
-        .marquee-text-instance { white-space: nowrap; flex-shrink: 0; line-height: 1; display: inline-flex; align-items: center; }
-        .marquee-text-instance > span { vertical-align: middle; }
-        .marquee-text-instance svg { vertical-align: middle; }
+        .marquee-widget main { vertical-align: middle; display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 100%; overflow: hidden; transform: translateZ(0); -webkit-transform: translateZ(0); }
+        .marquee-inner { vertical-align: middle; display: flex; width: fit-content; height: fit-content; will-change: transform; transform: translateZ(0); font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; -webkit-backface-visibility: hidden; backface-visibility: hidden; perspective: 1000px; margin-right: auto; }
+        .marquee-text-instance { vertical-align: middle; white-space: nowrap; flex-shrink: 0; line-height: 1; display: inline-flex; align-items: center; }
+        .blinking-text {
+             animation-name: blink-animation;
+             animation-timing-function: ease-in-out;
+             animation-iteration-count: infinite;
+        }
+        @keyframes blink-animation {
+            50% { opacity: 0.2; }
+        }
         /* --- 控制點樣式 --- */
         .control-handle { position: absolute; background-color: rgba(79, 70, 229, 0.8); border-radius: 50%; display: none; z-index: 100; }
         .widget-container.edit-mode .control-handle { display: block; }
@@ -190,6 +193,14 @@
         #group-move-handle { position: absolute; width: 32px; height: 32px; z-index: 200; cursor: move; background-color: rgba(255, 255, 0, 0.8); border-radius: 6px; padding: 4px; display: flex; align-items: center; justify-content: center; }
         #group-rotate-handle { position: absolute; width: 28px; height: 28px; z-index: 200; cursor: alias; background-color: rgba(255, 255, 0, 0.8); border-radius: 50%; padding: 4px; display: flex; align-items: center; justify-content: center; }
         #group-scale-handle { position: absolute; width: 28px; height: 28px; z-index: 200; cursor: se-resize; background-color: rgba(255, 255, 0, 0.8); border-radius: 50%; padding: 4px; display: flex; align-items: center; justify-content: center; }
+        #group-bounding-box {
+            position: absolute;
+            border: 2px dashed rgba(255, 255, 0, 0.8);
+            pointer-events: none;
+            z-index: 199;
+            display: none;
+            box-sizing: border-box;
+        }
         /* --- Modal 彈出視窗樣式 --- */
         .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); display: flex; justify-content: center; align-items: center; z-index: 1050; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
         .modal-backdrop.show { opacity: 1; visibility: visible; }
@@ -402,6 +413,7 @@
         </defs>
     </svg>
     <div id="edit-mode-grid"></div>
+    <div id="group-bounding-box"></div>
     <div id="calendar-container" class="widget-container calendar-widget">
         <div class="widget-content-wrapper">
             <div id="background-month" class="background-month"></div>
@@ -607,14 +619,14 @@
                                     <select id="timed-effect-interval-seconds"></select>
                                     <span>秒</span>
                                 </div>
-                                <div class="display-flex align-items-center gap-2">
+                                <div class="display-flex align-items: center gap-2">
                                     <label for="timed-effect-type">類型</label>
                                     <select id="timed-effect-type">
                                         <option value="slide">滑動</option>
                                         <option value="layoutSwitch">版面切換</option>
                                     </select>
                                 </div>
-                                <div class="display-flex align-items-center gap-3">
+                                <div class="display-flex align-items: center gap-3">
                                     <div id="layout-switch-options" class="display-flex align-items-center gap-2" style="display: none;">
                                         <input type="checkbox" id="layout-switch-random-toggle" class="form-checkbox">
                                         <label for="layout-switch-random-toggle" class="cursor-pointer">亂數</label>
@@ -696,7 +708,22 @@
                 </div>
                 <ul class="param-list max-height-80 overflow-y-auto padding-right-2">
                     <li class="param-group-title">特殊功能</li>
-                    <li class="param-item"><strong>%C(#RRGGBB, 文字)%</strong>: 自訂文字顏色。例如: %C(#FFD700, 黃色文字)%</li>
+                    <li class="param-item">
+                        <strong>%C(屬性, 文字)%</strong>: 自訂文字顏色、透明度與閃爍。
+                        <ul style="list-style-type: disc; margin-left: 20px; margin-top: 5px;">
+                            <li><strong>屬性:</strong> 以分號 (;) 分隔。可包含:</li>
+                            <li style="margin-left: 20px;">顏色: <code>#RRGGBB</code> (e.g., <code>#FFD700</code>)</li>
+                            <li style="margin-left: 20px;">顏色+透明度: <code>#RRGGBBAA</code> (e.g., <code>#FFD70080</code> for 50% transparent)</li>
+                            <li style="margin-left: 20px;">閃爍: <code>blink:速度</code> (e.g., <code>blink:1000</code> for 1 second interval)</li>
+                        </ul>
+                        <div style="margin-top: 5px;">
+                            <strong>範例:</strong><br>
+                            <code>%C(#FFD700, 黃色文字)%</code><br>
+                            <code>%C(#6EE7B780, 半透明綠字)%</code><br>
+                            <code>%C(blink:500, 閃爍白字)%</code><br>
+                            <code>%C(#FF0000;blink:1000, 紅色閃爍)%</code>
+                        </div>
+                    </li>
                     <li class="param-item"><strong>%br%</strong>: (僅直向)手動換行</li>
                     <li class="param-item"><strong>提示:</strong> %C(...)% 參數中的文字部分不能再包含其他參數。系統會自動為時間、天氣等參數套用主題色彩。</li>
                     <li class="param-group-title">西元日期與時間</li>
@@ -752,222 +779,13 @@
         const STORAGE_LAYOUTS_KEY = 'widgets_layouts_v2';
         let weatherDataLoaded = false;
         let layouts = [];
+        let groups = [];
         let currentLayoutIndex = -1; // -1 表示目前狀態未對應任何已儲存的版面，或是已被修改
         let nextLayoutIndex = 0; // 用於循序版面切換
 
         document.addEventListener('DOMContentLoaded', function () {
             // ===================================================================
-            // 月曆與月相曆模組 (工廠模式)
-            // ===================================================================
-            function createCalendarWidget(options) {
-                const { bodyId, yearHeaderId, backgroundMonthId, prevBtnId, nextBtnId, todayBtnId, onCellRender, onHeaderClick, getSetting } = options;
-                const body = document.getElementById(bodyId), yearHeader = document.getElementById(yearHeaderId), backgroundMonth = document.getElementById(backgroundMonthId);
-                const widget = {
-                    body: body, currentDate: new Date(),
-                    init() {
-                        document.getElementById(prevBtnId).addEventListener('click', () => { if (!isEditMode) { this.currentDate.setMonth(this.currentDate.getMonth() - 1); this.render(); } });
-                        document.getElementById(nextBtnId).addEventListener('click', () => { if (!isEditMode) { this.currentDate.setMonth(this.currentDate.getMonth() + 1); this.render(); } });
-                        document.getElementById(todayBtnId).addEventListener('click', () => { if (!isEditMode) { this.currentDate = new Date(); this.render(); } });
-                        if (onHeaderClick) yearHeader.addEventListener('click', () => onHeaderClick(this));
-                        this.render();
-                    },
-                    render() {
-                        body.innerHTML = '';
-                        const year = this.currentDate.getFullYear(), month = this.currentDate.getMonth();
-                        const widgetSettings = getSetting() || {};
-                        const useLedHeader = widgetSettings.useLedFont ?? true;
-                        const yearColor = getComputedStyle(document.documentElement).getPropertyValue('--year-color').trim() || '#FF7000';
-                        renderCalendarTitle(yearHeader, year, useLedHeader, 26, yearColor, '26px', yearColor);
-                        const widgetId = body.closest('.widget-container').id;
-                        const widgetState = transformStates[widgetId];
-                        if (useLedHeader && widgetState) {
-                             const monthColor = getComputedStyle(document.documentElement).getPropertyValue('--month-color').trim() || '#3070a0';
-                             backgroundMonth.innerHTML = generateLedSvg(String(month + 1), { height: widgetState.height * 0.7, color: monthColor });
-                        } else {
-                             backgroundMonth.textContent = month + 1;
-                        }
-                        const firstDayOfMonth = new Date(year, month, 1);
-                        const startDayOfWeek = firstDayOfMonth.getDay();
-                        const startDate = new Date(year, month, 1 - startDayOfWeek);
-                        const today = new Date(); today.setHours(0, 0, 0, 0);
-                        for (let i = 0; i < 42; i++) {
-                            const currentCellDate = new Date(startDate);
-                            currentCellDate.setDate(startDate.getDate() + i);
-                            const cell = document.createElement('div');
-                            cell.className = `calendar-day ${currentCellDate.getMonth() !== month ? 'other-month' : ''} ${currentCellDate.getTime() === today.getTime() ? 'today' : ''}`;
-                            onCellRender(cell, currentCellDate, widgetSettings);
-                            body.appendChild(cell);
-                        }
-                    }
-                };
-                return widget;
-            }
-            const calendarCellRenderer = (cell, date, settings) => {
-                const day = date.getDate(), lunar = getLunarDate(date), solarTerm = getSolarTerm(date.getFullYear(), date.getMonth() + 1, day), holiday = getHoliday(date);
-                const showMoonIcon = settings.showMoonIcon ?? true, useLed = settings.useLedFont ?? true;
-                const textDetailsHTML = `<div class="lunar-date">${lunar.day === 1 ? lunar.toString.substring(0, lunar.isLeap ? 3 : 2) : lunar.dayString}</div>
-                    ${solarTerm ? `<div class="solarterm-text truncate" data-key="${solarTerm}">${solarTerm}</div>` : ''}
-                    ${holiday ? `<div class="holiday-text truncate" data-key="${holiday}">${holiday}</div>` : ''}`;
-                const dayColor = getComputedStyle(document.documentElement).getPropertyValue('--day-color').trim();
-                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvg(String(day), {height: 20, color: dayColor})}</div>` : `<div class="day-number-wrapper" style="font-size: 1.5em; line-height: 1.2; color: ${dayColor}; display: flex; align-items: center; justify-content: center; height: 20px; font-weight: 700;">${day}</div>`;
-                if (showMoonIcon) {
-                    cell.classList.add('with-moon-icon');
-                    cell.innerHTML = `<div class="day-text-content">${dayNumberHTML}<div class="space-y-px">${textDetailsHTML}</div></div><div class="day-moon-container">${MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '28px', `main-cal-${Math.random()}`)}</div>`;
-                } else {
-                    cell.classList.remove('with-moon-icon');
-                    cell.innerHTML = `${dayNumberHTML}<div class="space-y-px">${textDetailsHTML}</div>`;
-                }
-                cell.dataset.date = date.toISOString();
-                if (isEditMode) cell.classList.add('edit-mode-active');
-            };
-            const moonPhaseCellRenderer = (cell, date, settings) => {
-                const lunar = getLunarDate(date), useLed = settings.useLedFont ?? true, dayColor = getComputedStyle(document.documentElement).getPropertyValue('--day-color').trim() || '#ffffff', day = date.getDate();
-                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvg(String(day), { height: 20, color: dayColor })}</div>` : `<div class="day-number-wrapper" style="font-size: 1.2em; line-height: 1; color: ${dayColor}; font-weight: bold;">${day}</div>`;
-                const lunarDateText = lunar.day === 1 ? lunar.toString.substring(0, lunar.isLeap ? 3 : 2) : lunar.dayString;
-                cell.innerHTML = `${dayNumberHTML}<div class="moon-icon-small">${MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '100%', `grid-${Math.random()}`)}</div><div class="lunar-date">${lunarDateText}</div>`;
-                cell.addEventListener('click', () => { if(!isEditMode) showDayDetailModal(date.toISOString()); });
-            };
-            // ===================================================================
-            // 設定、顏色與儲存
-            // 說明: 處理所有設定的載入、套用和儲存邏輯。
-            // ===================================================================
-            function applyDefaultSettings() { applyLayout(JSON.parse(JSON.stringify(userDefaultLayout))); saveCurrentSettings(); Weather.updateWeather(); }
-            function applyAllSettings() {
-                Object.values(settingsState).forEach(widgetState => {
-                    if (widgetState && widgetState.colors) Object.entries(widgetState.colors).forEach(([key, value]) => document.documentElement.style.setProperty(key, value));
-                });
-                applyAllTransforms();
-                updateSettingsUIFromState();
-                Calendar.render();
-                MoonPhaseWidget.render();
-                AnalogClock.init();
-                MarqueeManager.rebuildAllAnimations();
-            }
-            function saveCurrentSettings(isProgrammaticChange = false) {
-                localStorage.setItem(STORAGE_AUTOSAVE_KEY, JSON.stringify({ transforms: transformStates, settings: settingsState }));
-                if (!isProgrammaticChange) {
-                    currentLayoutIndex = -1;
-                }
-            }
-            function updateSettingsUIFromState() {
-                document.querySelectorAll('#modal-backdrop-settings input[data-setting-type="color"]').forEach(picker => {
-                    const widget = picker.dataset.widget, cssVar = picker.dataset.var;
-                    picker.value = settingsState[widget]?.colors?.[cssVar] || getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() || '#ffffff';
-                });
-                document.querySelectorAll('input[data-widget-toggle]').forEach(toggle => { toggle.checked = transformStates[toggle.dataset.widgetToggle]?.visible ?? false; });
-                document.querySelectorAll('#modal-backdrop-settings input[data-setting-type="toggle"]').forEach(toggle => {
-                    const widget = toggle.dataset.widget, key = toggle.dataset.key;
-                    if (settingsState[widget] && typeof settingsState[widget][key] !== 'undefined') toggle.checked = settingsState[widget][key];
-                });
-                updateLocationSelectors();
-                updateMarqueeSelectorUI();
-                loadMarqueeSettingsToUI(document.getElementById('marquee-selector').value);
-                const teSettings = settingsState.timedEffect;
-                if (teSettings) {
-                    document.getElementById('timed-effect-enabled-toggle').checked = teSettings.enabled;
-                    document.getElementById('timed-effect-interval-seconds').value = teSettings.intervalSeconds;
-                    const effectTypeSelect = document.getElementById('timed-effect-type');
-                    effectTypeSelect.value = teSettings.type || 'slide';
-                    document.getElementById('transition-effect-enabled-toggle').checked = teSettings.transitionEnabled ?? false;
-
-                    const layoutSwitchOptions = document.getElementById('layout-switch-options');
-                    const randomToggle = document.getElementById('layout-switch-random-toggle');
-                    if (teSettings.type === 'layoutSwitch') {
-                        layoutSwitchOptions.style.display = 'flex';
-                        randomToggle.checked = teSettings.isRandom ?? false;
-                    } else {
-                        layoutSwitchOptions.style.display = 'none';
-                    }
-                }
-            }
-            const marqueeSelector = document.getElementById('marquee-selector'), marqueeTextInput = document.getElementById('marquee-text-input'), marqueeSpeedInput = document.getElementById('marquee-speed-input'), marqueeVerticalToggle = document.getElementById('marquee-vertical-toggle'), marqueeEnabledToggle = document.getElementById('marquee-enabled-toggle'), marqueeColorInput = document.getElementById('marquee-default-color'), marqueeDirectionSelect = document.getElementById('marquee-direction-select');
-            function updateMarqueeSelectorUI() {
-                const currentVal = marqueeSelector.value;
-                marqueeSelector.innerHTML = '';
-                for (let i = 0; i < settingsState.marquees.length; i++) {
-                    marqueeSelector.add(new Option(`${i + 1}`, i));
-                }
-                if (document.querySelector(`#marquee-selector option[value="${currentVal}"]`)) {
-                    marqueeSelector.value = currentVal;
-                }
-                document.getElementById('remove-marquee-btn').disabled = marqueeSelector.value === '0' || settingsState.marquees.length <= 1;
-            }
-            ['left', 'right', 'up', 'down'].forEach(dir => marqueeDirectionSelect.add(new Option({'left':'左','right':'右','up':'上','down':'下'}[dir], dir)));
-            function updateDirectionOptions(isVertical) {
-                for (const option of marqueeDirectionSelect.options) {
-                    const isVerticalOption = ['up', 'down'].includes(option.value);
-                    option.disabled = isVertical ? !isVerticalOption : isVerticalOption;
-                }
-            }
-            function loadMarqueeSettingsToUI(index) {
-                const settings = settingsState.marquees[index]; if (!settings) return;
-                marqueeTextInput.value = settings.text; marqueeSpeedInput.value = settings.speed;
-                marqueeVerticalToggle.checked = settings.vertical; marqueeEnabledToggle.checked = transformStates[`marquee-container-${index}`]?.visible ?? false;
-                marqueeDirectionSelect.value = settings.direction || (settings.vertical ? 'up' : 'left');
-                marqueeColorInput.value = settings.colors?.default || '#FFFFFF';
-                updateDirectionOptions(settings.vertical);
-            }
-            marqueeSelector.addEventListener('change', (e) => {
-                loadMarqueeSettingsToUI(e.target.value);
-                document.getElementById('remove-marquee-btn').disabled = e.target.value === '0' || settingsState.marquees.length <= 1;
-            });
-            function updateMarqueeSettingFromUI() {
-                const index = marqueeSelector.value; if (!settingsState.marquees[index]) return;
-                const s = settingsState.marquees[index];
-                s.text = marqueeTextInput.value; s.speed = marqueeSpeedInput.value; s.vertical = marqueeVerticalToggle.checked;
-                s.direction = marqueeDirectionSelect.value;
-                if (!s.colors) s.colors = {};
-                s.colors['default'] = marqueeColorInput.value;
-                MarqueeManager.rebuildAnimationByIndex(index); saveCurrentSettings();
-            }
-            marqueeVerticalToggle.addEventListener('change', e => { const isVertical = e.target.checked; updateDirectionOptions(isVertical); marqueeDirectionSelect.value = isVertical ? 'up' : 'left'; updateMarqueeSettingFromUI(); });
-            marqueeEnabledToggle.addEventListener('change', e => {
-                const widgetId = `marquee-container-${marqueeSelector.value}`, isVisible = e.target.checked;
-                if (transformStates[widgetId]) {
-                    transformStates[widgetId].visible = isVisible;
-                    document.getElementById(widgetId).style.display = isVisible ? 'flex' : 'none';
-                    const mainToggle = document.querySelector(`input[data-widget-toggle="${widgetId}"]`);
-                    if (mainToggle) mainToggle.checked = isVisible;
-                    saveCurrentSettings();
-                }
-            });
-            ['input', 'change'].forEach(evt => { ['marquee-text-input', 'marquee-speed-input', 'marquee-default-color', 'marquee-direction-select'].forEach(id => document.getElementById(id).addEventListener(evt, updateMarqueeSettingFromUI)); });
-            document.getElementById('settings-btn').addEventListener('click', () => { updateSettingsUIFromState(); showModal('modal-backdrop-settings'); });
-            document.querySelector('#modal-backdrop-settings').addEventListener('input', e => {
-                if (e.target.dataset.settingType === 'color') {
-                    const widget = e.target.dataset.widget, cssVar = e.target.dataset.var, color = e.target.value;
-                    document.documentElement.style.setProperty(cssVar, color);
-                    if (settingsState[widget]?.colors) settingsState[widget].colors[cssVar] = color;
-                    if (widget === 'moonPhase') MoonPhaseWidget.render(); if (widget === 'calendar') Calendar.render(); if (widget === 'analogClock') AnalogClock.init();
-                    MarqueeManager.rebuildAllAnimations(); saveCurrentSettings();
-                }
-            });
-            document.querySelector('#modal-backdrop-settings').addEventListener('change', e => {
-                const toggle = e.target.closest('input[data-widget-toggle]');
-                if (toggle) {
-                    const widgetId = toggle.dataset.widgetToggle, widgetEl = document.getElementById(widgetId);
-                    if (widgetEl && transformStates[widgetId]) {
-                        transformStates[widgetId].visible = toggle.checked; widgetEl.style.display = toggle.checked ? 'flex' : 'none';
-                        if (widgetId.startsWith('marquee-container-') && widgetId === `marquee-container-${marqueeSelector.value}`) marqueeEnabledToggle.checked = toggle.checked;
-                        saveCurrentSettings();
-                    }
-                }
-                const settingToggle = e.target.closest('input[data-setting-type="toggle"]');
-                if (settingToggle) {
-                    const widget = settingToggle.dataset.widget, key = settingToggle.dataset.key;
-                    if (settingsState[widget]) {
-                        settingsState[widget][key] = settingToggle.checked; saveCurrentSettings();
-                        if (widget === 'calendar') Calendar.render(); if (widget === 'analogClock') AnalogClock.init(); if (widget === 'moonPhase') MoonPhaseWidget.render(); if (widget === 'marqueeGlobal') MarqueeManager.rebuildAllAnimations();
-                    }
-                }
-            });
-            function getRandomHexColor() { return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'); }
-            function applyRandomColors() { document.querySelectorAll('#modal-backdrop-settings .color-picker').forEach(p => { p.value = getRandomHexColor(); p.dispatchEvent(new Event('input', { bubbles: true })); }); }
-            document.getElementById('random-colors-btn').addEventListener('click', applyRandomColors);
-            document.getElementById('default-settings-btn').addEventListener('click', applyDefaultSettings);
-            // ===================================================================
             // 編輯模式與拖曳縮放
-            // 說明: 處理編輯模式下的所有互動，包括拖曳、縮放、還原尺寸等。
             // ===================================================================
             document.getElementById('edit-layout-btn').addEventListener('click', () => {
                 isEditMode = !isEditMode;
@@ -976,11 +794,13 @@
                 if (isEditMode) {
                     MarqueeManager.setPlayState(false);
                     timedEffectToggle.disabled = true; timedEffectInterval.disabled = true;
+                    renderAllPersistentGroupsUI(); // 進入編輯模式時顯示已儲存的群組
                 } else {
                     clearGroupSelection();
                     MarqueeManager.setPlayState(true); saveCurrentSettings();
                     editToolbar.style.left = '50%'; editToolbar.style.top = 'auto'; editToolbar.style.bottom = ''; editToolbar.style.transform = 'translateX(-50%)';
                     timedEffectToggle.disabled = false; timedEffectInterval.disabled = false;
+                    renderAllPersistentGroupsUI(); // 離開編輯模式時會清除群組UI
                 }
                 document.body.classList.toggle('edit-mode', isEditMode);
                 allWidgetContainers().forEach(c => c.classList.toggle('edit-mode', isEditMode));
@@ -990,7 +810,6 @@
                 document.querySelectorAll('.calendar-day').forEach(d => d.classList.toggle('edit-mode-active', isEditMode));
                 resetActivityTimeout();
             });
-            let activeHandle = null, startX, startY, initialTransformState, scaleCenterX, scaleCenterY, initialDist, activeWidget;
             const applyTransform = (widgetEl, state) => {
                 if (!widgetEl || !state) return;
                 const { left, top, width, height, scale, visible, rotation = 0 } = state;
@@ -1016,7 +835,13 @@
                 }
                 const inverseScale = 1 / scale;
                 widgetEl.querySelectorAll('.control-handle, .group-select-handle').forEach(h => {
-                     h.style.transform = `scale(${inverseScale})`;
+                     let transform = `scale(${inverseScale})`;
+                    if (h.classList.contains('resize-handle-w')) {
+                        transform = `translateY(-50%) ${transform}`;
+                    } else if (h.classList.contains('resize-handle-h')) {
+                        transform = `translateX(-50%) ${transform}`;
+                    }
+                    h.style.transform = transform;
                 });
             };
             const applyAllTransforms = () => { Object.keys(transformStates).forEach(id => applyTransform(document.getElementById(id), transformStates[id])); };
@@ -1042,13 +867,25 @@
                 if (e.target.closest('.group-select-handle')) return;
 
                 const targetWidget = e.target.closest('.widget-container');
+                const pGroupRotateHandle = e.target.closest('[data-persistent-group-rotate]');
+                const pGroupScaleHandle = e.target.closest('[data-persistent-group-scale]');
                 const groupRotateHandleEl = e.target.closest('#group-rotate-handle');
                 const groupScaleHandleEl = e.target.closest('#group-scale-handle');
                 
                 let isDragAction = false;
                 activeHandle = null;
 
-                if (groupRotateHandleEl) {
+                if (pGroupRotateHandle) {
+                    activeHandle = 'persistent-group-rotate';
+                    const groupIndex = parseInt(pGroupRotateHandle.dataset.persistentGroupRotate, 10);
+                    activeGroup = groups[groupIndex];
+                    isDragAction = true;
+                } else if (pGroupScaleHandle) {
+                    activeHandle = 'persistent-group-scale';
+                    const groupIndex = parseInt(pGroupScaleHandle.dataset.persistentGroupScale, 10);
+                    activeGroup = groups[groupIndex];
+                    isDragAction = true;
+                } else if (groupRotateHandleEl) {
                     activeHandle = 'group-rotate'; isDragAction = true;
                 } else if (groupScaleHandleEl) {
                     activeHandle = 'group-scale'; isDragAction = true;
@@ -1064,9 +901,16 @@
                         if (activeHandle) isDragAction = true;
 
                     } else if (!individualHandle) {
-                        const isPartOfGroup = selectedWidgets.has(targetWidget.id) && selectedWidgets.size >= 2;
-                        activeHandle = isPartOfGroup ? 'group-move' : 'move';
-                        isDragAction = true;
+                        const persistentGroup = findGroupForWidget(targetWidget.id);
+                        if (persistentGroup) {
+                            activeHandle = 'persistent-group-move';
+                            activeGroup = persistentGroup;
+                            isDragAction = true;
+                        } else {
+                            const isPartOfTempGroup = selectedWidgets.has(targetWidget.id) && selectedWidgets.size >= 2;
+                            activeHandle = isPartOfTempGroup ? 'group-move' : 'move';
+                            isDragAction = true;
+                        }
                     }
                 }
 
@@ -1077,25 +921,41 @@
                 startX = (e.touches ? e.touches[0] : e).clientX;
                 startY = (e.touches ? e.touches[0] : e).clientY;
 
-                if (activeHandle.startsWith('group')) {
-                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                    selectedWidgets.forEach(id => {
-                        const state = transformStates[id]; if (!state || !state.visible) return;
-                        const renderedWidth = state.width * state.scale, renderedHeight = state.height * state.scale;
-                        const offsetX = (state.width - renderedWidth) / 2, offsetY = (state.height - renderedHeight) / 2;
-                        const renderedLeft = state.left + offsetX, renderedTop = state.top + offsetY;
-                        minX = Math.min(minX, renderedLeft); minY = Math.min(minY, renderedTop);
-                        maxX = Math.max(maxX, renderedLeft + renderedWidth); maxY = Math.max(maxY, renderedTop + renderedHeight);
-                    });
-                    scaleCenterX = minX + (maxX - minX) / 2; scaleCenterY = minY + (maxY - minY) / 2;
+                if (activeHandle === 'persistent-group-move') {
                     initialGroupTransforms = {};
-                    selectedWidgets.forEach(id => { initialGroupTransforms[id] = { ...transformStates[id] }; });
-                    if (activeHandle === 'group-scale') {
+                    activeGroup.forEach(id => {
+                        initialGroupTransforms[id] = { ...transformStates[id] };
+                    });
+                } else if (activeHandle.startsWith('persistent-group') || activeHandle.startsWith('group')) {
+                    const groupSet = activeHandle.startsWith('persistent-group') ? activeGroup : selectedWidgets;
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    groupSet.forEach(id => {
+                        const state = transformStates[id]; if (!state || !state.visible) return;
+                        const w = state.width * state.scale, h = state.height * state.scale;
+                        const cx = state.left + state.width / 2, cy = state.top + state.height / 2;
+                        const angle = (state.rotation || 0) * Math.PI / 180;
+                        const cosA = Math.cos(angle), sinA = Math.sin(angle);
+                        [{x: -w/2, y: -h/2}, {x: w/2, y: -h/2}, {x: w/2, y: h/2}, {x: -w/2, y: h/2}].forEach(corner => {
+                            const rx = corner.x * cosA - corner.y * sinA + cx;
+                            const ry = corner.x * sinA + corner.y * cosA + cy;
+                            minX = Math.min(minX, rx); maxX = Math.max(maxX, rx);
+                            minY = Math.min(minY, ry); maxY = Math.max(maxY, ry);
+                        });
+                    });
+
+                    scaleCenterX = minX + (maxX - minX) / 2;
+                    scaleCenterY = minY + (maxY - minY) / 2;
+                    initialGroupTransforms = {};
+                    groupSet.forEach(id => { initialGroupTransforms[id] = { ...transformStates[id] }; });
+
+                    if (activeHandle.includes('scale')) {
                         initialDist = Math.hypot(startX - scaleCenterX, startY - scaleCenterY);
-                    } else if (activeHandle === 'group-rotate') {
+                    } else if (activeHandle.includes('rotate')) {
                         initialGroupTransforms.startAngle = Math.atan2(startY - scaleCenterY, startX - scaleCenterX);
-                        if (groupRotateHandle) { initialGroupTransforms.rotateHandle = { left: groupRotateHandle.offsetLeft, top: groupRotateHandle.offsetTop }; }
-                        if (groupScaleHandle) { initialGroupTransforms.scaleHandle = { left: groupScaleHandle.offsetLeft, top: groupScaleHandle.offsetTop }; }
+                        if (activeHandle === 'group-rotate') {
+                            if (groupRotateHandle) { initialGroupTransforms.rotateHandle = { left: groupRotateHandle.offsetLeft, top: groupRotateHandle.offsetTop }; }
+                            if (groupScaleHandle) { initialGroupTransforms.scaleHandle = { left: groupScaleHandle.offsetLeft, top: groupScaleHandle.offsetTop }; }
+                        }
                     }
                 } 
                 else {
@@ -1105,11 +965,20 @@
                     targetWidget.style.transition = 'none';
                     activeWidget = { el: targetWidget, state: transformStates[targetWidget.id], originalTransition: originalTransition };
                     
-                    const isPartOfGroup = selectedWidgets.has(targetWidget.id) && selectedWidgets.size >= 2;
+                    let syncGroup = null;
+                    if (selectedWidgets.has(targetWidget.id) && selectedWidgets.size >= 2) {
+                        syncGroup = selectedWidgets;
+                    } else {
+                        const persistentGroup = findGroupForWidget(targetWidget.id);
+                        if (persistentGroup) {
+                            syncGroup = persistentGroup;
+                        }
+                    }
+                    activeWidget.syncGroup = syncGroup;
 
-                    if (isPartOfGroup && (activeHandle === 'rotate' || activeHandle === 'scale')) {
+                    if (syncGroup && (activeHandle === 'rotate' || activeHandle === 'scale')) {
                         initialGroupTransforms = {};
-                        selectedWidgets.forEach(id => { initialGroupTransforms[id] = { ...transformStates[id] }; });
+                        syncGroup.forEach(id => { initialGroupTransforms[id] = { ...transformStates[id] }; });
                     } else {
                         initialTransformState = { ...activeWidget.state };
                     }
@@ -1121,7 +990,7 @@
                             initialDist = Math.hypot(startX - scaleCenterX, startY - scaleCenterY);
                         } else { // 'rotate'
                             const startAngle = Math.atan2(startY - scaleCenterY, startX - scaleCenterX) * (180 / Math.PI);
-                            if (isPartOfGroup) {
+                            if (syncGroup) {
                                 initialGroupTransforms.startAngle = startAngle;
                             } else {
                                 initialTransformState.startAngle = startAngle;
@@ -1135,11 +1004,28 @@
                 window.addEventListener('mouseup', onDragEnd); 
                 window.addEventListener('touchend', onDragEnd);
             };
+
             const onDragMove = (e) => {
                 if (!activeHandle) return;
                 const currentX = (e.touches ? e.touches[0] : e).clientX, currentY = (e.touches ? e.touches[0] : e).clientY;
                 const dx = currentX - startX, dy = currentY - startY;
                 
+                if (activeHandle === 'persistent-group-move') {
+                    document.body.style.cursor = 'grabbing';
+                    activeGroup.forEach(id => {
+                        const widgetEl = document.getElementById(id);
+                        const initialState = initialGroupTransforms[id];
+                        const state = transformStates[id];
+                        if (initialState && state) {
+                            state.left = initialState.left + dx;
+                            state.top = initialState.top + dy;
+                            applyTransform(widgetEl, state);
+                        }
+                    });
+                    renderAllPersistentGroupsUI();
+                    return;
+                }
+
                 if (activeHandle === 'group-move') {
                     document.body.style.cursor = 'grabbing';
                     selectedWidgets.forEach(id => {
@@ -1149,67 +1035,120 @@
                     });
                     if (groupRotateHandle) groupRotateHandle.style.transform = `translate(${dx}px, ${dy}px)`;
                     if (groupScaleHandle) groupScaleHandle.style.transform = `translate(${dx}px, ${dy}px)`;
+                    if (groupBoundingBox) groupBoundingBox.style.transform = `translate(${dx}px, ${dy}px)`;
                     return;
                 }
-                if (activeHandle === 'group-scale') {
-                    const currentDist = Math.hypot(currentX - scaleCenterX, currentY - scaleCenterY);
-                    const scaleFactor = initialDist > 0 ? (currentDist / initialDist) : 1;
+                
+                const updateDynamicGroupBounds = () => {
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                     selectedWidgets.forEach(id => {
-                        const widgetEl = document.getElementById(id);
-                        const initialState = initialGroupTransforms[id];
                         const state = transformStates[id];
-                        let newScale = initialState.scale * scaleFactor;
-                        state.scale = Math.max(0.1, Math.min(newScale, 10));
-                        const initialWidgetLayoutCenterX = initialState.left + initialState.width / 2;
-                        const initialWidgetLayoutCenterY = initialState.top + initialState.height / 2;
-                        const newWidgetLayoutCenterX = scaleCenterX + (initialWidgetLayoutCenterX - scaleCenterX) * scaleFactor;
-                        const newWidgetLayoutCenterY = scaleCenterY + (initialWidgetLayoutCenterY - scaleCenterY) * scaleFactor;
-                        state.left = newWidgetLayoutCenterX - state.width / 2;
-                        state.top = newWidgetLayoutCenterY - state.height / 2;
-                        applyTransform(widgetEl, state);
+                        if (!state || !state.visible) return;
+                        
+                        const w = state.width * state.scale;
+                        const h = state.height * state.scale;
+                        const cx = state.left + state.width / 2;
+                        const cy = state.top + state.height / 2;
+                        const angle = (state.rotation || 0) * Math.PI / 180;
+                        const cosA = Math.cos(angle);
+                        const sinA = Math.sin(angle);
+                        
+                        const corners = [
+                            {x: -w/2, y: -h/2}, {x: w/2, y: -h/2},
+                            {x: w/2, y: h/2},  {x: -w/2, y: h/2}
+                        ];
+
+                        corners.forEach(corner => {
+                            const rx = corner.x * cosA - corner.y * sinA + cx;
+                            const ry = corner.x * sinA + corner.y * cosA + cy;
+                            minX = Math.min(minX, rx);
+                            maxX = Math.max(maxX, rx);
+                            minY = Math.min(minY, ry);
+                            maxY = Math.max(maxY, ry);
+                        });
                     });
-                    document.body.style.cursor = 'se-resize';
-                    updateGroupControls();
-                    return;
-                }
-                if (activeHandle === 'group-rotate') {
-                    document.body.style.cursor = 'alias';
-                    const currentAngle = Math.atan2(currentY - scaleCenterY, currentX - scaleCenterX);
-                    const angleDelta = currentAngle - initialGroupTransforms.startAngle;
-                    const cosA = Math.cos(angleDelta); const sinA = Math.sin(angleDelta);
-                    selectedWidgets.forEach(id => {
-                        const widgetEl = document.getElementById(id);
-                        const initialState = initialGroupTransforms[id];
-                        const state = transformStates[id];
-                        const initialWidgetCenterX = initialState.left + (initialState.width / 2);
-                        const initialWidgetCenterY = initialState.top + (initialState.height / 2);
-                        const vecX = initialWidgetCenterX - scaleCenterX;
-                        const vecY = initialWidgetCenterY - scaleCenterY;
-                        const rotatedVecX = vecX * cosA - vecY * sinA;
-                        const rotatedVecY = vecX * sinA + vecY * cosA;
-                        state.left = (scaleCenterX + rotatedVecX) - (state.width / 2);
-                        state.top = (scaleCenterY + rotatedVecY) - (state.height / 2);
-                        state.rotation = (initialState.rotation || 0) + (angleDelta * 180 / Math.PI);
-                        applyTransform(widgetEl, state);
-                    });
-                    const rotateHandle = (handle, initialPos) => {
-                        if (!handle || !initialPos) return;
-                        const initialHandleCenterX = initialPos.left + handle.offsetWidth / 2;
-                        const initialHandleCenterY = initialPos.top + handle.offsetHeight / 2;
-                        const vecX = initialHandleCenterX - scaleCenterX;
-                        const vecY = initialHandleCenterY - scaleCenterY;
-                        const rotatedVecX = vecX * cosA - vecY * sinA;
-                        const rotatedVecY = vecX * sinA + vecY * cosA;
-                        handle.style.left = `${(scaleCenterX + rotatedVecX) - handle.offsetWidth / 2}px`;
-                        handle.style.top = `${(scaleCenterY + rotatedVecY) - handle.offsetHeight / 2}px`;
-                    };
-                    rotateHandle(groupRotateHandle, initialGroupTransforms.rotateHandle);
-                    rotateHandle(groupScaleHandle, initialGroupTransforms.scaleHandle);
+
+                    if (isFinite(minX) && groupBoundingBox) {
+                        groupBoundingBox.style.left = `${minX}px`;
+                        groupBoundingBox.style.top = `${minY}px`;
+                        groupBoundingBox.style.width = `${maxX - minX}px`;
+                        groupBoundingBox.style.height = `${maxY - minY}px`;
+                    }
+                };
+
+                if (activeHandle.includes('group-scale') || activeHandle.includes('group-rotate')) {
+                    const groupSet = activeHandle.startsWith('persistent-group') ? activeGroup : selectedWidgets;
+                    const isRotate = activeHandle.includes('rotate');
+                    document.body.style.cursor = isRotate ? 'alias' : 'se-resize';
+
+                    if (isRotate) {
+                        const currentAngle = Math.atan2(currentY - scaleCenterY, currentX - scaleCenterX);
+                        const angleDelta = currentAngle - initialGroupTransforms.startAngle;
+                        const cosA = Math.cos(angleDelta); const sinA = Math.sin(angleDelta);
+
+                        groupSet.forEach(id => {
+                            const widgetEl = document.getElementById(id);
+                            const initialState = initialGroupTransforms[id];
+                            const state = transformStates[id];
+                            const initialWidgetCenterX = initialState.left + (initialState.width / 2);
+                            const initialWidgetCenterY = initialState.top + (initialState.height / 2);
+                            const vecX = initialWidgetCenterX - scaleCenterX;
+                            const vecY = initialWidgetCenterY - scaleCenterY;
+                            const rotatedVecX = vecX * cosA - vecY * sinA;
+                            const rotatedVecY = vecX * sinA + vecY * cosA;
+                            state.left = (scaleCenterX + rotatedVecX) - (state.width / 2);
+                            state.top = (scaleCenterY + rotatedVecY) - (state.height / 2);
+                            state.rotation = (initialState.rotation || 0) + (angleDelta * 180 / Math.PI);
+                            applyTransform(widgetEl, state);
+                        });
+                    } else { // isScale
+                        const currentDist = Math.hypot(currentX - scaleCenterX, currentY - scaleCenterY);
+                        const scaleFactor = initialDist > 0 ? (currentDist / initialDist) : 1;
+                        groupSet.forEach(id => {
+                            const widgetEl = document.getElementById(id);
+                            const initialState = initialGroupTransforms[id];
+                            const state = transformStates[id];
+                            let newScale = initialState.scale * scaleFactor;
+                            state.scale = Math.max(0.1, Math.min(newScale, 10));
+                            const initialWidgetLayoutCenterX = initialState.left + initialState.width / 2;
+                            const initialWidgetLayoutCenterY = initialState.top + initialState.height / 2;
+                            const newWidgetLayoutCenterX = scaleCenterX + (initialWidgetLayoutCenterX - scaleCenterX) * scaleFactor;
+                            const newWidgetLayoutCenterY = scaleCenterY + (initialWidgetLayoutCenterY - scaleCenterY) * scaleFactor;
+                            state.left = newWidgetLayoutCenterX - state.width / 2;
+                            state.top = newWidgetLayoutCenterY - state.height / 2;
+                            applyTransform(widgetEl, state);
+                        });
+                    }
+
+                    if (activeHandle.startsWith('persistent-group')) {
+                        renderAllPersistentGroupsUI();
+                    } else { // temporary group
+                        if (activeHandle === 'group-rotate') {
+                             const rotateHandle = (handle, initialPos) => {
+                                if (!handle || !initialPos) return;
+                                const currentAngle = Math.atan2(currentY - scaleCenterY, currentX - scaleCenterX);
+                                const angleDelta = currentAngle - initialGroupTransforms.startAngle;
+                                const cosA = Math.cos(angleDelta); const sinA = Math.sin(angleDelta);
+                                const initialHandleCenterX = initialPos.left + handle.offsetWidth / 2;
+                                const initialHandleCenterY = initialPos.top + handle.offsetHeight / 2;
+                                const vecX = initialHandleCenterX - scaleCenterX;
+                                const vecY = initialHandleCenterY - scaleCenterY;
+                                const rotatedVecX = vecX * cosA - vecY * sinA;
+                                const rotatedVecY = vecX * sinA + vecY * cosA;
+                                handle.style.left = `${(scaleCenterX + rotatedVecX) - handle.offsetWidth / 2}px`;
+                                handle.style.top = `${(scaleCenterY + rotatedVecY) - handle.offsetHeight / 2}px`;
+                            };
+                            rotateHandle(groupRotateHandle, initialGroupTransforms.rotateHandle);
+                            rotateHandle(groupScaleHandle, initialGroupTransforms.scaleHandle);
+                        }
+                        updateDynamicGroupBounds();
+                        updateGroupControls();
+                    }
                     return;
                 }
                 
                 if (!activeWidget) return; e.preventDefault();
-                const isGroupSyncAction = selectedWidgets.has(activeWidget.el.id) && selectedWidgets.size >= 2;
+                const isGroupSyncAction = !!activeWidget.syncGroup;
 
                 switch (activeHandle) {
                     case 'move': 
@@ -1251,7 +1190,7 @@
                         const scaleFactor = initialDist > 0 ? (currentDist / initialDist) : 1;
 
                         if (isGroupSyncAction) {
-                            selectedWidgets.forEach(id => {
+                            activeWidget.syncGroup.forEach(id => {
                                 const widgetEl = document.getElementById(id);
                                 const initialState = initialGroupTransforms[id];
                                 const state = transformStates[id];
@@ -1272,7 +1211,7 @@
                         const angle = Math.atan2(currentY - scaleCenterY, currentX - scaleCenterX) * (180 / Math.PI);
                         if (isGroupSyncAction) {
                             const rotationDelta = angle - initialGroupTransforms.startAngle;
-                            selectedWidgets.forEach(id => {
+                            activeWidget.syncGroup.forEach(id => {
                                 const widgetEl = document.getElementById(id);
                                 const initialState = initialGroupTransforms[id];
                                 const state = transformStates[id];
@@ -1290,10 +1229,17 @@
             };
             const onDragEnd = () => {
                 if (!activeHandle) return;
-                if (activeHandle.startsWith('group')) {
+                
+                if (activeHandle.startsWith('persistent-group')) {
+                    if(activeGroup) activeGroup.forEach(id => checkAndClampWidgetBounds(transformStates[id]));
+                    applyAllTransforms();
+                    renderAllPersistentGroupsUI();
+                    activeGroup = null;
+                } else if (activeHandle.startsWith('group')) {
                     if (groupMoveHandle) groupMoveHandle.style.transform = '';
                     if (groupRotateHandle) groupRotateHandle.style.transform = '';
                     if (groupScaleHandle) groupScaleHandle.style.transform = '';
+                    if (groupBoundingBox) groupBoundingBox.style.transform = '';
                     selectedWidgets.forEach(id => checkAndClampWidgetBounds(transformStates[id]));
                     applyAllTransforms();
                     updateGroupControls();
@@ -1310,6 +1256,104 @@
             // ===================================================================
             // 群組功能相關函式
             // ===================================================================
+            const groupsUiLayer = document.createElement('div');
+            groupsUiLayer.id = 'groups-ui-layer';
+            document.body.appendChild(groupsUiLayer);
+    
+            function renderAllPersistentGroupsUI() {
+                groupsUiLayer.innerHTML = '';
+                if (!isEditMode) return;
+                groups = groups.filter(g => g.size > 0);
+                groups.forEach((groupSet, index) => {
+                    renderSinglePersistentGroupUI(groupSet, index);
+                });
+            }
+    
+            function createGroupFromSelection(e) {
+                if (e) e.stopPropagation();
+                if (selectedWidgets.size < 2) {
+                    showAlert('提示', '請至少勾選兩個元件來建立群組。');
+                    return;
+                }
+                const newGroupMembers = Array.from(selectedWidgets);
+                groups = groups.map(existingGroup => {
+                    const remainingMembers = new Set([...existingGroup].filter(memberId => !selectedWidgets.has(memberId)));
+                    return remainingMembers;
+                });
+                groups = groups.filter(group => group.size > 1);
+                groups.push(new Set(newGroupMembers));
+                clearGroupSelection();
+                renderAllPersistentGroupsUI();
+                saveCurrentSettings();
+            }
+    
+            function renderSinglePersistentGroupUI(groupSet, index) {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                groupSet.forEach(id => {
+                    const state = transformStates[id]; if (!state || !state.visible) return;
+                    const w = state.width * state.scale, h = state.height * state.scale;
+                    const cx = state.left + state.width / 2, cy = state.top + state.height / 2;
+                    const angle = (state.rotation || 0) * Math.PI / 180;
+                    const cosA = Math.cos(angle), sinA = Math.sin(angle);
+                    [{x: -w/2, y: -h/2}, {x: w/2, y: -h/2}, {x: w/2, y: h/2}, {x: -w/2, y: h/2}].forEach(corner => {
+                        const rx = corner.x * cosA - corner.y * sinA + cx;
+                        const ry = corner.x * sinA + corner.y * cosA + cy;
+                        minX = Math.min(minX, rx); maxX = Math.max(maxX, rx);
+                        minY = Math.min(minY, ry); maxY = Math.max(maxY, ry);
+                    });
+                });
+    
+                if (!isFinite(minX)) return;
+    
+                const box = document.createElement('div');
+                box.style.cssText = `position: absolute; border: 2px dashed rgba(255, 165, 0, 0.8); pointer-events: none; z-index: 199; box-sizing: border-box; left: ${minX}px; top: ${minY}px; width: ${maxX - minX}px; height: ${maxY - minY}px;`;
+    
+                const idDisplay = document.createElement('div');
+                idDisplay.textContent = index + 1;
+                idDisplay.style.cssText = `position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(255, 165, 0, 0.8); font-size: 48px; font-weight: bold; pointer-events: none; z-index: 200; text-shadow: 0 0 5px black;`;
+    
+                const deleteButton = document.createElement('div');
+                deleteButton.innerHTML = '&times;';
+                deleteButton.title = `解散群組 ${index + 1}`;
+                deleteButton.style.cssText = `position: absolute; top: ${minY - 14}px; left: ${minX - 14}px; width: 28px; height: 28px; background-color: rgba(239, 68, 68, 0.8); border-radius: 50%; cursor: pointer; z-index: 201; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold; pointer-events: all;`;
+                deleteButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    disbandGroup(index);
+                });
+                
+                const rotateHandle = document.createElement('div');
+                rotateHandle.dataset.persistentGroupRotate = index;
+                rotateHandle.title = `旋轉群組 ${index + 1}`;
+                rotateHandle.innerHTML = `<svg style="width:100%; height:100%;"><use href="#icon-rotate" stroke="black" stroke-width="1.5"></use></svg>`;
+                rotateHandle.style.cssText = `position: absolute; top: ${maxY - 14}px; left: ${maxX - 14}px; width: 28px; height: 28px; background-color: rgba(255, 165, 0, 0.8); border-radius: 50%; cursor: alias; z-index: 201; display: flex; align-items: center; justify-content: center; pointer-events: all; padding: 4px;`;
+
+                const scaleHandle = document.createElement('div');
+                scaleHandle.dataset.persistentGroupScale = index;
+                scaleHandle.title = `縮放群組 ${index + 1}`;
+                scaleHandle.innerHTML = `<svg style="width:100%; height:100%;"><use href="#icon-scale" stroke="black" stroke-width="1.5"></use></svg>`;
+                scaleHandle.style.cssText = `position: absolute; top: ${maxY - 14}px; left: ${minX - 14}px; width: 28px; height: 28px; background-color: rgba(255, 165, 0, 0.8); border-radius: 50%; cursor: se-resize; z-index: 201; display: flex; align-items: center; justify-content: center; pointer-events: all; padding: 4px;`;
+    
+                box.appendChild(idDisplay);
+                groupsUiLayer.appendChild(box);
+                groupsUiLayer.appendChild(deleteButton);
+                groupsUiLayer.appendChild(rotateHandle);
+                groupsUiLayer.appendChild(scaleHandle);
+            }
+    
+            function findGroupForWidget(widgetId) {
+                return (groups || []).find(groupSet => groupSet.has(widgetId));
+            }
+    
+            function disbandGroup(index) {
+                if (index < 0 || index >= groups.length) return;
+                showConfirm("確認", `您確定要解散群組 ${index + 1} 嗎？元件將會保留。`, (confirmed) => {
+                    if (confirmed) {
+                        groups.splice(index, 1);
+                        renderAllPersistentGroupsUI();
+                        saveCurrentSettings();
+                    }
+                });
+            }
             function toggleWidgetSelection(widgetEl) {
                 const widgetId = widgetEl.id, uncheckedIcon = widgetEl.querySelector('.group-select-handle .unchecked'), checkedIcon = widgetEl.querySelector('.group-select-handle .checked');
                 if (selectedWidgets.has(widgetId)) {
@@ -1323,28 +1367,40 @@
             }
             function updateGroupControls() {
                 if (selectedWidgets.size < 2) {
-                    // if (groupMoveHandle) { groupMoveHandle.remove(); groupMoveHandle = null; }
                     if (groupRotateHandle) { groupRotateHandle.remove(); groupRotateHandle = null; }
                     if (groupScaleHandle) { groupScaleHandle.remove(); groupScaleHandle = null; }
+                    if (groupAddHandle) { groupAddHandle.remove(); groupAddHandle = null; }
+                    if (groupBoundingBox) groupBoundingBox.style.display = 'none';
                     return;
                 }
                 
-                // 計算群組的整體邊界 (minX, minY, maxX, maxY)
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                 selectedWidgets.forEach(id => {
                     const state = transformStates[id]; if (!state || !state.visible) return;
-                    const renderedWidth = state.width * state.scale, renderedHeight = state.height * state.scale;
-                    const offsetX = (state.width - renderedWidth) / 2, offsetY = (state.height - renderedHeight) / 2;
-                    const renderedLeft = state.left + offsetX, renderedTop = state.top + offsetY;
-                    minX = Math.min(minX, renderedLeft); minY = Math.min(minY, renderedTop);
-                    maxX = Math.max(maxX, renderedLeft + renderedWidth); maxY = Math.max(maxY, renderedTop + renderedHeight);
+                    
+                    const w = state.width * state.scale, h = state.height * state.scale;
+                    const cx = state.left + state.width / 2, cy = state.top + state.height / 2;
+                    const angle = (state.rotation || 0) * Math.PI / 180;
+                    const cosA = Math.cos(angle), sinA = Math.sin(angle);
+                    
+                    [{x: -w/2, y: -h/2}, {x: w/2, y: -h/2}, {x: w/2, y: h/2}, {x: -w/2, y: h/2}].forEach(corner => {
+                        const rx = corner.x * cosA - corner.y * sinA + cx;
+                        const ry = corner.x * sinA - corner.y * cosA + cy;
+                        minX = Math.min(minX, rx); maxX = Math.max(maxX, rx);
+                        minY = Math.min(minY, ry); maxY = Math.max(maxY, ry);
+                    });
                 });
                 
                 if (!isFinite(minX)) return;
                 
-                if (groupMoveHandle) { groupMoveHandle.remove(); groupMoveHandle = null; }
+                if (groupBoundingBox) {
+                    groupBoundingBox.style.display = 'block';
+                    groupBoundingBox.style.left = `${minX}px`;
+                    groupBoundingBox.style.top = `${minY}px`;
+                    groupBoundingBox.style.width = `${maxX - minX}px`;
+                    groupBoundingBox.style.height = `${maxY - minY}px`;
+                }
 
-                // 建立或更新右下角的旋轉圖示
                  if (!groupRotateHandle) {
                     groupRotateHandle = document.createElement('div');
                     groupRotateHandle.id = 'group-rotate-handle';
@@ -1359,19 +1415,30 @@
                     document.body.appendChild(groupScaleHandle);
                 }
                 
-                // 根據群組邊界定位控制圖示
+                if (!groupAddHandle) {
+                    groupAddHandle = document.createElement('div');
+                    groupAddHandle.id = 'group-add-handle';
+                    groupAddHandle.style.cssText = `position: absolute; width: 28px; height: 28px; z-index: 201; cursor: pointer; background-color: rgba(0, 255, 0, 0.8); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; font-size: 24px; font-weight: bold;`;
+                    groupAddHandle.textContent = '+';
+                    groupAddHandle.title = '將選取項目建立為新群組';
+                    groupAddHandle.addEventListener('click', createGroupFromSelection);
+                    document.body.appendChild(groupAddHandle);
+                }
+                
                 groupRotateHandle.style.left = `${maxX - groupRotateHandle.offsetWidth / 2}px`;
                 groupRotateHandle.style.top = `${maxY - groupRotateHandle.offsetHeight / 2}px`;
                 groupScaleHandle.style.left = `${minX - groupScaleHandle.offsetWidth / 2}px`;
                 groupScaleHandle.style.top = `${maxY - groupScaleHandle.offsetHeight / 2}px`;
-
+                groupAddHandle.style.left = `${maxX - groupAddHandle.offsetWidth / 2}px`;
+                groupAddHandle.style.top = `${minY - groupAddHandle.offsetHeight / 2}px`;
             }
+
            function clearGroupSelection() {
-                // if (groupMoveHandle) { groupMoveHandle.remove(); groupMoveHandle = null; }
                 if (groupRotateHandle) { groupRotateHandle.remove(); groupRotateHandle = null; }
                 if (groupScaleHandle) { groupScaleHandle.remove(); groupScaleHandle = null; }
+                if (groupAddHandle) { groupAddHandle.remove(); groupAddHandle = null; } 
+                if (groupBoundingBox) groupBoundingBox.style.display = 'none';
                 
-                // 清除所有被選取元件的樣式與狀態
                 selectedWidgets.forEach(id => {
                     const widgetEl = document.getElementById(id); if (!widgetEl) return;
                     widgetEl.classList.remove('selected-for-group');
@@ -1380,24 +1447,36 @@
                     if (checkedIcon) checkedIcon.style.display = 'none';
                 });
                 selectedWidgets.clear();
-
             }
+
             // ===================================================================
             // 版面配置儲存/載入
             // ===================================================================
             const getCurrentLayout = () => {
                 const settingsToSave = JSON.parse(JSON.stringify(settingsState));
-                delete settingsToSave.timedEffect; // 不要儲存定時特效設定
-                delete settingsToSave.location; // 不要儲存地區設定
+                delete settingsToSave.timedEffect;
+                delete settingsToSave.location;
+                
+                const serializedGroups = (groups || []).map(groupSet => Array.from(groupSet));
+
                 return {
                     transforms: JSON.parse(JSON.stringify(transformStates)),
-                    settings: settingsToSave
+                    settings: settingsToSave,
+                    groups: serializedGroups
                 };
             };
+
             const applyLayout = (layout, options = {}) => {
                 const layoutToApply = JSON.parse(JSON.stringify(layout));
                 const { ignoreTimedEffect = false, ignoreLocation = false } = options;
                 if (layoutToApply.transforms) transformStates = { ...transformStates, ...layoutToApply.transforms };
+                
+                if (layoutToApply.groups && Array.isArray(layoutToApply.groups)) {
+                    groups = layoutToApply.groups.map(groupArray => new Set(groupArray));
+                } else {
+                    groups = [];
+                }
+
                 if (layoutToApply.settings) {
                     Object.keys(layoutToApply.settings).forEach(key => {
                         if (ignoreTimedEffect && key === 'timedEffect') return;
@@ -1414,6 +1493,7 @@
                 syncMarqueeDOMElements();
                 MarqueeManager.syncInstances();
                 applyAllSettings();
+                renderAllPersistentGroupsUI();
             };
             function animateLayoutChange(targetLayout, duration = 1000, preserveTimedEffectSettings = false, callback = null) {
                 if (!targetLayout || !targetLayout.transforms || Object.values(isWidgetAnimating).some(v => v)) return;
@@ -1610,6 +1690,661 @@
                 };
                 input.click();
             });
+            // ===================================================================
+            // LED 數字 SVG 產生器
+            // ===================================================================
+            function generateLedSvg(text, config = {}) {
+                const { height = 24, color = '#FFFFFF', letterSpacing = 0, isStandalone = false, applyYOffset = false } = config;
+                const id_suffix = Math.random().toString(36).substring(2, 9);
+                const segmentId = `led-segment-${id_suffix}`, colonId = `led-colon-${id_suffix}`;
+                const segmentMap = [[1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],[0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1]];
+                
+                const digitXOffset = 26; 
+                const segmentTransforms = [
+                    `translate(${0 + digitXOffset}, 0)`, `translate(${132 + digitXOffset}, 20) rotate(90)`,
+                    `translate(${132 + digitXOffset}, 140) rotate(90)`, `translate(${0 + digitXOffset}, 240)`,
+                    `translate(${12 + digitXOffset}, 140) rotate(90)`, `translate(${12 + digitXOffset}, 20) rotate(90)`,
+                    `translate(${0 + digitXOffset}, 120)`
+                ];
+                
+                const digitBaseWidth = 158, digitBaseHeight = 272, colonBaseWidth = 38;
+                const internalSpacing = isStandalone ? letterSpacing : 0;
+
+                let totalWidth = 0;
+                const chars = String(text);
+                for (let i = 0; i < chars.length; i++) {
+                    const char = chars[i];
+                    if (/\d/.test(char)) {
+                        totalWidth += digitBaseWidth;
+                    } else if (char === ':') {
+                        totalWidth += colonBaseWidth;
+                    } else if (['/', '-', '.'].includes(char)) {
+                        totalWidth += 60;
+                    }
+                    if (i < chars.length - 1) {
+                        totalWidth += internalSpacing;
+                    }
+                }
+                if (totalWidth === 0) return '';
+
+                let svgContent = '', currentX = 0;
+
+                for (const char of chars) {
+                    if (/\d/.test(char)) {
+                        const digit = parseInt(char, 10);
+                        if (digit >= 0 && digit <= 9) {
+                            const pattern = segmentMap[digit];
+                            let digitGroup = `<g transform="translate(${currentX}, 0)">`;
+                            for (let i = 0; i < 7; i++) {
+                                digitGroup += `<use href="#${segmentId}" opacity="${pattern[i] ? '1' : '0.1'}" transform="${segmentTransforms[i]}" />`;
+                            }
+                            digitGroup += `</g>`;
+                            svgContent += digitGroup;
+                        }
+                        currentX += digitBaseWidth + internalSpacing;
+                    } else if (char === ':') {
+                        svgContent += `<g transform="translate(${currentX + 5}, 0)"><use href="#${colonId}" transform="translate(0, 60)" /><use href="#${colonId}" transform="translate(0, 180)" /></g>`;
+                        currentX += colonBaseWidth + internalSpacing;
+                    } else if (['/', '-', '.'].includes(char)) {
+                        const separatorWidth = 60, entity = { '/': '/', '-': '—', '.': '.' }[char];
+                        svgContent += `<text x="${currentX + separatorWidth / 2}" y="${digitBaseHeight / 2}" text-anchor="middle" dominant-baseline="central" font-size="${digitBaseHeight * 0.9}" font-family="'Courier New', Courier, monospace" font-weight="bold">${entity}</text>`;
+                        currentX += separatorWidth + internalSpacing;
+                    }
+                }
+
+                let yOffset = 0;
+                if (applyYOffset) {
+                    yOffset = 60;
+                }
+                
+                const viewBoxHeight = digitBaseHeight + yOffset;
+                const transformedContent = yOffset > 0 ? `<g transform="translate(0, ${yOffset})">${svgContent}</g>` : svgContent;
+
+                const scaleFactor = height / digitBaseHeight;
+                const finalHeight = viewBoxHeight * scaleFactor;
+                const finalWidth = totalWidth * scaleFactor;
+                
+                return `<svg viewBox="0 0 ${totalWidth} ${viewBoxHeight}" data-text="${text}" height="${finalHeight}px" width="${finalWidth}px" fill="${color}" style="vertical-align: middle;"><defs><polygon id="${segmentId}" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="${colonId}" x="0" y="0" width="32" height="32" rx="5" ry="5" /></defs>${transformedContent}</svg>`.replace(/\n\s*/g, '');
+            }
+            function getLedHTML(text, useLed, options = {}) {
+                if (!useLed) return String(text).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                const { color = '#FFFFFF', fontSize = 16, heightMultiplier = 1.1, defaultSpan = true } = options;
+                let resultHTML = '';
+                const parts = String(text).split(/(\d[\d:./-]*|\D+)/);
+                
+                parts.forEach(part => {
+                    if (!part) return;
+                    if (/^\d/.test(part)) {
+                        resultHTML += generateLedSvg(part, { height: fontSize * heightMultiplier, color: color, isStandalone: true, letterSpacing: 8, applyYOffset: true });
+                    } else {
+                        const escapedPart = part.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                        resultHTML += `<span style="color:${color}; display: inline-flex; align-items: center; height: ${fontSize * heightMultiplier}px;">${escapedPart}</span>`;
+                    }
+                });
+                return resultHTML;
+            }
+            function applyLedToStaticContent(containerElement) {
+                if (containerElement.dataset.ledProcessed) return;
+                const walker = document.createTreeWalker(containerElement, NodeFilter.SHOW_TEXT, null, false);
+                const nodesToProcess = [];
+                let node;
+                while (node = walker.nextNode()) {
+                    if (node.parentElement.closest('script, style, svg, [data-led-processed]')) continue;
+                    if (/\d/.test(node.nodeValue)) nodesToProcess.push(node);
+                }
+                nodesToProcess.forEach(node => {
+                    const parent = node.parentNode;
+                    if (!parent) return;
+                    const parts = node.nodeValue.split(/(\d+[\d:./-]*)/);
+                    if (parts.length <= 1) return;
+
+                    const fragment = document.createDocumentFragment();
+                    parts.forEach(part => {
+                        if (/^\d+[\d:./-]*$/.test(part) && part.trim() !== '') {
+                            const color = getComputedStyle(parent).color || '#FFFFFF';
+                            const fontSize = parseFloat(getComputedStyle(parent).fontSize) || 16;
+                            const template = document.createElement('template');
+                            const svgHTML = generateLedSvg(part, { height: fontSize * 1.1, color: color, isStandalone: false, applyYOffset: true }).trim();
+                            if (svgHTML) {
+                                template.innerHTML = svgHTML;
+                                if (template.content.firstChild) {
+                                    template.content.firstChild.dataset.ledProcessed = 'true';
+                                    fragment.appendChild(template.content.firstChild);
+                                }
+                            } else { fragment.appendChild(document.createTextNode(part)); }
+                        } else if (part) { fragment.appendChild(document.createTextNode(part)); }
+                    });
+                    parent.replaceChild(fragment, node);
+                });
+                containerElement.dataset.ledProcessed = 'true';
+            }
+            // ===================================================================
+            // 跑馬燈模組 (Class)
+            // ===================================================================
+            class MarqueeInstance {
+                constructor(containerId, index) {
+                    this.container = document.getElementById(containerId);
+                    this.mainContainer = this.container.querySelector('main');
+                    this.innerDiv = this.container.querySelector('.marquee-inner');
+                    this.index = index;
+                    this.animationStyleTag = document.createElement('style');
+                    document.head.appendChild(this.animationStyleTag);
+                    this.rebuildTimeout = null;
+                    this.isScrolling = false;
+
+                    this.paramToFrequency = {
+                        s: ['%ss%', '%s%'],
+                        m: ['%mm%', '%m%', '%HH%', '%H%', '%hh%', '%h%', '%AP%', '%ap%', '%ap_c%', '%SHICHEN_GZ%', '%SHICHEN_NAME%', '%SHICHEN_CHAR%'],
+                        d: ['%YYYY%', '%YY%', '%ROC_YY%', '%MM%', '%M%', '%DD%', '%D%', '%WEEKDAY%', '%W_SHORT%', '%W_CHAR%', '%W_NUM%', '%CONSTELLATION%', '%L_GZ%', '%L_SX%', '%LM_C%', '%LD_C%', '%MOON_PHASE%', '%MOON_ICON%', '%MOON_DAY%'],
+                        w: ['%WEATHER_LOC%', '%WEATHER_DESC%', '%TEMP%', '%SUNRISE%', '%SUNSET%']
+                    };
+                    this.spansByFrequency = { s: [], m: [], d: [], w: [] };
+                }
+
+                _categorizeSpans() {
+                    this.spansByFrequency = { s: [], m: [], d: [], w: [] };
+                    this.innerDiv.querySelectorAll('[data-time-key]').forEach(span => {
+                        const key = span.dataset.timeKey;
+                        if (this.paramToFrequency.s.includes(key)) this.spansByFrequency.s.push(span);
+                        else if (this.paramToFrequency.m.includes(key)) this.spansByFrequency.m.push(span);
+                        else if (this.paramToFrequency.d.includes(key)) this.spansByFrequency.d.push(span);
+                        else if (this.paramToFrequency.w.includes(key)) this.spansByFrequency.w.push(span);
+                    });
+                }
+
+                buildInitialHTML(text) {
+                    const settings = settingsState.marquees[this.index], isVertical = settings.vertical, useLedGlobal = settingsState.marqueeGlobal?.useLedFont ?? true, defaultColor = (settings.colors && settings.colors.default) ? settings.colors.default : '#FFFFFF';
+                    const processMarqueeChunk = (chunk) => {
+                        if (!useLedGlobal) return `<span class="marquee-plain-text" style="color:${defaultColor}">${chunk.replace(/ /g, '\u00A0')}</span>`;
+                        let processedHTML = '';
+                        const parts = chunk.split(/(\d+[\d:.]*)/);
+                        for (const part of parts) {
+                            if (/^\d+[\d:.]*$/.test(part) && part.trim() !== '') {
+                                const widgetState = transformStates[this.container.id];
+                                const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
+                                processedHTML += generateLedSvg(part, { height: svgHeight, color: defaultColor, applyYOffset: true });
+                            } else if (part) {
+                                processedHTML += `<span class="marquee-plain-text" style="color:${defaultColor}">${part.replace(/ /g, '\u00A0')}</span>`;
+                            }
+                        }
+                        return processedHTML;
+                    };
+                    const replacements = MarqueeManager._cachedReplacements;
+                    const paramRegex = new RegExp(`%C\\(([^,]+),\\s*(.*?)\\)%|${Object.keys(marqueeParamColorMap).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')}|%br%`, 'g');
+                    let resultHTML = '', lastIndex = 0, match;
+                    const ledParams = ['%HH%', '%H%', '%hh%', '%h%', '%mm%', '%m%', '%ss%', '%s%', '%ROC_YY%', '%YYYY%', '%YY%', '%MM%', '%M%', '%DD%', '%D%', '%TEMP%', '%SUNRISE%', '%SUNSET%'];
+                    while ((match = paramRegex.exec(text)) !== null) {
+                        if (match.index > lastIndex) { resultHTML += processMarqueeChunk(text.substring(lastIndex, match.index)); }
+                        const param = match[0];
+
+                        if (param.startsWith('%C(')) {
+                            const propsStr = match[1];
+                            const colorText = match[2];
+                            const props = propsStr.split(';').map(p => p.trim());
+                            let color = defaultColor;
+                            let blinkDuration = 0;
+                            let finalStyle = '';
+                            let finalClass = 'marquee-plain-text';
+
+                            props.forEach(prop => {
+                                if (prop.startsWith('#')) {
+                                    const hex = prop.substring(1);
+                                    if (hex.length === 8) { // RRGGBBAA
+                                        const r = parseInt(hex.substring(0, 2), 16);
+                                        const g = parseInt(hex.substring(2, 4), 16);
+                                        const b = parseInt(hex.substring(4, 6), 16);
+                                        const a = parseInt(hex.substring(6, 8), 16) / 255;
+                                        color = `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})`;
+                                    } else if (hex.length === 6) {
+                                        color = prop;
+                                    }
+                                } else if (prop.startsWith('blink:')) {
+                                    const duration = parseInt(prop.split(':')[1], 10);
+                                    if (!isNaN(duration) && duration > 0) {
+                                        blinkDuration = duration;
+                                    }
+                                }
+                            });
+                            
+                            finalStyle += `color: ${color};`;
+                            if (blinkDuration > 0) {
+                                finalClass += ' blinking-text';
+                                finalStyle += ` animation-duration: ${blinkDuration / 1000}s;`;
+                            }
+
+                            if (useLedGlobal && /^[\d:]+$/.test(colorText)) {
+                                const widgetState = transformStates[this.container.id];
+                                const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
+                                let svgColor = color;
+                                let spanStyle = '';
+
+                                if (color.startsWith('rgba')) {
+                                    const parts = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+                                    svgColor = `rgb(${parts[1]}, ${parts[2]}, ${parts[3]})`;
+                                    const opacity = parts[4] !== undefined ? parts[4] : 1;
+                                    spanStyle += `opacity: ${opacity};`;
+                                }
+                                
+                                if (blinkDuration > 0) {
+                                     spanStyle += ` animation-duration: ${blinkDuration / 1000}s;`;
+                                }
+
+                                resultHTML += `<span class="${finalClass}" style="${spanStyle}">${generateLedSvg(colorText, { height: svgHeight, color: svgColor })}</span>`;
+                            } else {
+                                resultHTML += `<span class="${finalClass}" style="${finalStyle}">${colorText.replace(/ /g, '\u00A0')}</span>`;
+                            }
+                        } else if (param === '%br%') {
+                            if (isVertical) resultHTML += '</div><div>';
+                        } else if (replacements[param] !== undefined) {
+                            const cssVar = marqueeParamColorMap[param];
+                            const color = cssVar ? getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() : defaultColor;
+                            const replacementContent = String(replacements[param] || '');
+                            if (useLedGlobal && ledParams.includes(param) && /^[\d:]+$/.test(replacementContent)) {
+                                const widgetState = transformStates[this.container.id];
+                                const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
+                                resultHTML += `<span data-time-key="${param}">${generateLedSvg(replacementContent, { height: svgHeight, color: color })}</span>`;
+                            } else if (param === '%MOON_ICON%') {
+                                resultHTML += `<span data-time-key="${param}">${replacementContent}</span>`;
+                            } else {
+                                resultHTML += `<span data-time-key="${param}" style="color:${color}">${replacementContent}</span>`;
+                            }
+                        }
+                        lastIndex = paramRegex.lastIndex;
+                    }
+                    if (lastIndex < text.length) { resultHTML += processMarqueeChunk(text.substring(lastIndex)); }
+                    return isVertical ? `<div>${resultHTML}</div>` : resultHTML;
+                }
+
+                updateContent(status, replacements) {
+                    const updateSpan = (span) => {
+                        const key = span.dataset.timeKey;
+                        if (replacements[key] === undefined) return;
+                        const useLed = settingsState.marqueeGlobal?.useLedFont ?? true;
+                        const ledParams = ['%HH%', '%H%', '%hh%', '%h%', '%mm%', '%m%', '%ss%', '%s%', '%ROC_YY%', '%YYYY%', '%YY%', '%MM%', '%M%', '%DD%', '%D%', '%TEMP%', '%SUNRISE%', '%SUNSET%'];
+                        const newText = String(replacements[key]);
+                        if (useLed && ledParams.includes(key) && /^[\d:]+$/.test(newText)) {
+                            const svgEl = span.querySelector('svg');
+                            if (!svgEl || svgEl.dataset.text !== newText) {
+                                 const widgetState = transformStates[this.container.id];
+                                 const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
+                                 const color = svgEl ? svgEl.getAttribute('fill') : (marqueeParamColorMap[key] ? getComputedStyle(document.documentElement).getPropertyValue(marqueeParamColorMap[key]).trim() : '#FFFFFF');
+                                 span.innerHTML = generateLedSvg(newText, { height: svgHeight, color: color });
+                            }
+                        } else if (key === '%MOON_ICON%') {
+                            if (span.innerHTML !== newText) span.innerHTML = newText;
+                        } else {
+                            if (span.textContent !== newText) span.textContent = newText;
+                        }
+                    };
+                    
+                    if (status.s) this.spansByFrequency.s.forEach(updateSpan);
+                    if (status.m) this.spansByFrequency.m.forEach(updateSpan);
+                    if (status.d) this.spansByFrequency.d.forEach(updateSpan);
+                    if (status.w) this.spansByFrequency.w.forEach(updateSpan);
+                }
+
+                rebuildAnimation() {
+                    clearTimeout(this.rebuildTimeout);
+                    this.innerDiv.style.animation = ''; this.isScrolling = false;
+                    const settings = settingsState.marquees[this.index]; if (!settings) return;
+                    if (/^%WEATHER_|%SUNRISE%|%SUNSET%|%TEMP%/.test(settings.text) && !weatherDataLoaded) {
+                        this.innerDiv.style.transform = 'translateX(0) translateY(0)';
+                        this.innerDiv.innerHTML = `<div class="marquee-text-instance">${this.buildInitialHTML(settings.text)}</div>`;
+                        return;
+                    }
+                    this.rebuildTimeout = setTimeout(() => {
+                        this.animationStyleTag.innerHTML = ''; this.innerDiv.innerHTML = '';
+                        this.innerDiv.style.transform = 'translateX(0) translateY(0) translateZ(0)';
+                        if (!settings.text || !settings.text.trim()) return;
+                        const { text, vertical: isVertical, speed, direction } = settings;
+                        this.innerDiv.style.flexDirection = isVertical ? 'column' : 'row';
+                        this.innerDiv.style.width = isVertical ? '100%' : 'fit-content';
+                        this.mainContainer.style.alignItems = isVertical ? 'flex-start' : 'center';
+                        const instance1 = document.createElement('div');
+                        instance1.className = 'marquee-text-instance';
+                        instance1.style.whiteSpace = isVertical ? 'normal' : 'nowrap';
+                        instance1.style.textAlign = isVertical ? 'center' : 'left';
+                        if (isVertical) instance1.style.display = 'block';
+                        instance1.innerHTML = this.buildInitialHTML(text);
+                        this.innerDiv.appendChild(instance1);
+                        instance1.getBoundingClientRect();
+                        const contentMeasure = isVertical ? instance1.offsetHeight : instance1.offsetWidth;
+                        const containerMeasure = isVertical ? this.mainContainer.offsetHeight : this.mainContainer.offsetWidth;
+                        if (contentMeasure <= containerMeasure) {
+                            this.isScrolling = false;
+                            if (!isVertical && instance1.scrollWidth > this.mainContainer.clientWidth) {
+                                this.container.style.fontSize = `${parseFloat(getComputedStyle(this.container).fontSize) * (this.mainContainer.clientWidth / instance1.scrollWidth) * 0.98}px`;
+                            }
+                        } else {
+                            this.isScrolling = true;
+                            this.innerDiv.appendChild(instance1.cloneNode(true));
+                        }
+                        this._categorizeSpans();
+
+                        if (!this.isScrolling) return;
+                        const travelDistance = contentMeasure; if (travelDistance <= 0) return;
+                        const duration = travelDistance / (parseInt(speed, 10) || 80);
+                        const animName = `marquee-${this.index}-${Date.now()}`;
+                        let fromTransform, toTransform;
+                        switch(direction) {
+                            case 'right': fromTransform = `translateX(-${travelDistance}px)`; toTransform = `translateX(0px)`; break;
+                            case 'up': fromTransform = `translateY(0px)`; toTransform = `translateY(-${travelDistance}px)`; break;
+                            case 'down': fromTransform = `translateY(-${travelDistance}px)`; toTransform = `translateY(0px)`; break;
+                            default: fromTransform = `translateX(0px)`; toTransform = `translateX(-${travelDistance}px)`; break;
+                        }
+                        this.animationStyleTag.innerHTML = `@keyframes ${animName} { from { transform: ${fromTransform} translateZ(0); } to { transform: ${toTransform} translateZ(0); }}`;
+                        this.innerDiv.style.animation = `${animName} ${duration}s linear infinite`;
+                        this.innerDiv.style.animationPlayState = isEditMode ? 'paused' : 'running';
+                    }, 50);
+                }
+                 setPlayState(shouldPlay) { this.innerDiv.style.animationPlayState = shouldPlay ? 'running' : 'paused'; }
+            }
+            // ===================================================================
+            // LED 時鐘模組
+            // ===================================================================
+            const LedClock = {
+                svg: document.getElementById('led-clock-svg'), digits: {}, colons: {}, periodTextElement: null,
+                lastTime: { h: -1, m: -1, s: -1 },
+                segmentMap: [[1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],[0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1]],
+                segmentTransforms: ['translate(0, 0)','translate(132, 20) rotate(90)','translate(132, 140) rotate(90)','translate(0, 240)','translate(12, 140) rotate(90)','translate(12, 20) rotate(90)','translate(0, 120)'],
+                baseViewBoxWidth: 0, aspectRatio: 0,
+                createDigit(id, x, parentGroup, segmentClass) { const group = document.createElementNS('http://www.w3.org/2000/svg', 'g'); group.setAttribute('id', id); group.setAttribute('transform', `translate(${x}, 0)`); for (let i = 0; i < 7; i++) { const use = document.createElementNS('http://www.w3.org/2000/svg', 'use'); use.setAttribute('href', '#segment-shape'); use.setAttribute('class', `segment ${segmentClass}`); use.setAttribute('data-segment', String.fromCharCode(97 + i)); use.setAttribute('transform', this.segmentTransforms[i]); group.appendChild(use); } parentGroup.appendChild(group); return group; },
+                createColon(id, x, parentGroup) { const group = document.createElementNS('http://www.w3.org/2000/svg', 'g'); group.setAttribute('id', id); group.setAttribute('transform', `translate(${x}, 0)`); ['translate(0, 60)', 'translate(0, 180)'].forEach(transform => { const dot = document.createElementNS('http://www.w3.org/2000/svg', 'use'); dot.setAttribute('href', '#colon-dot-shape'); dot.setAttribute('class', 'colon'); dot.setAttribute('transform', transform); group.appendChild(dot); }); parentGroup.appendChild(group); return group; },
+                init() {
+                    this.svg.innerHTML = ''; const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs'); defs.innerHTML = `<polygon id="segment-shape" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="colon-dot-shape" x="-16" y="0" width="32" height="32" rx="5" ry="5" />`; this.svg.appendChild(defs); const digitWidth=160, colonWidth=48, digitSpacing=2, hourMinuteSpacing=0, secondsScale=0.25, minuteSecondSpacing=8; const viewportGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g'); this.svg.appendChild(viewportGroup); let currentX = 0; this.digits.h1 = this.createDigit('digit-h1', currentX, viewportGroup, 'segment-h'); currentX += digitWidth + digitSpacing; this.digits.h2 = this.createDigit('digit-h2', currentX, viewportGroup, 'segment-h'); currentX += digitWidth + hourMinuteSpacing; this.colons.h = this.createColon('colon-h', currentX, viewportGroup); currentX += colonWidth + hourMinuteSpacing; this.digits.m1 = this.createDigit('digit-m1', currentX, viewportGroup, 'segment-m'); currentX += digitWidth + digitSpacing; this.digits.m2 = this.createDigit('digit-m2', currentX, viewportGroup, 'segment-m'); const mainDigitsWidth = currentX + digitWidth; const secondsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g'); viewportGroup.appendChild(secondsGroup); this.digits.s1 = this.createDigit('digit-s1', 0, secondsGroup, 'segment-s'); this.digits.s2 = this.createDigit('digit-s2', digitWidth + digitSpacing, secondsGroup, 'segment-s'); this.periodTextElement = document.createElementNS('http://www.w3.org/2000/svg', 'text'); this.periodTextElement.setAttribute('class', 'period-text'); this.periodTextElement.setAttribute('dominant-baseline', 'hanging'); viewportGroup.appendChild(this.periodTextElement); const mainDigitHeight = 240 + 32; const scaledSecondsHeight = mainDigitHeight * secondsScale; const totalContentWidth = mainDigitsWidth + minuteSecondSpacing + Math.max((digitWidth * 2 + digitSpacing) * secondsScale, 110); this.baseViewBoxWidth = totalContentWidth + 20; this.aspectRatio = this.baseViewBoxWidth / mainDigitHeight; this.svg.setAttribute('viewBox', `0 0 ${this.baseViewBoxWidth} ${mainDigitHeight}`); viewportGroup.setAttribute('transform', 'translate(20, 0)'); secondsGroup.setAttribute('transform', `translate(${mainDigitsWidth + minuteSecondSpacing}, ${mainDigitHeight - scaledSecondsHeight}) scale(${secondsScale})`);
+                    this.periodTextElement.setAttribute('x', mainDigitsWidth + minuteSecondSpacing - 20);
+                    this.periodTextElement.setAttribute('y', 0); this.update(); setInterval(() => this.update(), 1000);
+                },
+                updateDigit(digitElement, number) { const pattern = this.segmentMap[number]; digitElement.querySelectorAll('.segment').forEach((segment, i) => { segment.style.opacity = pattern[i] ? '1' : '0.1'; }); },
+                update() {
+                    const now = new Date();
+                    const s = now.getSeconds();
+
+                    if (s !== this.lastTime.s) {
+                        const effectSettings = settingsState.timedEffect;
+                        if (!isEditMode && effectSettings && effectSettings.enabled && s % effectSettings.intervalSeconds === 0) {
+                            if (Object.values(isWidgetAnimating).some(v => v)) return;
+
+                            if (effectSettings.type === 'layoutSwitch') {
+                                if (layouts.length >= 2) {
+                                    if (effectSettings.isRandom) {
+                                        let randomIndex;
+                                        do { randomIndex = Math.floor(Math.random() * layouts.length); } while (layouts.length > 1 && randomIndex === currentLayoutIndex);
+                                        currentLayoutIndex = randomIndex;
+                                    } else {
+                                        currentLayoutIndex = nextLayoutIndex;
+                                        nextLayoutIndex = (nextLayoutIndex + 1) % layouts.length;
+                                    }
+                                    const useTransition = settingsState.timedEffect?.transitionEnabled ?? false;
+                                    if (useTransition) { animateLayoutChange(layouts[currentLayoutIndex], 1000, true); } 
+                                    else { applyLayout(layouts[currentLayoutIndex], { ignoreTimedEffect: true }); saveCurrentSettings(true); }
+                                }
+                            } else if (effectSettings.type === 'slide') {
+                                this.triggerSlideEffect();
+                            }
+                        }
+
+                        const sStr = String(s).padStart(2, '0');
+                        this.updateDigit(this.digits.s1, parseInt(sStr[0]));
+                        this.updateDigit(this.digits.s2, parseInt(sStr[1]));
+                        const shouldBlink = settingsState.ledClock?.colonBlink ?? true;
+                        const colonOpacity = shouldBlink ? (s % 2 === 0 ? '1' : '0.2') : '1';
+                        this.colons.h.querySelectorAll('.colon').forEach(c => c.style.opacity = colonOpacity);
+                        this.lastTime.s = s;
+                    }
+
+                    const m = now.getMinutes();
+                    if (m !== this.lastTime.m) {
+                        const mStr = String(m).padStart(2, '0');
+                        this.updateDigit(this.digits.m1, parseInt(mStr[0]));
+                        this.updateDigit(this.digits.m2, parseInt(mStr[1]));
+                        this.lastTime.m = m;
+                    }
+
+                    const h = now.getHours();
+                    if (h !== this.lastTime.h) {
+                        if (this.periodTextElement) { this.periodTextElement.textContent = TimeHelper.getPeriodText(h); }
+                        let h12 = h % 12; if (h12 === 0) h12 = 12;
+                        const hStr = String(h12).padStart(2, '0');
+                        this.updateDigit(this.digits.h1, parseInt(hStr[0]));
+                        this.updateDigit(this.digits.h2, parseInt(hStr[1]));
+                        this.lastTime.h = h;
+                    }
+                },
+                triggerSlideEffect() {
+                    let targets = [];
+                    allWidgetContainers().forEach(el => {
+                        if (transformStates[el.id]?.visible && !el.classList.contains('marquee-widget')) targets.push(el.id);
+                    });
+                    MarqueeManager.instances.forEach(instance => {
+                        if (transformStates[instance.container.id]?.visible && !instance.isScrolling) targets.push(instance.container.id);
+                    });
+                    if (targets.length === 0) return;
+                    const move = { up: 'translateY(-100vh)', down: 'translateY(100vh)', left: 'translateX(-100vw)', right: 'translateX(100vw)' };
+                    const directions = Object.keys(move);
+                    const duration = 700;
+                    targets.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (!el || isWidgetAnimating[id]) return;
+                        const direction = directions[Math.floor(Math.random() * directions.length)];
+                        isWidgetAnimating[id] = true;
+                        const originalTransform = el.style.transform;
+                        const originalTransition = el.style.transition;
+                        el.style.transition = `transform ${duration}ms ease-in-out`;
+                        el.style.transform = `${originalTransform} ${move[direction]}`;
+                        setTimeout(() => {
+                            el.style.transition = 'none';
+                            el.style.transform = originalTransform;
+                            setTimeout(() => {
+                                el.style.transition = originalTransition;
+                                isWidgetAnimating[id] = false;
+                            }, 50);
+                        }, duration);
+                    });
+                }
+            };
+            // ===================================================================
+            // 指針時鐘模組
+            // ===================================================================
+            const AnalogClock = {
+                lastSecond: -1,
+                hourHand: document.querySelector('#analog-clock-container .hour-hand'),
+                minuteHand: document.querySelector('#analog-clock-container .minute-hand'),
+                secondHand: document.querySelector('#analog-clock-container .second-hand'),
+                ticksContainer: document.getElementById('ticks-container'),
+                animationFrameId: null,
+                init() {
+                    this.ticksContainer.innerHTML = '';
+                    const useLed = settingsState.analogClock?.useLedFont ?? true;
+                    for (let i = 1; i <= 60; i++) {
+                        const isHour = i % 5 === 0, rotation = i * 6;
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'tick-wrapper'; wrapper.style.transform = `rotate(${rotation}deg)`;
+                        const tick = document.createElement('div');
+                        tick.className = isHour ? 'tick tick-hour' : 'tick tick-minute';
+                        wrapper.appendChild(tick);
+                        if (isHour) {
+                            wrapper.style.setProperty('--rotation', `${rotation}deg`);
+                            const numDiv = document.createElement('div'); numDiv.className = 'number';
+                            const numberText = String(i / 5);
+                            const numberColor = getComputedStyle(document.documentElement).getPropertyValue('--analog-number-color').trim() || '#ffffff';
+                            if (useLed) {
+                                const clockState = transformStates['analog-clock-container'];
+                                const svgHeight = clockState ? clockState.width * 0.08 : 16;
+                                numDiv.innerHTML = `<div>${generateLedSvg(numberText, { height: svgHeight, color: numberColor })}</div>`;
+                            } else {
+                                numDiv.innerHTML = `<div style="transform: rotate(calc(-1 * var(--rotation))); color: ${numberColor}; font-size: 1.2em; font-weight: bold;">${numberText}</div>`;
+                            }
+                            wrapper.appendChild(numDiv);
+                        }
+                        this.ticksContainer.appendChild(wrapper);
+                    }
+                    if (!this.animationFrameId) this.update();
+                },
+                update() {
+                    const now = new Date();
+                    const smooth = settingsState.analogClock?.smoothSeconds ?? false;
+
+                    if (!smooth) {
+                        const currentSecond = now.getSeconds();
+                        if (currentSecond === this.lastSecond) {
+                            this.animationFrameId = requestAnimationFrame(() => this.update());
+                            return;
+                        }
+                        this.lastSecond = currentSecond;
+                    }
+
+                    const s = smooth ? now.getSeconds() + now.getMilliseconds() / 1000 : now.getSeconds();
+                    const m = now.getMinutes() + s / 60;
+                    const h = now.getHours() % 12 + m / 60;
+                    this.hourHand.style.transform = `translateX(-50%) rotate(${(h / 12) * 360}deg)`;
+                    this.minuteHand.style.transform = `translateX(-50%) rotate(${(m / 60) * 360}deg)`;
+                    this.secondHand.style.transform = `translateX(-50%) rotate(${(s / 60) * 360}deg)`;
+                    this.animationFrameId = requestAnimationFrame(() => this.update());
+                }
+            };
+            // ===================================================================
+            // 設定、顏色與儲存
+            // ===================================================================
+            function applyDefaultSettings() { applyLayout(JSON.parse(JSON.stringify(userDefaultLayout))); saveCurrentSettings(); Weather.updateWeather(); }
+            function applyAllSettings() {
+                Object.values(settingsState).forEach(widgetState => {
+                    if (widgetState && widgetState.colors) Object.entries(widgetState.colors).forEach(([key, value]) => document.documentElement.style.setProperty(key, value));
+                });
+                applyAllTransforms();
+                updateSettingsUIFromState();
+                Calendar.render();
+                MoonPhaseWidget.render();
+                AnalogClock.init();
+                MarqueeManager.rebuildAllAnimations();
+            }
+            function saveCurrentSettings(isProgrammaticChange = false) {
+                const serializedGroups = (groups || []).map(groupSet => Array.from(groupSet));
+                localStorage.setItem(STORAGE_AUTOSAVE_KEY, JSON.stringify({
+                    transforms: transformStates,
+                    settings: settingsState,
+                    groups: serializedGroups
+                }));
+                if (!isProgrammaticChange) {
+                    currentLayoutIndex = -1;
+                }
+            }
+            function updateSettingsUIFromState() {
+                document.querySelectorAll('#modal-backdrop-settings input[data-setting-type="color"]').forEach(picker => {
+                    const widget = picker.dataset.widget, cssVar = picker.dataset.var;
+                    picker.value = settingsState[widget]?.colors?.[cssVar] || getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() || '#ffffff';
+                });
+                document.querySelectorAll('input[data-widget-toggle]').forEach(toggle => { toggle.checked = transformStates[toggle.dataset.widgetToggle]?.visible ?? false; });
+                document.querySelectorAll('#modal-backdrop-settings input[data-setting-type="toggle"]').forEach(toggle => {
+                    const widget = toggle.dataset.widget, key = toggle.dataset.key;
+                    if (settingsState[widget] && typeof settingsState[widget][key] !== 'undefined') toggle.checked = settingsState[widget][key];
+                });
+                updateLocationSelectors();
+                updateMarqueeSelectorUI();
+                loadMarqueeSettingsToUI(document.getElementById('marquee-selector').value);
+                const teSettings = settingsState.timedEffect;
+                if (teSettings) {
+                    document.getElementById('timed-effect-enabled-toggle').checked = teSettings.enabled;
+                    document.getElementById('timed-effect-interval-seconds').value = teSettings.intervalSeconds;
+                    const effectTypeSelect = document.getElementById('timed-effect-type');
+                    effectTypeSelect.value = teSettings.type || 'slide';
+                    document.getElementById('transition-effect-enabled-toggle').checked = teSettings.transitionEnabled ?? false;
+
+                    const layoutSwitchOptions = document.getElementById('layout-switch-options');
+                    const randomToggle = document.getElementById('layout-switch-random-toggle');
+                    if (teSettings.type === 'layoutSwitch') {
+                        layoutSwitchOptions.style.display = 'flex';
+                        randomToggle.checked = teSettings.isRandom ?? false;
+                    } else {
+                        layoutSwitchOptions.style.display = 'none';
+                    }
+                }
+            }
+            const marqueeSelector = document.getElementById('marquee-selector'), marqueeTextInput = document.getElementById('marquee-text-input'), marqueeSpeedInput = document.getElementById('marquee-speed-input'), marqueeVerticalToggle = document.getElementById('marquee-vertical-toggle'), marqueeEnabledToggle = document.getElementById('marquee-enabled-toggle'), marqueeColorInput = document.getElementById('marquee-default-color'), marqueeDirectionSelect = document.getElementById('marquee-direction-select');
+            function updateMarqueeSelectorUI() {
+                const currentVal = marqueeSelector.value;
+                marqueeSelector.innerHTML = '';
+                for (let i = 0; i < settingsState.marquees.length; i++) {
+                    marqueeSelector.add(new Option(`${i + 1}`, i));
+                }
+                if (document.querySelector(`#marquee-selector option[value="${currentVal}"]`)) {
+                    marqueeSelector.value = currentVal;
+                }
+                document.getElementById('remove-marquee-btn').disabled = marqueeSelector.value === '0' || settingsState.marquees.length <= 1;
+            }
+            ['left', 'right', 'up', 'down'].forEach(dir => marqueeDirectionSelect.add(new Option({'left':'左','right':'右','up':'上','down':'下'}[dir], dir)));
+            function updateDirectionOptions(isVertical) {
+                for (const option of marqueeDirectionSelect.options) {
+                    const isVerticalOption = ['up', 'down'].includes(option.value);
+                    option.disabled = isVertical ? !isVerticalOption : isVerticalOption;
+                }
+            }
+            function loadMarqueeSettingsToUI(index) {
+                const settings = settingsState.marquees[index]; if (!settings) return;
+                marqueeTextInput.value = settings.text; marqueeSpeedInput.value = settings.speed;
+                marqueeVerticalToggle.checked = settings.vertical; marqueeEnabledToggle.checked = transformStates[`marquee-container-${index}`]?.visible ?? false;
+                marqueeDirectionSelect.value = settings.direction || (settings.vertical ? 'up' : 'left');
+                marqueeColorInput.value = settings.colors?.default || '#FFFFFF';
+                updateDirectionOptions(settings.vertical);
+            }
+            marqueeSelector.addEventListener('change', (e) => {
+                loadMarqueeSettingsToUI(e.target.value);
+                document.getElementById('remove-marquee-btn').disabled = e.target.value === '0' || settingsState.marquees.length <= 1;
+            });
+            function updateMarqueeSettingFromUI() {
+                const index = marqueeSelector.value; if (!settingsState.marquees[index]) return;
+                const s = settingsState.marquees[index];
+                s.text = marqueeTextInput.value; s.speed = marqueeSpeedInput.value; s.vertical = marqueeVerticalToggle.checked;
+                s.direction = marqueeDirectionSelect.value;
+                if (!s.colors) s.colors = {};
+                s.colors['default'] = marqueeColorInput.value;
+                MarqueeManager.rebuildAnimationByIndex(index); saveCurrentSettings();
+            }
+            marqueeVerticalToggle.addEventListener('change', e => { const isVertical = e.target.checked; updateDirectionOptions(isVertical); marqueeDirectionSelect.value = isVertical ? 'up' : 'left'; updateMarqueeSettingFromUI(); });
+            marqueeEnabledToggle.addEventListener('change', e => {
+                const widgetId = `marquee-container-${marqueeSelector.value}`, isVisible = e.target.checked;
+                if (transformStates[widgetId]) {
+                    transformStates[widgetId].visible = isVisible;
+                    document.getElementById(widgetId).style.display = isVisible ? 'flex' : 'none';
+                    const mainToggle = document.querySelector(`input[data-widget-toggle="${widgetId}"]`);
+                    if (mainToggle) mainToggle.checked = isVisible;
+                    saveCurrentSettings();
+                }
+            });
+            ['input', 'change'].forEach(evt => { ['marquee-text-input', 'marquee-speed-input', 'marquee-default-color', 'marquee-direction-select'].forEach(id => document.getElementById(id).addEventListener(evt, updateMarqueeSettingFromUI)); });
+            document.getElementById('settings-btn').addEventListener('click', () => { updateSettingsUIFromState(); showModal('modal-backdrop-settings'); });
+            document.querySelector('#modal-backdrop-settings').addEventListener('input', e => {
+                if (e.target.dataset.settingType === 'color') {
+                    const widget = e.target.dataset.widget, cssVar = e.target.dataset.var, color = e.target.value;
+                    document.documentElement.style.setProperty(cssVar, color);
+                    if (settingsState[widget]?.colors) settingsState[widget].colors[cssVar] = color;
+                    if (widget === 'moonPhase') MoonPhaseWidget.render(); if (widget === 'calendar') Calendar.render(); if (widget === 'analogClock') AnalogClock.init();
+                    MarqueeManager.rebuildAllAnimations(); saveCurrentSettings();
+                }
+            });
+            document.querySelector('#modal-backdrop-settings').addEventListener('change', e => {
+                const toggle = e.target.closest('input[data-widget-toggle]');
+                if (toggle) {
+                    const widgetId = toggle.dataset.widgetToggle, widgetEl = document.getElementById(widgetId);
+                    if (widgetEl && transformStates[widgetId]) {
+                        transformStates[widgetId].visible = toggle.checked; widgetEl.style.display = toggle.checked ? 'flex' : 'none';
+                        if (widgetId.startsWith('marquee-container-') && widgetId === `marquee-container-${marqueeSelector.value}`) marqueeEnabledToggle.checked = toggle.checked;
+                        saveCurrentSettings();
+                    }
+                }
+                const settingToggle = e.target.closest('input[data-setting-type="toggle"]');
+                if (settingToggle) {
+                    const widget = settingToggle.dataset.widget, key = settingToggle.dataset.key;
+                    if (settingsState[widget]) {
+                        settingsState[widget][key] = settingToggle.checked; saveCurrentSettings();
+                        if (widget === 'calendar') Calendar.render(); if (widget === 'analogClock') AnalogClock.init(); if (widget === 'moonPhase') MoonPhaseWidget.render(); if (widget === 'marqueeGlobal') MarqueeManager.rebuildAllAnimations();
+                    }
+                }
+            });
+            function getRandomHexColor() { return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'); }
+            function applyRandomColors() { document.querySelectorAll('#modal-backdrop-settings .color-picker').forEach(p => { p.value = getRandomHexColor(); p.dispatchEvent(new Event('input', { bubbles: true })); }); }
+            document.getElementById('random-colors-btn').addEventListener('click', applyRandomColors);
+            document.getElementById('default-settings-btn').addEventListener('click', applyDefaultSettings);
             // ===================================================================
             // 地區選擇器
             // ===================================================================
@@ -1823,8 +2558,11 @@
             const allWidgetContainers = () => document.querySelectorAll('.widget-container');
             const actionButtons = document.getElementById('action-buttons');
             const editToolbar = document.getElementById('edit-toolbar');
+            const groupBoundingBox = document.getElementById('group-bounding-box');
             let isEditMode = false, activityTimeout, transformStates = {}, settingsState = {}, isWidgetAnimating = {};
             let selectedWidgets = new Set(), groupMoveHandle = null, groupRotateHandle = null, groupScaleHandle = null, initialGroupTransforms = {};
+            let groups = []; // [Gem] 新增：用來存放所有已定義的群組
+            let activeHandle = null, startX, startY, initialTransformState, scaleCenterX, scaleCenterY, initialDist, activeWidget, groupAddHandle = null, activeGroup = null; // [Gem] 修改：加入 groupAddHandle 和 activeGroup
             // --- 跑馬燈參數與顏色變數的映射表 ---
             const marqueeParamColorMap = {
                 '%YYYY%': '--year-color', '%ROC_YY%': '--year-color', '%MM%': '--month-color', '%DD%': '--day-color',
@@ -1859,259 +2597,6 @@
                 }
             };
             // ===================================================================
-            // LED 時鐘模組
-            // ===================================================================
-            const LedClock = {
-                svg: document.getElementById('led-clock-svg'), digits: {}, colons: {}, periodTextElement: null,
-                lastTime: { h: -1, m: -1, s: -1 },
-                segmentMap: [[1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],[0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1]],
-                segmentTransforms: ['translate(0, 0)','translate(132, 20) rotate(90)','translate(132, 140) rotate(90)','translate(0, 240)','translate(12, 140) rotate(90)','translate(12, 20) rotate(90)','translate(0, 120)'],
-                baseViewBoxWidth: 0, aspectRatio: 0,
-                createDigit(id, x, parentGroup, segmentClass) { const group = document.createElementNS('http://www.w3.org/2000/svg', 'g'); group.setAttribute('id', id); group.setAttribute('transform', `translate(${x}, 0)`); for (let i = 0; i < 7; i++) { const use = document.createElementNS('http://www.w3.org/2000/svg', 'use'); use.setAttribute('href', '#segment-shape'); use.setAttribute('class', `segment ${segmentClass}`); use.setAttribute('data-segment', String.fromCharCode(97 + i)); use.setAttribute('transform', this.segmentTransforms[i]); group.appendChild(use); } parentGroup.appendChild(group); return group; },
-                createColon(id, x, parentGroup) { const group = document.createElementNS('http://www.w3.org/2000/svg', 'g'); group.setAttribute('id', id); group.setAttribute('transform', `translate(${x}, 0)`); ['translate(0, 60)', 'translate(0, 180)'].forEach(transform => { const dot = document.createElementNS('http://www.w3.org/2000/svg', 'use'); dot.setAttribute('href', '#colon-dot-shape'); dot.setAttribute('class', 'colon'); dot.setAttribute('transform', transform); group.appendChild(dot); }); parentGroup.appendChild(group); return group; },
-                init() {
-                    this.svg.innerHTML = ''; const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs'); defs.innerHTML = `<polygon id="segment-shape" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="colon-dot-shape" x="-16" y="0" width="32" height="32" rx="5" ry="5" />`; this.svg.appendChild(defs); const digitWidth=160, colonWidth=48, digitSpacing=2, hourMinuteSpacing=0, secondsScale=0.25, minuteSecondSpacing=8; const viewportGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g'); this.svg.appendChild(viewportGroup); let currentX = 0; this.digits.h1 = this.createDigit('digit-h1', currentX, viewportGroup, 'segment-h'); currentX += digitWidth + digitSpacing; this.digits.h2 = this.createDigit('digit-h2', currentX, viewportGroup, 'segment-h'); currentX += digitWidth + hourMinuteSpacing; this.colons.h = this.createColon('colon-h', currentX, viewportGroup); currentX += colonWidth + hourMinuteSpacing; this.digits.m1 = this.createDigit('digit-m1', currentX, viewportGroup, 'segment-m'); currentX += digitWidth + digitSpacing; this.digits.m2 = this.createDigit('digit-m2', currentX, viewportGroup, 'segment-m'); const mainDigitsWidth = currentX + digitWidth; const secondsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g'); viewportGroup.appendChild(secondsGroup); this.digits.s1 = this.createDigit('digit-s1', 0, secondsGroup, 'segment-s'); this.digits.s2 = this.createDigit('digit-s2', digitWidth + digitSpacing, secondsGroup, 'segment-s'); this.periodTextElement = document.createElementNS('http://www.w3.org/2000/svg', 'text'); this.periodTextElement.setAttribute('class', 'period-text'); this.periodTextElement.setAttribute('dominant-baseline', 'hanging'); viewportGroup.appendChild(this.periodTextElement); const mainDigitHeight = 240 + 32; const scaledSecondsHeight = mainDigitHeight * secondsScale; const totalContentWidth = mainDigitsWidth + minuteSecondSpacing + Math.max((digitWidth * 2 + digitSpacing) * secondsScale, 110); this.baseViewBoxWidth = totalContentWidth + 20; this.aspectRatio = this.baseViewBoxWidth / mainDigitHeight; this.svg.setAttribute('viewBox', `0 0 ${this.baseViewBoxWidth} ${mainDigitHeight}`); viewportGroup.setAttribute('transform', 'translate(20, 0)'); secondsGroup.setAttribute('transform', `translate(${mainDigitsWidth + minuteSecondSpacing}, ${mainDigitHeight - scaledSecondsHeight}) scale(${secondsScale})`);
-                    this.periodTextElement.setAttribute('x', mainDigitsWidth + minuteSecondSpacing - 20);
-                    this.periodTextElement.setAttribute('y', 0); this.update(); setInterval(() => this.update(), 1000);
-                },
-                updateDigit(digitElement, number) { const pattern = this.segmentMap[number]; digitElement.querySelectorAll('.segment').forEach((segment, i) => { segment.style.opacity = pattern[i] ? '1' : '0.1'; }); },
-                update() {
-                    const now = new Date();
-                    const s = now.getSeconds();
-
-                    // --- 每秒執行的部分 ---
-                    if (s !== this.lastTime.s) {
-                        // 處理定時特效
-                        const effectSettings = settingsState.timedEffect;
-                        if (!isEditMode && effectSettings && effectSettings.enabled && s % effectSettings.intervalSeconds === 0) {
-                            if (Object.values(isWidgetAnimating).some(v => v)) return;
-
-                            if (effectSettings.type === 'layoutSwitch') {
-                                if (layouts.length >= 2) {
-                                    if (effectSettings.isRandom) {
-                                        let randomIndex;
-                                        do { randomIndex = Math.floor(Math.random() * layouts.length); } while (layouts.length > 1 && randomIndex === currentLayoutIndex);
-                                        currentLayoutIndex = randomIndex;
-                                    } else {
-                                        currentLayoutIndex = nextLayoutIndex;
-                                        nextLayoutIndex = (nextLayoutIndex + 1) % layouts.length;
-                                    }
-                                    const useTransition = settingsState.timedEffect?.transitionEnabled ?? false;
-                                    if (useTransition) { animateLayoutChange(layouts[currentLayoutIndex], 1000, true); } 
-                                    else { applyLayout(layouts[currentLayoutIndex], { ignoreTimedEffect: true }); saveCurrentSettings(true); }
-                                }
-                            } else if (effectSettings.type === 'slide') {
-                                this.triggerSlideEffect();
-                            }
-                        }
-
-                        // 更新秒數顯示和冒號閃爍
-                        const sStr = String(s).padStart(2, '0');
-                        this.updateDigit(this.digits.s1, parseInt(sStr[0]));
-                        this.updateDigit(this.digits.s2, parseInt(sStr[1]));
-                        const shouldBlink = settingsState.ledClock?.colonBlink ?? true;
-                        const colonOpacity = shouldBlink ? (s % 2 === 0 ? '1' : '0.2') : '1';
-                        this.colons.h.querySelectorAll('.colon').forEach(c => c.style.opacity = colonOpacity);
-                        this.lastTime.s = s;
-                    }
-
-                    // --- 每分鐘執行的部分 ---
-                    const m = now.getMinutes();
-                    if (m !== this.lastTime.m) {
-                        const mStr = String(m).padStart(2, '0');
-                        this.updateDigit(this.digits.m1, parseInt(mStr[0]));
-                        this.updateDigit(this.digits.m2, parseInt(mStr[1]));
-                        this.lastTime.m = m;
-                    }
-
-                    // --- 每小時執行的部分 ---
-                    const h = now.getHours();
-                    if (h !== this.lastTime.h) {
-                        if (this.periodTextElement) { this.periodTextElement.textContent = TimeHelper.getPeriodText(h); }
-                        let h12 = h % 12; if (h12 === 0) h12 = 12;
-                        const hStr = String(h12).padStart(2, '0');
-                        this.updateDigit(this.digits.h1, parseInt(hStr[0]));
-                        this.updateDigit(this.digits.h2, parseInt(hStr[1]));
-                        this.lastTime.h = h;
-                    }
-                },
-                triggerSlideEffect() {
-                    let targets = [];
-                    allWidgetContainers().forEach(el => {
-                        if (transformStates[el.id]?.visible && !el.classList.contains('marquee-widget')) targets.push(el.id);
-                    });
-                    MarqueeManager.instances.forEach(instance => {
-                        if (transformStates[instance.container.id]?.visible && !instance.isScrolling) targets.push(instance.container.id);
-                    });
-                    if (targets.length === 0) return;
-                    const move = { up: 'translateY(-100vh)', down: 'translateY(100vh)', left: 'translateX(-100vw)', right: 'translateX(100vw)' };
-                    const directions = Object.keys(move);
-                    const duration = 700;
-                    targets.forEach(id => {
-                        const el = document.getElementById(id);
-                        if (!el || isWidgetAnimating[id]) return;
-                        const direction = directions[Math.floor(Math.random() * directions.length)];
-                        isWidgetAnimating[id] = true;
-                        const originalTransform = el.style.transform;
-                        const originalTransition = el.style.transition;
-                        el.style.transition = `transform ${duration}ms ease-in-out`;
-                        el.style.transform = `${originalTransform} ${move[direction]}`;
-                        setTimeout(() => {
-                            el.style.transition = 'none';
-                            el.style.transform = originalTransform;
-                            setTimeout(() => {
-                                el.style.transition = originalTransition;
-                                isWidgetAnimating[id] = false;
-                            }, 50);
-                        }, duration);
-                    });
-                }
-            };
-            // ===================================================================
-            // 指針時鐘模組
-            // ===================================================================
-            const AnalogClock = {
-                lastSecond: -1,
-                hourHand: document.querySelector('#analog-clock-container .hour-hand'),
-                minuteHand: document.querySelector('#analog-clock-container .minute-hand'),
-                secondHand: document.querySelector('#analog-clock-container .second-hand'),
-                ticksContainer: document.getElementById('ticks-container'),
-                animationFrameId: null,
-                init() {
-                    this.ticksContainer.innerHTML = '';
-                    const useLed = settingsState.analogClock?.useLedFont ?? true;
-                    for (let i = 1; i <= 60; i++) {
-                        const isHour = i % 5 === 0, rotation = i * 6;
-                        const wrapper = document.createElement('div');
-                        wrapper.className = 'tick-wrapper'; wrapper.style.transform = `rotate(${rotation}deg)`;
-                        const tick = document.createElement('div');
-                        tick.className = isHour ? 'tick tick-hour' : 'tick tick-minute';
-                        wrapper.appendChild(tick);
-                        if (isHour) {
-                            wrapper.style.setProperty('--rotation', `${rotation}deg`);
-                            const numDiv = document.createElement('div'); numDiv.className = 'number';
-                            const numberText = String(i / 5);
-                            const numberColor = getComputedStyle(document.documentElement).getPropertyValue('--analog-number-color').trim() || '#ffffff';
-                            if (useLed) {
-                                const clockState = transformStates['analog-clock-container'];
-                                const svgHeight = clockState ? clockState.width * 0.08 : 16;
-                                numDiv.innerHTML = `<div>${generateLedSvg(numberText, { height: svgHeight, color: numberColor })}</div>`;
-                            } else {
-                                numDiv.innerHTML = `<div style="transform: rotate(calc(-1 * var(--rotation))); color: ${numberColor}; font-size: 1.2em; font-weight: bold;">${numberText}</div>`;
-                            }
-                            wrapper.appendChild(numDiv);
-                        }
-                        this.ticksContainer.appendChild(wrapper);
-                    }
-                    if (!this.animationFrameId) this.update();
-                },
-                update() {
-                    const now = new Date();
-                    const smooth = settingsState.analogClock?.smoothSeconds ?? false;
-
-                    if (!smooth) {
-                        const currentSecond = now.getSeconds();
-                        if (currentSecond === this.lastSecond) {
-                            this.animationFrameId = requestAnimationFrame(() => this.update());
-                            return;
-                        }
-                        this.lastSecond = currentSecond;
-                    }
-
-                    const s = smooth ? now.getSeconds() + now.getMilliseconds() / 1000 : now.getSeconds();
-                    const m = now.getMinutes() + s / 60;
-                    const h = now.getHours() % 12 + m / 60;
-                    this.hourHand.style.transform = `translateX(-50%) rotate(${(h / 12) * 360}deg)`;
-                    this.minuteHand.style.transform = `translateX(-50%) rotate(${(m / 60) * 360}deg)`;
-                    this.secondHand.style.transform = `translateX(-50%) rotate(${(s / 60) * 360}deg)`;
-                    this.animationFrameId = requestAnimationFrame(() => this.update());
-                }
-            };
-            // ===================================================================
-            // LED 數字 SVG 產生器
-            // ===================================================================
-            function generateLedSvg(text, config = {}) {
-                const { height = 24, color = '#FFFFFF', letterSpacing = 16 } = config;
-                const id_suffix = Math.random().toString(36).substring(2, 9);
-                const segmentId = `led-segment-${id_suffix}`, colonId = `led-colon-${id_suffix}`;
-                const segmentMap = [[1,1,1,1,1,1,0],[0,1,1,0,0,0,0],[1,1,0,1,1,0,1],[1,1,1,1,0,0,1],[0,1,1,0,0,1,1],[1,0,1,1,0,1,1],[1,0,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1]];
-                const segmentTransforms = ['translate(0, 0)','translate(132, 20) rotate(90)','translate(132, 140) rotate(90)','translate(0, 240)','translate(12, 140) rotate(90)','translate(12, 20) rotate(90)','translate(0, 120)'];
-                const digitBaseWidth = 144, digitBaseHeight = 272, colonBaseWidth = 48;
-                let svgContent = '', currentX = 0;
-                for (const char of String(text)) {
-                    if (/\d/.test(char)) {
-                        const digit = parseInt(char, 10);
-                        if (digit >= 0 && digit <= 9) {
-                            const pattern = segmentMap[digit];
-                            let digitGroup = `<g transform="translate(${currentX}, 0)">`;
-                            for (let i = 0; i < 7; i++) digitGroup += `<use href="#${segmentId}" opacity="${pattern[i] ? '1' : '0.1'}" transform="${segmentTransforms[i]}" />`;
-                            digitGroup += `</g>`; svgContent += digitGroup;
-                        }
-                        currentX += digitBaseWidth + letterSpacing;
-                    } else if (char === ':') {
-                        svgContent += `<g transform="translate(${currentX}, 0)"><use href="#${colonId}" transform="translate(0, 60)" /><use href="#${colonId}" transform="translate(0, 180)" /></g>`;
-                        currentX += colonBaseWidth + letterSpacing;
-                    } else if (['/', '-', '.'].includes(char)) {
-                        const separatorWidth = 60, entity = { '/': '/', '-': '—', '.': '.' }[char];
-                        svgContent += `<text x="${currentX + separatorWidth / 2}" y="${digitBaseHeight / 2}" text-anchor="middle" dominant-baseline="central" font-size="${digitBaseHeight * 0.9}" font-family="'Courier New', Courier, monospace" font-weight="bold">${entity}</text>`;
-                        currentX += separatorWidth + letterSpacing;
-                    }
-                }
-                const totalWidth = currentX > 0 ? currentX - letterSpacing : 0;
-                if (totalWidth === 0) return '';
-                const padding = 16, finalWidth = ((totalWidth + padding * 2) / digitBaseHeight) * height;
-                return `<svg viewBox="-${padding} 0 ${totalWidth + padding * 2} ${digitBaseHeight}" data-text="${text}" height="${height}px" width="${finalWidth}px" fill="${color}" style="vertical-align: middle; display: inline-block;"><defs><polygon id="${segmentId}" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="${colonId}" x="-16" y="0" width="32" height="32" rx="5" ry="5" /></defs>${svgContent}</svg>`.replace(/\n\s*/g, '');
-            }
-            function getLedHTML(text, useLed, options = {}) {
-                if (!useLed) return String(text).replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                const { color = '#FFFFFF', fontSize = 16, heightMultiplier = 1.1, defaultSpan = true } = options;
-                let resultHTML = '';
-                const parts = String(text).split(/(\d+[\d:./-]*)/);
-                parts.forEach(part => {
-                    if (/^\d+[\d:./-]*$/.test(part) && part.trim() !== '') {
-                        resultHTML += generateLedSvg(part, { height: fontSize * heightMultiplier, color: color });
-                    } else if (part) {
-                        const escapedPart = part.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                        resultHTML += defaultSpan ? `<span style="color:${color};">${escapedPart}</span>` : escapedPart;
-                    }
-                });
-                return resultHTML;
-            }
-            function applyLedToStaticContent(containerElement) {
-                if (containerElement.dataset.ledProcessed) return;
-                const walker = document.createTreeWalker(containerElement, NodeFilter.SHOW_TEXT, null, false);
-                const nodesToProcess = [];
-                let node;
-                while (node = walker.nextNode()) {
-                    if (node.parentElement.closest('script, style, svg, [data-led-processed]')) continue;
-                    if (/\d/.test(node.nodeValue)) nodesToProcess.push(node);
-                }
-                nodesToProcess.forEach(node => {
-                    const parent = node.parentNode;
-                    if (!parent) return;
-                    const parts = node.nodeValue.split(/(\d+[\d:./-]*)/);
-                    if (parts.length <= 1) return;
-                    const fragment = document.createDocumentFragment();
-                    parts.forEach(part => {
-                        if (/^\d+[\d:./-]*$/.test(part) && part.trim() !== '') {
-                            const color = getComputedStyle(parent).color || '#FFFFFF';
-                            const fontSize = parseFloat(getComputedStyle(parent).fontSize) || 16;
-                            const template = document.createElement('template');
-                            const svgHTML = generateLedSvg(part, { height: fontSize * 1.1, color: color }).trim();
-                            if (svgHTML) {
-                                template.innerHTML = svgHTML;
-                                if (template.content.firstChild) {
-                                    template.content.firstChild.dataset.ledProcessed = 'true';
-                                    fragment.appendChild(template.content.firstChild);
-                                }
-                            } else { fragment.appendChild(document.createTextNode(part)); }
-                        } else if (part) { fragment.appendChild(document.createTextNode(part)); }
-                    });
-                    parent.replaceChild(fragment, node);
-                });
-                containerElement.dataset.ledProcessed = 'true';
-            }
-            // ===================================================================
             // 統一的日曆標題渲染函數
             // ===================================================================
             function renderCalendarTitle(element, year, useLed, ledHeight, ledColor, defaultFontSize, defaultColor) {
@@ -2120,182 +2605,76 @@
                     : `<span style="font-size: ${defaultFontSize}; color: ${defaultColor}; line-height: 1; font-weight: 700;">${year}</span>`;
             }
             // ===================================================================
-            // 跑馬燈模組 (Class)
+            // 月曆與月相曆模組 (工廠模式)
             // ===================================================================
-            class MarqueeInstance {
-                constructor(containerId, index) {
-                    this.container = document.getElementById(containerId);
-                    this.mainContainer = this.container.querySelector('main');
-                    this.innerDiv = this.container.querySelector('.marquee-inner');
-                    this.index = index;
-                    this.animationStyleTag = document.createElement('style');
-                    document.head.appendChild(this.animationStyleTag);
-                    this.rebuildTimeout = null;
-                    this.isScrolling = false;
-
-                    // 參數與更新頻率的映射
-                    this.paramToFrequency = {
-                        s: ['%ss%', '%s%'],
-                        m: ['%mm%', '%m%', '%HH%', '%H%', '%hh%', '%h%', '%AP%', '%ap%', '%ap_c%', '%SHICHEN_GZ%', '%SHICHEN_NAME%', '%SHICHEN_CHAR%'],
-                        d: ['%YYYY%', '%YY%', '%ROC_YY%', '%MM%', '%M%', '%DD%', '%D%', '%WEEKDAY%', '%W_SHORT%', '%W_CHAR%', '%W_NUM%', '%CONSTELLATION%', '%L_GZ%', '%L_SX%', '%LM_C%', '%LD_C%', '%MOON_PHASE%', '%MOON_ICON%', '%MOON_DAY%'],
-                        w: ['%WEATHER_LOC%', '%WEATHER_DESC%', '%TEMP%', '%SUNRISE%', '%SUNSET%']
-                    };
-                    // 根據頻率分類儲存對應的 span 元素
-                    this.spansByFrequency = { s: [], m: [], d: [], w: [] };
-                }
-
-                // 新增：將跑馬燈內的參數 span 元素進行分類儲存
-                _categorizeSpans() {
-                    this.spansByFrequency = { s: [], m: [], d: [], w: [] };
-                    this.innerDiv.querySelectorAll('[data-time-key]').forEach(span => {
-                        const key = span.dataset.timeKey;
-                        if (this.paramToFrequency.s.includes(key)) this.spansByFrequency.s.push(span);
-                        else if (this.paramToFrequency.m.includes(key)) this.spansByFrequency.m.push(span);
-                        else if (this.paramToFrequency.d.includes(key)) this.spansByFrequency.d.push(span);
-                        else if (this.paramToFrequency.w.includes(key)) this.spansByFrequency.w.push(span);
-                    });
-                }
-
-                buildInitialHTML(text) {
-                    const settings = settingsState.marquees[this.index], isVertical = settings.vertical, useLedGlobal = settingsState.marqueeGlobal?.useLedFont ?? true, defaultColor = (settings.colors && settings.colors.default) ? settings.colors.default : '#FFFFFF';
-                    const processMarqueeChunk = (chunk) => {
-                        if (!useLedGlobal) return `<span class="marquee-plain-text" style="color:${defaultColor}">${chunk.replace(/ /g, '\u00A0')}</span>`;
-                        let processedHTML = '';
-                        const parts = chunk.split(/(\d+[\d:.]*)/);
-                        for (const part of parts) {
-                            if (/^\d+[\d:.]*$/.test(part) && part.trim() !== '') {
-                                const widgetState = transformStates[this.container.id];
-                                const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
-                                processedHTML += generateLedSvg(part, { height: svgHeight, color: defaultColor });
-                            } else if (part) {
-                                processedHTML += `<span class="marquee-plain-text" style="color:${defaultColor}">${part.replace(/ /g, '\u00A0')}</span>`;
-                            }
-                        }
-                        return processedHTML;
-                    };
-                    // 不再呼叫 getReplacements()，而是使用 Manager 提供的快取
-                    const replacements = MarqueeManager._cachedReplacements;
-                    const paramRegex = new RegExp(`%C\\(#([0-9a-fA-F]{6}),\\s*([^%)]+)\\)%|${Object.keys(marqueeParamColorMap).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')}|%br%`, 'g');
-                    let resultHTML = '', lastIndex = 0, match;
-                    const ledParams = ['%HH%', '%H%', '%hh%', '%h%', '%mm%', '%m%', '%ss%', '%s%', '%ROC_YY%', '%YYYY%', '%YY%', '%MM%', '%M%', '%DD%', '%D%', '%TEMP%', '%SUNRISE%', '%SUNSET%'];
-                    while ((match = paramRegex.exec(text)) !== null) {
-                        if (match.index > lastIndex) { resultHTML += processMarqueeChunk(text.substring(lastIndex, match.index)); }
-                        const param = match[0], colorHex = match[1], colorText = match[2];
-                        if (colorHex && colorText) {
-                            if (useLedGlobal && /^[\d:]+$/.test(colorText)) {
-                                const widgetState = transformStates[this.container.id];
-                                const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
-                                resultHTML += `<span>${generateLedSvg(colorText, { height: svgHeight, color: '#' + colorHex })}</span>`;
-                            } else {
-                                resultHTML += `<span class="marquee-plain-text" style="color:#${colorHex}">${colorText.replace(/ /g, '\u00A0')}</span>`;
-                            }
-                        } else if (param === '%br%') {
-                            if (isVertical) resultHTML += '</div><div>';
-                        } else if (replacements[param] !== undefined) { // 確保 replacements 有值
-                            const cssVar = marqueeParamColorMap[param];
-                            const color = cssVar ? getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim() : defaultColor;
-                            const replacementContent = String(replacements[param] || '');
-                            if (useLedGlobal && ledParams.includes(param) && /^[\d:]+$/.test(replacementContent)) {
-                                const widgetState = transformStates[this.container.id];
-                                const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
-                                resultHTML += `<span data-time-key="${param}">${generateLedSvg(replacementContent, { height: svgHeight, color: color })}</span>`;
-                            } else if (param === '%MOON_ICON%') {
-                                resultHTML += `<span data-time-key="${param}">${replacementContent}</span>`;
-                            } else {
-                                resultHTML += `<span data-time-key="${param}" style="color:${color}">${replacementContent}</span>`;
-                            }
-                        }
-                        lastIndex = paramRegex.lastIndex;
-                    }
-                    if (lastIndex < text.length) { resultHTML += processMarqueeChunk(text.substring(lastIndex)); }
-                    return isVertical ? `<div>${resultHTML}</div>` : resultHTML;
-                }
-
-                // 修改：接收狀態和快取資料，進行目標式更新
-                updateContent(status, replacements) {
-                    const updateSpan = (span) => {
-                        const key = span.dataset.timeKey;
-                        if (replacements[key] === undefined) return;
-                        const useLed = settingsState.marqueeGlobal?.useLedFont ?? true;
-                        const ledParams = ['%HH%', '%H%', '%hh%', '%h%', '%mm%', '%m%', '%ss%', '%s%', '%ROC_YY%', '%YYYY%', '%YY%', '%MM%', '%M%', '%DD%', '%D%', '%TEMP%', '%SUNRISE%', '%SUNSET%'];
-                        const newText = String(replacements[key]);
-                        if (useLed && ledParams.includes(key) && /^[\d:]+$/.test(newText)) {
-                            const svgEl = span.querySelector('svg');
-                            if (!svgEl || svgEl.dataset.text !== newText) {
-                                 const widgetState = transformStates[this.container.id];
-                                 const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
-                                 const color = svgEl ? svgEl.getAttribute('fill') : (marqueeParamColorMap[key] ? getComputedStyle(document.documentElement).getPropertyValue(marqueeParamColorMap[key]).trim() : '#FFFFFF');
-                                 span.innerHTML = generateLedSvg(newText, { height: svgHeight, color: color });
-                            }
-                        } else if (key === '%MOON_ICON%') {
-                            if (span.innerHTML !== newText) span.innerHTML = newText;
+            function createCalendarWidget(options) {
+                const { bodyId, yearHeaderId, backgroundMonthId, prevBtnId, nextBtnId, todayBtnId, onCellRender, onHeaderClick, getSetting } = options;
+                const body = document.getElementById(bodyId), yearHeader = document.getElementById(yearHeaderId), backgroundMonth = document.getElementById(backgroundMonthId);
+                const widget = {
+                    body: body, currentDate: new Date(),
+                    init() {
+                        document.getElementById(prevBtnId).addEventListener('click', () => { if (!isEditMode) { this.currentDate.setMonth(this.currentDate.getMonth() - 1); this.render(); } });
+                        document.getElementById(nextBtnId).addEventListener('click', () => { if (!isEditMode) { this.currentDate.setMonth(this.currentDate.getMonth() + 1); this.render(); } });
+                        document.getElementById(todayBtnId).addEventListener('click', () => { if (!isEditMode) { this.currentDate = new Date(); this.render(); } });
+                        if (onHeaderClick) yearHeader.addEventListener('click', () => onHeaderClick(this));
+                        this.render();
+                    },
+                    render() {
+                        body.innerHTML = '';
+                        const year = this.currentDate.getFullYear(), month = this.currentDate.getMonth();
+                        const widgetSettings = getSetting() || {};
+                        const useLedHeader = widgetSettings.useLedFont ?? true;
+                        const yearColor = getComputedStyle(document.documentElement).getPropertyValue('--year-color').trim() || '#FF7000';
+                        renderCalendarTitle(yearHeader, year, useLedHeader, 26, yearColor, '26px', yearColor);
+                        const widgetId = body.closest('.widget-container').id;
+                        const widgetState = transformStates[widgetId];
+                        if (useLedHeader && widgetState) {
+                             const monthColor = getComputedStyle(document.documentElement).getPropertyValue('--month-color').trim() || '#3070a0';
+                             backgroundMonth.innerHTML = generateLedSvg(String(month + 1), { height: widgetState.height * 0.7, color: monthColor });
                         } else {
-                            if (span.textContent !== newText) span.textContent = newText;
+                             backgroundMonth.textContent = month + 1;
                         }
-                    };
-                    
-                    if (status.s) this.spansByFrequency.s.forEach(updateSpan);
-                    if (status.m) this.spansByFrequency.m.forEach(updateSpan);
-                    if (status.d) this.spansByFrequency.d.forEach(updateSpan);
-                    if (status.w) this.spansByFrequency.w.forEach(updateSpan);
-                }
-
-                rebuildAnimation() {
-                    clearTimeout(this.rebuildTimeout);
-                    this.innerDiv.style.animation = ''; this.isScrolling = false;
-                    const settings = settingsState.marquees[this.index]; if (!settings) return;
-                    if (/^%WEATHER_|%SUNRISE%|%SUNSET%|%TEMP%/.test(settings.text) && !weatherDataLoaded) {
-                        this.innerDiv.style.transform = 'translateX(0) translateY(0)';
-                        this.innerDiv.innerHTML = `<div class="marquee-text-instance">${this.buildInitialHTML(settings.text)}</div>`;
-                        return;
+                        const firstDayOfMonth = new Date(year, month, 1);
+                        const startDayOfWeek = firstDayOfMonth.getDay();
+                        const startDate = new Date(year, month, 1 - startDayOfWeek);
+                        const today = new Date(); today.setHours(0, 0, 0, 0);
+                        for (let i = 0; i < 42; i++) {
+                            const currentCellDate = new Date(startDate);
+                            currentCellDate.setDate(startDate.getDate() + i);
+                            const cell = document.createElement('div');
+                            cell.className = `calendar-day ${currentCellDate.getMonth() !== month ? 'other-month' : ''} ${currentCellDate.getTime() === today.getTime() ? 'today' : ''}`;
+                            onCellRender(cell, currentCellDate, widgetSettings);
+                            body.appendChild(cell);
+                        }
                     }
-                    this.rebuildTimeout = setTimeout(() => {
-                        this.animationStyleTag.innerHTML = ''; this.innerDiv.innerHTML = '';
-                        this.innerDiv.style.transform = 'translateX(0) translateY(0) translateZ(0)';
-                        if (!settings.text || !settings.text.trim()) return;
-                        const { text, vertical: isVertical, speed, direction } = settings;
-                        this.innerDiv.style.flexDirection = isVertical ? 'column' : 'row';
-                        this.innerDiv.style.width = isVertical ? '100%' : 'fit-content';
-                        this.mainContainer.style.alignItems = isVertical ? 'flex-start' : 'center';
-                        const instance1 = document.createElement('div');
-                        instance1.className = 'marquee-text-instance';
-                        instance1.style.whiteSpace = isVertical ? 'normal' : 'nowrap';
-                        instance1.style.textAlign = isVertical ? 'center' : 'left';
-                        if (isVertical) instance1.style.display = 'block';
-                        instance1.innerHTML = this.buildInitialHTML(text);
-                        this.innerDiv.appendChild(instance1);
-                        instance1.getBoundingClientRect();
-                        const contentMeasure = isVertical ? instance1.offsetHeight : instance1.offsetWidth;
-                        const containerMeasure = isVertical ? this.mainContainer.offsetHeight : this.mainContainer.offsetWidth;
-                        if (contentMeasure <= containerMeasure) {
-                            this.isScrolling = false;
-                            if (!isVertical && instance1.scrollWidth > this.mainContainer.clientWidth) {
-                                this.container.style.fontSize = `${parseFloat(getComputedStyle(this.container).fontSize) * (this.mainContainer.clientWidth / instance1.scrollWidth) * 0.98}px`;
-                            }
-                        } else {
-                            this.isScrolling = true;
-                            this.innerDiv.appendChild(instance1.cloneNode(true));
-                        }
-                        this._categorizeSpans();
-
-                        if (!this.isScrolling) return;
-                        const travelDistance = contentMeasure; if (travelDistance <= 0) return;
-                        const duration = travelDistance / (parseInt(speed, 10) || 80);
-                        const animName = `marquee-${this.index}-${Date.now()}`;
-                        let fromTransform, toTransform;
-                        switch(direction) {
-                            case 'right': fromTransform = `translateX(-${travelDistance}px)`; toTransform = `translateX(0px)`; break;
-                            case 'up': fromTransform = `translateY(0px)`; toTransform = `translateY(-${travelDistance}px)`; break;
-                            case 'down': fromTransform = `translateY(-${travelDistance}px)`; toTransform = `translateY(0px)`; break;
-                            default: fromTransform = `translateX(0px)`; toTransform = `translateX(-${travelDistance}px)`; break;
-                        }
-                        this.animationStyleTag.innerHTML = `@keyframes ${animName} { from { transform: ${fromTransform} translateZ(0); } to { transform: ${toTransform} translateZ(0); }}`;
-                        this.innerDiv.style.animation = `${animName} ${duration}s linear infinite`;
-                        this.innerDiv.style.animationPlayState = isEditMode ? 'paused' : 'running';
-                    }, 50);
-                }
-                 setPlayState(shouldPlay) { this.innerDiv.style.animationPlayState = shouldPlay ? 'running' : 'paused'; }
+                };
+                return widget;
             }
+            const calendarCellRenderer = (cell, date, settings) => {
+                const day = date.getDate(), lunar = getLunarDate(date), solarTerm = getSolarTerm(date.getFullYear(), date.getMonth() + 1, day), holiday = getHoliday(date);
+                const showMoonIcon = settings.showMoonIcon ?? true, useLed = settings.useLedFont ?? true;
+                const textDetailsHTML = `<div class="lunar-date">${lunar.day === 1 ? lunar.toString.substring(0, lunar.isLeap ? 3 : 2) : lunar.dayString}</div>
+                    ${solarTerm ? `<div class="solarterm-text truncate" data-key="${solarTerm}">${solarTerm}</div>` : ''}
+                    ${holiday ? `<div class="holiday-text truncate" data-key="${holiday}">${holiday}</div>` : ''}`;
+                const dayColor = getComputedStyle(document.documentElement).getPropertyValue('--day-color').trim();
+                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvg(String(day), {height: 20, color: dayColor})}</div>` : `<div class="day-number-wrapper" style="font-size: 1.5em; line-height: 1.2; color: ${dayColor}; display: flex; align-items: center; justify-content: center; height: 20px; font-weight: 700;">${day}</div>`;
+                if (showMoonIcon) {
+                    cell.classList.add('with-moon-icon');
+                    cell.innerHTML = `<div class="day-text-content">${dayNumberHTML}<div class="space-y-px">${textDetailsHTML}</div></div><div class="day-moon-container">${MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '28px', `main-cal-${Math.random()}`)}</div>`;
+                } else {
+                    cell.classList.remove('with-moon-icon');
+                    cell.innerHTML = `${dayNumberHTML}<div class="space-y-px">${textDetailsHTML}</div>`;
+                }
+                cell.dataset.date = date.toISOString();
+                if (isEditMode) cell.classList.add('edit-mode-active');
+            };
+            const moonPhaseCellRenderer = (cell, date, settings) => {
+                const lunar = getLunarDate(date), useLed = settings.useLedFont ?? true, dayColor = getComputedStyle(document.documentElement).getPropertyValue('--day-color').trim() || '#ffffff', day = date.getDate();
+                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvg(String(day), { height: 20, color: dayColor })}</div>` : `<div class="day-number-wrapper" style="font-size: 1.2em; line-height: 1; color: ${dayColor}; font-weight: bold;">${day}</div>`;
+                const lunarDateText = lunar.day === 1 ? lunar.toString.substring(0, lunar.isLeap ? 3 : 2) : lunar.dayString;
+                cell.innerHTML = `${dayNumberHTML}<div class="moon-icon-small">${MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '100%', `grid-${Math.random()}`)}</div><div class="lunar-date">${lunarDateText}</div>`;
+                cell.addEventListener('click', () => { if(!isEditMode) showDayDetailModal(date.toISOString()); });
+            };
             // ===================================================================
             // 月相 SVG 產生器
             // ===================================================================
@@ -2314,8 +2693,8 @@
             // ===================================================================
             function showModal(modalId) {
                 const modal = document.getElementById(modalId);
-                if (modalId === 'modal-backdrop-marquee-params' || modalId === 'modal-backdrop-explanation') {
-                    const useLed = modalId === 'modal-backdrop-marquee-params' ? (settingsState.marqueeGlobal?.useLedFont ?? true) : (settingsState.calendar?.useLedFont ?? true);
+                if (modalId === 'modal-backdrop-explanation') {
+                    const useLed = settingsState.calendar?.useLedFont ?? true;
                     if (useLed) applyLedToStaticContent(modal.querySelector('.modal-content'));
                 }
                 modal.classList.add('show');
@@ -2532,25 +2911,59 @@
             document.getElementById('fullscreen-btn').addEventListener('click',()=>{if(!document.fullscreenElement){document.documentElement.requestFullscreen()}else{document.exitFullscreen()}});
             document.addEventListener('fullscreenchange',()=>{const isFullscreen=!!document.fullscreenElement;document.getElementById('fullscreen-enter-icon').classList.toggle('display-none',isFullscreen);document.getElementById('fullscreen-exit-icon').classList.toggle('display-none',!isFullscreen)});
             // ===================================================================
+            // 自動每日重新整理模組
+            // ===================================================================
+            const DailyRefresher = {
+                timeoutId: null,
+
+                start() {
+                    this.scheduleNextRefresh();
+                },
+
+                scheduleNextRefresh() {
+                    // 如果已有計時器，先清除
+                    if (this.timeoutId) clearTimeout(this.timeoutId);
+
+                    const now = new Date();
+                    // 設定在隔天凌晨 0 點 0 分 5 秒觸發，避免剛好在午夜的邊界問題
+                    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5); 
+                    const msUntilTrigger = tomorrow - now;
+
+                    // 設定計時器
+                    this.timeoutId = setTimeout(() => {
+                        this.refreshCalendars();
+                    }, msUntilTrigger);
+                },
+
+                refreshCalendars() {
+                    console.log('偵測到日期變更，自動重新整理日曆。');
+                    // 將日曆的目前日期更新為今天
+                    Calendar.currentDate = new Date();
+                    MoonPhaseWidget.currentDate = new Date();
+                    // 重新渲染兩個日曆
+                    Calendar.render();
+                    MoonPhaseWidget.render();
+                    
+                    // 再次排定下一次的重新整理
+                    this.scheduleNextRefresh();
+                }
+            };
+            // ===================================================================
             // 應用程式初始化
             // ===================================================================
             function initializeWidgetControls() {
                 const resetHandleHTML = `<div class="reset-handle control-handle" title="還原尺寸與旋轉"><svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-reset-size"></use></svg></div>`;
-                // 2025-09-25: 移除中央的移動圖示 HTML
                 // const moveHandleHTML = `<div class="move-handle control-handle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="width-full height-full"><use href="#icon-move"></use></svg></div>`;
                 const resizeHandlesHTML = `<div class="resize-handle-w control-handle"></div><div class="resize-handle-h control-handle"></div>`;
                 const groupSelectHTML = `<div class="group-select-handle" title="加入/移出群組"><svg class="unchecked" style="display: block;" viewBox="0 0 24 24"><use href="#icon-checkbox-unchecked" stroke="white"></use></svg><svg class="checked" style="display: none;" viewBox="0 0 24 24"><use href="#icon-checkbox-checked" stroke="white"></use></svg></div>`;
                 const rotateHandleHTML = `<div class="rotate-handle control-handle" title="旋轉"><svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-rotate"></use></svg></div>`;
-                // 2025-09-25: 新增左下角的縮放圖示 HTML
                 const scaleHandleHTML = `<div class="scale-handle control-handle" title="縮放"><svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-scale"></use></svg></div>`;
                 
                 document.querySelectorAll('.widget-container').forEach(widgetEl => {
                     widgetEl.insertAdjacentHTML('afterbegin', groupSelectHTML);
                     widgetEl.insertAdjacentHTML('beforeend', resetHandleHTML);
-                    // 2025-09-25: 移除添加中央移動圖示的動作
                     // widgetEl.insertAdjacentHTML('beforeend', moveHandleHTML);
                     widgetEl.insertAdjacentHTML('beforeend', rotateHandleHTML);
-                    // 2025-09-25: 新增添加左下角縮放圖示的動作
                     widgetEl.insertAdjacentHTML('beforeend', scaleHandleHTML);
                     if (widgetEl.id !== 'analog-clock-container') {
                         widgetEl.insertAdjacentHTML('beforeend', resizeHandlesHTML);
@@ -2578,7 +2991,6 @@
 
                 init() {
                     this.syncInstances();
-                    // 首次執行以填滿快取
                     this._updateCacheAndGetStatus();
                     setInterval(() => this.updateAllContent(), 1000);
                 },
@@ -2588,12 +3000,10 @@
                     const s = now.getSeconds(), m = now.getMinutes(), d = now.getDate();
                     const status = { s: false, m: false, d: false, w: this._weatherDataChanged };
 
-                    // 依賴鍊：如果日期變了，分鐘和秒鐘也必定需要更新
                     if (d !== this._lastUpdateTime.d) status.d = true;
                     if (status.d || m !== this._lastUpdateTime.m) status.m = true;
                     if (status.m || s !== this._lastUpdateTime.s) status.s = true;
 
-                    // 根據狀態更新對應的快取資料
                     if (status.s) {
                         this._cachedReplacements['%ss%'] = String(s).padStart(2, '0');
                         this._cachedReplacements['%s%'] = s;
@@ -2649,7 +3059,7 @@
                             };
                         }
                         Object.assign(this._cachedReplacements, weatherReplacements);
-                        this._weatherDataChanged = false; // 重設標記
+                        this._weatherDataChanged = false;
                     }
                     return status;
                 },
@@ -2689,6 +3099,7 @@
                 AnalogClock.init();
                 Weather.init(); 
                 MarqueeManager.init();
+                DailyRefresher.start(); // 啟動每日自動重新整理
                 
                 updateLocationSelectors();
                 
