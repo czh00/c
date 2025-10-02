@@ -1010,11 +1010,11 @@
             const onDragMove = (e) => {
                 if (!activeHandle) return;
 
-                // --- FIX for iOS Dragging Issue ---
-                // By calling preventDefault() at the start of the move event,
-                // we tell the browser that we are handling this touch gesture,
-                // preventing it from trying to scroll the page, which can interrupt the drag.
-                // This is particularly important for a smooth experience on iOS.
+                // --- 為了解決 iOS 拖曳延遲問題 ---
+                // 在 move 事件 (touchmove) 中呼叫 preventDefault()，
+                // 可以立即告訴瀏覽器我們正在處理這個觸控手勢，
+                // 從而阻止它嘗試滾動頁面或執行其他預設行為，這些行為正是造成延遲的原因。
+                // 這對於在 iOS 上獲得流暢的拖曳體驗至關重要。
                 if (e.touches && e.cancelable) {
                     e.preventDefault();
                     e.stopPropagation();
