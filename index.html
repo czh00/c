@@ -25,7 +25,9 @@
         /* --- 通用 Widget 容器樣式 --- */
         .widget-container {
             position: absolute;
-            box-sizing: border-box; user-select: none;
+            box-sizing: border-box; 
+            user-select: none;
+            -webkit-touch-callout: none; /* iOS 拖曳優化: 防止長按觸發選單 */
             display: flex; flex-direction: column;
             background-color: transparent; z-index: 10;
             padding: 0;
@@ -1007,6 +1009,17 @@
 
             const onDragMove = (e) => {
                 if (!activeHandle) return;
+
+                // --- FIX for iOS Dragging Issue ---
+                // By calling preventDefault() at the start of the move event,
+                // we tell the browser that we are handling this touch gesture,
+                // preventing it from trying to scroll the page, which can interrupt the drag.
+                // This is particularly important for a smooth experience on iOS.
+                if (e.touches && e.cancelable) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                
                 const currentX = (e.touches ? e.touches[0] : e).clientX, currentY = (e.touches ? e.touches[0] : e).clientY;
                 const dx = currentX - startX, dy = currentY - startY;
                 
@@ -1147,7 +1160,7 @@
                     return;
                 }
                 
-                if (!activeWidget) return; e.preventDefault();
+                if (!activeWidget) return;
                 const isGroupSyncAction = !!activeWidget.syncGroup;
 
                 switch (activeHandle) {
@@ -1385,7 +1398,7 @@
                     
                     [{x: -w/2, y: -h/2}, {x: w/2, y: -h/2}, {x: w/2, y: h/2}, {x: -w/2, y: h/2}].forEach(corner => {
                         const rx = corner.x * cosA - corner.y * sinA + cx;
-                        const ry = corner.x * sinA - corner.y * cosA + cy;
+                        const ry = corner.x * sinA + corner.y * cosA + cy;
                         minX = Math.min(minX, rx); maxX = Math.max(maxX, rx);
                         minY = Math.min(minY, ry); maxY = Math.max(maxY, ry);
                     });
