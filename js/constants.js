@@ -15,3 +15,18 @@ const lunarInfo = [0x04bd8, 0x04ae0, 0x0a570, 0x054d5, 0x0d260, 0x0d950, 0x16554
             { sign: "天蠍座", m: 11, d: 23, range: "10/24 - 11/22" }, { sign: "射手座", m: 12, d: 22, range: "11/23 - 12/21" },
             { sign: "摩羯座", m: 13, d: 32, range: "12/22 - 1/19" } // 處理跨年
         ];
+
+        // --- 跑馬燈參數與顏色變數的映射表 ---
+        const marqueeParamColorMap = {
+            '%YYYY%': '--year-color', '%YY%': '--year-color', '%ROC_YY%': '--year-color', 
+            '%MM%': '--month-color', '%M%': '--month-color', 
+            '%DD%': '--day-color', '%D%': '--day-color',
+            '%WEEKDAY%': '--week-color', '%W_SHORT%': '--week-color', '%HH%': '--led-hour-color', '%hh%': '--led-hour-color',
+            '%mm%': '--led-minute-color', '%ss%': '--led-second-color', '%ap_c%': '--led-period-color', '%L_GZ%': '--lunar-color',
+            '%L_SX%': '--lunar-color', '%LM_C%': '--lunar-color', '%LD_C%': '--lunar-color', '%WEATHER_LOC%': '--holiday-color',
+            '%WEATHER_DESC%': '--holiday-color', '%TEMP%': '--holiday-color', '%SUNRISE%': '--solarterm-color',
+            '%SUNSET%': '--solarterm-color', '%MOON_PHASE%': '--moon-header-color', '%MOON_ICON%': '--moon-header-color',
+            '%MOON_DAY%': '--moon-header-color', '%CONSTELLATION%': '--solarterm-color',
+            '%SHICHEN_GZ%': '--lunar-color', '%SHICHEN_NAME%': '--lunar-color', '%SHICHEN_CHAR%': '--lunar-color',
+            '%br%': '#94a3b8'
+        };

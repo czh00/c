@@ -391,19 +391,7 @@
             let isEditMode = false, activityTimeout, transformStates = {}, settingsState = {}, isWidgetAnimating = {};
             let selectedWidgets = new Set(), groupMoveHandle = null, groupRotateHandle = null, groupScaleHandle = null, initialGroupTransforms = {};
             let activeHandle = null, startX, startY, initialTransformState, scaleCenterX, scaleCenterY, initialDist, activeWidget, groupAddHandle = null, activeGroup = null;
-            // --- 跑馬燈參數與顏色變數的映射表 ---
-            const marqueeParamColorMap = {
-                '%YYYY%': '--year-color', '%YY%': '--year-color', '%ROC_YY%': '--year-color', 
-                '%MM%': '--month-color', '%M%': '--month-color', 
-                '%DD%': '--day-color', '%D%': '--day-color',
-                '%WEEKDAY%': '--week-color', '%W_SHORT%': '--week-color', '%HH%': '--led-hour-color', '%hh%': '--led-hour-color',
-                '%mm%': '--led-minute-color', '%ss%': '--led-second-color', '%ap_c%': '--led-period-color', '%L_GZ%': '--lunar-color',
-                '%L_SX%': '--lunar-color', '%LM_C%': '--lunar-color', '%LD_C%': '--lunar-color', '%WEATHER_LOC%': '--holiday-color',
-                '%WEATHER_DESC%': '--holiday-color', '%TEMP%': '--holiday-color', '%SUNRISE%': '--solarterm-color',
-                '%SUNSET%': '--solarterm-color', '%MOON_PHASE%': '--moon-header-color', '%MOON_ICON%': '--moon-header-color',
-                '%MOON_DAY%': '--moon-header-color', '%CONSTELLATION%': '--solarterm-color',
-                '%SHICHEN_GZ%': '--lunar-color', '%SHICHEN_NAME%': '--lunar-color', '%SHICHEN_CHAR%': '--lunar-color'
-            };
+            // --- 預設佈局 ---
             const userDefaultLayout = {
                 "transforms": {
                     "calendar-container": { "visible": true, "width": 500, "height": 400, "left": 310, "top": 80, "scale": 1, "rotation": 0 },

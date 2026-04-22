@@ -508,16 +508,33 @@ const MarqueeEditor = {
             if (part.startsWith('%') && part.endsWith('%')) {
                 let label = this.paramLabelMap[part] || part;
                 let customColor = null;
-                
                 if (part.startsWith('%C(')) {
                     const match = part.match(/%C\((#[0-9a-fA-F]{6}),\s*(.*?)\)%/);
-                    if (match) {
-                        customColor = match[1];
-                        label = match[2];
+                    if (match) { customColor = match[1]; label = match[2]; }
+                }
+
+                let displayLabel = label;
+                if (part === '%br%') {
+                    displayLabel = `<svg><use href="#icon-newline" xlink:href="#icon-newline"></use></svg>`;
+                } else if (typeof MarqueeManager !== 'undefined' && MarqueeManager._cachedReplacements) {
+                    const replacement = MarqueeManager._cachedReplacements[part];
+                    if (replacement !== undefined && replacement !== null) {
+                        displayLabel = String(replacement);
                     }
                 }
                 
-                this.blocks.push({ type: 'module', code: part, label: label, color: customColor });
+                let themeColorVar = (typeof marqueeParamColorMap !== 'undefined') ? marqueeParamColorMap[part] : null;
+                let themeColor = null;
+                if (themeColorVar) {
+                    themeColor = getComputedStyle(document.documentElement).getPropertyValue(themeColorVar).trim();
+                }
+
+                this.blocks.push({ 
+                    type: 'module', 
+                    code: part, 
+                    label: displayLabel, 
+                    color: customColor || themeColor 
+                });
             } else if (part) {
                 this.blocks.push({ type: 'text', value: part });
             }
@@ -584,9 +601,11 @@ const MarqueeEditor = {
                 pill.title = block.code;
 
                 if (block.color) {
-                    pill.style.background = block.color + '33'; // 20% opacity
-                    pill.style.borderColor = block.color + '66'; // 40% opacity
-                    pill.style.color = block.color;
+                    // 檢查顏色格式，如果是 hex 或 rgb 則直接使用，否則可能是 css 變數名稱
+                    const finalColor = block.color.startsWith('--') ? getComputedStyle(document.documentElement).getPropertyValue(block.color).trim() : block.color;
+                    pill.style.background = finalColor + '33'; // 20% opacity
+                    pill.style.borderColor = finalColor + '66'; // 40% opacity
+                    pill.style.color = finalColor;
                 }
                 
                 pill.addEventListener('dragstart', (e) => {
@@ -602,16 +621,38 @@ const MarqueeEditor = {
     },
 
     createBlockFromCode(code, label) {
-        let finalLabel = label || this.paramLabelMap[code] || code;
+        let baseLabel = label || this.paramLabelMap[code] || code;
         let color = null;
+        
+        // 解析自定義顏色標籤
         if (code.startsWith('%C(')) {
             const match = code.match(/%C\((#[0-9a-fA-F]{6}),\s*(.*?)\)%/);
             if (match) {
                 color = match[1];
-                finalLabel = match[2];
+                baseLabel = match[2];
             }
         }
-        return { type: 'module', code: code, label: finalLabel, color: color };
+
+        // 嘗試獲取即時數值
+        let displayLabel = baseLabel;
+        if (code === '%br%') {
+            displayLabel = `<svg><use href="#icon-newline" xlink:href="#icon-newline"></use></svg>`;
+        } else if (typeof MarqueeManager !== 'undefined' && MarqueeManager._cachedReplacements) {
+            const replacement = MarqueeManager._cachedReplacements[code];
+            if (replacement !== undefined && replacement !== null) {
+                displayLabel = String(replacement);
+            }
+        }
+
+        // 嘗試獲取主題顏色
+        if (!color) {
+            let themeColorVar = (typeof marqueeParamColorMap !== 'undefined') ? marqueeParamColorMap[code] : null;
+            if (themeColorVar) {
+                color = getComputedStyle(document.documentElement).getPropertyValue(themeColorVar).trim();
+            }
+        }
+
+        return { type: 'module', code: code, label: displayLabel, color: color };
     },
 
     moveBlock(fromIdx, toIdx) {
