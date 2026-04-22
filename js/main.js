@@ -32,11 +32,11 @@
 // 應用程式初始化
 // ===================================================================
             function initializeWidgetControls() {
-                const resetHandleHTML = `<div class="reset-handle control-handle" title="還原尺寸與旋轉"><svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-reset-size"></use></svg></div>`;
+                const resetHandleHTML = `<div class="reset-handle control-handle" title="還原尺寸與旋轉"><svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-reset-size" xlink:href="#icon-reset-size"></use></svg></div>`;
                 const resizeHandlesHTML = `<div class="resize-handle-w control-handle"></div><div class="resize-handle-h control-handle"></div>`;
-                const groupSelectHTML = `<div class="group-select-handle" title="加入/移出群組"><svg class="unchecked" style="display: block;" viewBox="0 0 24 24"><use href="#icon-checkbox-unchecked" stroke="white"></use></svg><svg class="checked" style="display: none;" viewBox="0 0 24 24"><use href="#icon-checkbox-checked" stroke="white"></use></svg></div>`;
-                const rotateHandleHTML = `<div class="rotate-handle control-handle" title="旋轉"><svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-rotate"></use></svg></div>`;
-                const scaleHandleHTML = `<div class="scale-handle control-handle" title="縮放"><svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-scale"></use></svg></div>`;
+                const groupSelectHTML = `<div class="group-select-handle" title="加入/移出群組"><svg class="unchecked" style="display: block;" viewBox="0 0 24 24"><use href="#icon-checkbox-unchecked" xlink:href="#icon-checkbox-unchecked" stroke="white"></use></svg><svg class="checked" style="display: none;" viewBox="0 0 24 24"><use href="#icon-checkbox-checked" xlink:href="#icon-checkbox-checked" stroke="white"></use></svg></div>`;
+                const rotateHandleHTML = `<div class="rotate-handle control-handle" title="旋轉"><svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-rotate" xlink:href="#icon-rotate"></use></svg></div>`;
+                const scaleHandleHTML = `<div class="scale-handle control-handle" title="縮放"><svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-scale" xlink:href="#icon-scale"></use></svg></div>`;
 
                 document.querySelectorAll('.widget-container').forEach(widgetEl => {
                     widgetEl.insertAdjacentHTML('afterbegin', groupSelectHTML);

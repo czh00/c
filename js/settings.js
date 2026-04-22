@@ -405,12 +405,12 @@
                     timedEffectToggle.disabled = false; timedEffectInterval.disabled = false;
                     renderAllPersistentGroupsUI(); // 離開編輯模式時會清除群組UI
                 }
-                document.body.classList.toggle('edit-mode', isEditMode);
-                allWidgetContainers().forEach(c => c.classList.toggle('edit-mode', isEditMode));
-                document.getElementById('edit-icon').classList.toggle('display-none', isEditMode);
-                document.getElementById('edit-exit-icon').classList.toggle('display-none', !isEditMode);
-                editToolbar.classList.toggle('show', isEditMode);
-                document.querySelectorAll('.calendar-day').forEach(d => d.classList.toggle('edit-mode-active', isEditMode));
+                if (isEditMode) document.body.classList.add('edit-mode'); else document.body.classList.remove('edit-mode');
+                allWidgetContainers().forEach(c => { if (isEditMode) c.classList.add('edit-mode'); else c.classList.remove('edit-mode'); });
+                if (isEditMode) document.getElementById('edit-icon').classList.add('display-none'); else document.getElementById('edit-icon').classList.remove('display-none');
+                if (!isEditMode) document.getElementById('edit-exit-icon').classList.add('display-none'); else document.getElementById('edit-exit-icon').classList.remove('display-none');
+                if (isEditMode) editToolbar.classList.add('show'); else editToolbar.classList.remove('show');
+                document.querySelectorAll('.calendar-day').forEach(d => { if (isEditMode) d.classList.add('edit-mode-active'); else d.classList.remove('edit-mode-active'); });
                 resetActivityTimeout();
             });
             const applyTransform = (widgetEl, state) => {
