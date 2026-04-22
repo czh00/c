@@ -169,7 +169,8 @@
                 },
 
                 rebuildAllAnimations() { this.instances.forEach(ins => ins.rebuildAnimation()); },
-                rebuildAnimationByIndex(index) { if (this.instances[index]) this.instances[index].rebuildAnimation(); }
+                rebuildAnimationByIndex(index) { if (this.instances[index]) this.instances[index].rebuildAnimation(); },
+                setPlayState(shouldPlay) { this.instances.forEach(ins => ins.setPlayState(shouldPlay)); }
             };
 
             // 初始化應用程式
