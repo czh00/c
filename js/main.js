@@ -180,6 +180,7 @@
                 } else {
                     applyLayout(JSON.parse(JSON.stringify(userDefaultLayout)));
                 }
+                applyAllSettings();
 
                 if (!settingsState.location) {
                     settingsState.location = "taiwan";
@@ -200,7 +201,9 @@
                 DailyRefresher.start();
 
                 updateLocationSelectors();
-                await Weather.updateWeather();
+                Weather.updateWeather().then(() => {
+                    MarqueeManager.updateAllContent();
+                });
                 setupTimedEffectControls();
                 resetActivityTimeout();
                 updateLayoutSelector();
