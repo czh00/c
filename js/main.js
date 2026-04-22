@@ -138,10 +138,10 @@
                             const formatTime = (dateStr) => dateStr ? new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'N/A';
                             weatherReplacements = {
                                 '%WEATHER_LOC%': Weather.getChineseLocationName(settingsState.location),
-                                '%WEATHER_DESC%': Weather.data.weather,
-                                '%TEMP%': Weather.data.temp,
-                                '%SUNRISE%': formatTime(Weather.data.sunrise),
-                                '%SUNSET%': formatTime(Weather.data.sunset)
+                                '%WEATHER_DESC%': Weather.getWeatherDescription(Weather.data.current.weather_code),
+                                '%TEMP%': Math.round(Weather.data.current.temperature_2m),
+                                '%SUNRISE%': formatTime(Weather.data.daily.sunrise[0]),
+                                '%SUNSET%': formatTime(Weather.data.daily.sunset[0])
                             };
                         }
                         Object.assign(this._cachedReplacements, weatherReplacements);
