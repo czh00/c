@@ -1,1687 +1,1687 @@
 html,
-        body {
-            overflow: hidden;
-            height: 100%;
-            width: 100%;
-        }
-
-        body {
-            font-family: 'Noto Sans TC', 'Inter', sans-serif;
-            font-weight: bold;
-            background-color: var(--bg-primary, #000000);
-            color: var(--text-primary, #F3F4F6);
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* --- 通用 Widget 容器樣式 --- */
-        .widget-container {
-            position: absolute;
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-touch-callout: none;
-            /* iOS 拖曳優化: 防止長按觸發選單 */
-            display: flex;
-            flex-direction: column;
-            background-color: transparent;
-            z-index: 10;
-            padding: 0;
-            transform-origin: center center;
-        }
-
-        .widget-container.edit-mode:not(:has(.control-handle:hover)) {
-            cursor: move;
-        }
-
-        /* --- CSS 編輯模式邊框 --- */
-        .widget-container.edit-mode::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border: 2px dashed rgba(0, 255, 255, 0.5);
-            pointer-events: none;
-            transition: border-color 0.3s;
-            box-sizing: border-box;
-            border-radius: inherit;
-            /* 繼承容器的圓角設定 */
-        }
-
-        .widget-content-wrapper {
-            width: 100%;
-            height: 100%;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-            position: relative;
-        }
-
-        .widget-content-wrapper>main {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-
-        /* --- 月曆共用樣式 (Refactored) --- */
-        .calendar-widget main {
-            overflow: hidden;
-        }
-
-        .calendar-widget .calendar-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0;
-            margin: 0;
-            position: relative;
-            z-index: 2;
-        }
-
-        .calendar-widget .calendar-title {
-            font-weight: 700;
-            letter-spacing: 0.025em;
-            padding: 0;
-            margin: 0;
-            cursor: pointer;
-            color: var(--year-color);
-            transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1);
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            height: 30px;
-        }
-
-        .calendar-widget .calendar-title:hover {
-            color: #a5b4fc;
-        }
-
-        .calendar-widget .calendar-nav {
-            display: flex;
-            align-items: center;
-            padding: 0;
-            margin: 0;
-            flex-shrink: 0;
-        }
-
-        .calendar-widget .calendar-nav-arrow,
-        .calendar-widget .calendar-nav-today {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            height: 1.5rem;
-            padding: 0 0.25rem;
-            margin: 0;
-            transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .calendar-widget .calendar-nav-today {
-            font-weight: 700;
-        }
-
-        .calendar-widget .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 0;
-        }
-
-        .calendar-widget .calendar-day {
-            padding: 0.25rem;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: center;
-            font-size: 0.9em;
-            border: 1px solid #555;
-            cursor: pointer;
-            transition: background-color 0.3s, opacity 0.3s;
-            background-color: transparent;
-            z-index: 1;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .calendar-widget .calendar-day:not(.edit-mode-active):hover {
-            background-color: var(--bg-hover);
-            cursor: pointer;
-        }
-
-        .calendar-widget .day-header {
-            border: 1px solid #555;
-            background-color: var(--bg-secondary);
-            color: var(--week-color);
-            font-size: 1.2em;
-            padding: 0;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .calendar-widget .today {
-            background-color: #ff000080;
-            color: white;
-            box-shadow: 0 0 10px 1px #FF0000;
-            border-radius: 0.5em;
-        }
-
-        .calendar-widget .other-month {
-            color: var(--text-muted);
-            opacity: 0.4;
-        }
-
-        .calendar-widget .background-month {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-weight: 900;
-            color: var(--month-color);
-            z-index: 1;
-            user-select: none;
-            opacity: 0.6;
-            line-height: 0.6;
-            pointer-events: none;
-        }
-
-        #calendar-body,
-        #moon-calendar-body {
-            flex-grow: 1;
-            display: grid;
-            min-height: 0;
-        }
-
-        /* --- 標準月曆 spezifische樣式 --- */
-        .calendar-day.with-moon-icon {
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
-        .day-text-content {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            flex-grow: 1;
-            min-width: 0;
-        }
-
-        .day-moon-container {
-            flex-shrink: 0;
-            margin-left: 0.25rem;
-        }
-
-        .day-number-wrapper {
-            margin-bottom: 2px;
-        }
-
-        .lunar-date {
-            font-size: 1.2em;
-            color: var(--lunar-color);
-            line-height: 1;
-        }
-
-        .holiday-text,
-        .solarterm-text {
-            font-size: 1.2em;
-            font-weight: 500;
-            cursor: help;
-            line-height: 1;
-        }
-
-        .holiday-text {
-            color: var(--holiday-color);
-        }
-
-        .solarterm-text {
-            color: var(--solarterm-color);
-        }
-
-        .truncate {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .space-y-px> :not([hidden])~ :not([hidden]) {
-            margin-top: 1px;
-        }
-
-        .today .lunar-date,
-        .today .holiday-text,
-        .today .solarterm-text {
-            color: #C7D2FE;
-        }
-
-        /* --- 月相曆 spezifische樣式 --- */
-        #moon-phase-container .calendar-day.selected {
-            border-color: var(--moon-highlight-color);
-            box-shadow: 0 0 5px var(--moon-highlight-color);
-            border-radius: 0.375rem;
-        }
-
-        .moon-icon-small svg {
-            width: 100%;
-            height: auto;
-            max-width: 28px;
-            margin: 0 auto;
-        }
-
-        /* --- Modal 內部元素樣式 --- */
-        .led-text-unit {
-            font-family: 'Noto Sans TC', 'Inter', sans-serif;
-            font-weight: bold;
-            display: inline-block;
-            vertical-align: baseline;
-            padding: 0 4px;
-            line-height: 1;
-            font-size: 22px;
-            color: white;
-        }
-
-        #modal-gregorian-date {
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 2px;
-        }
-
-        #modal-lunar-date {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-        }
-
-        .countdown-text-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-        }
-
-        .countdown-text-container svg {
-            vertical-align: middle;
-        }
-
-        #moon-detail-icon svg {
-            width: 120px;
-            height: 120px;
-        }
-
-        /* --- LED 時鐘 spezifische樣式 --- */
-        #led-clock-container .resize-handle-w,
-        #led-clock-container .resize-handle-h {
-            display: none !important;
-        }
-
-        #led-clock-container svg {
-            width: 100%;
-            height: 100%;
-            overflow: visible;
-        }
-
-        #led-clock-container .segment {
-            transition: opacity 0.2s ease-in-out;
-        }
-
-        #led-clock-container .segment-h {
-            fill: var(--led-hour-color);
-        }
-
-        #led-clock-container .segment-m {
-            fill: var(--led-minute-color);
-        }
-
-        #led-clock-container .segment-s {
-            fill: var(--led-second-color);
-        }
-
-        #led-clock-container .colon {
-            fill: var(--led-colon-color);
-        }
-
-        #led-clock-container .period-text {
-            fill: var(--led-period-color);
-            font-size: 50px;
-        }
-
-        .period-text {
-            position: absolute;
-            top: 0;
-            right: -10vw;
-        }
-
-        /* --- 指針時鐘 spezifische樣式 --- */
-        #analog-clock-container {
-            border-radius: 50%;
-        }
-
-        #analog-clock-container .resize-handle-w,
-        #analog-clock-container .resize-handle-h {
-            display: none !important;
-        }
-
-        #analog-clock-container main {
-            aspect-ratio: 1 / 1;
-            border-radius: 50%;
-            background-color: var(--analog-face-color);
-            clip-path: circle(50%);
-            overflow: hidden;
-        }
-
-        .analog-clock-face {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-
-        .analog-hand {
-            position: absolute;
-            bottom: 50%;
-            left: 50%;
-            transform-origin: bottom;
-            background-color: var(--analog-hand-color);
-            border-radius: 50% 50% 0 0;
-        }
-
-        .hour-hand {
-            width: 1.5%;
-            height: 25%;
-            z-index: 5;
-        }
-
-        .minute-hand {
-            width: 1%;
-            height: 40%;
-            z-index: 6;
-        }
-
-        .second-hand {
-            width: 0.5%;
-            height: 45%;
-            background-color: var(--analog-second-hand-color);
-            z-index: 7;
-        }
-
-        .analog-pivot {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 3%;
-            height: 3%;
-            background-color: var(--analog-second-hand-color);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 8;
-        }
-
-        .ticks-container {
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-        }
-
-        .tick-wrapper {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        .tick {
-            position: absolute;
-            background-color: var(--analog-tick-color);
-        }
-
-        .tick-minute {
-            top: 1%;
-            left: 49.75%;
-            width: 0.5%;
-            height: 2%;
-            border-radius: 1px;
-        }
-
-        .tick-hour {
-            top: 1%;
-            left: 49.5%;
-            width: 1%;
-            height: 4%;
-            border-radius: 1px;
-        }
-
-        .number {
-            position: absolute;
-            top: 6%;
-            left: 0;
-            width: 100%;
-            height: 10%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .number>div {
-            transform: rotate(calc(-1 * var(--rotation)));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* --- 跑馬燈 spezifische樣式 --- */
-        .marquee-widget main {
-            vertical-align: middle;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            transform: translateZ(0);
-            -webkit-transform: translateZ(0);
-        }
-
-        .marquee-inner {
-            vertical-align: middle;
-            display: flex;
-            width: fit-content;
-            height: fit-content;
-            will-change: transform;
-            transform: translateZ(0);
-            font-variant-numeric: tabular-nums;
-            font-feature-settings: 'tnum';
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
-            perspective: 1000px;
-            margin-right: auto;
-        }
-
-        .marquee-text-instance {
-            vertical-align: middle;
-            white-space: nowrap;
-            flex-shrink: 0;
-            line-height: 1;
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .blinking-text {
-            animation-name: blink-animation;
-            animation-timing-function: ease-in-out;
-            animation-iteration-count: infinite;
-        }
-
-        @keyframes blink-animation {
-            50% {
-                opacity: 0.2;
-            }
-        }
-
-        /* --- 控制點樣式 --- */
-        /* 1. 物件中心的十字準心 (使用 linear-gradient 製作虛線) */
-        .widget-container.edit-mode::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image:
-                linear-gradient(to right, rgba(0, 255, 255, 0.5) 50%, transparent 50%),
-                linear-gradient(to bottom, rgba(0, 255, 255, 0.5) 50%, transparent 50%);
-            background-position: center, center;
-            background-size: 8px 2px, 2px 8px;
-            /* 模擬虛線效果：8px長度中，4px有色，4px透明 */
-            background-repeat: repeat-x, repeat-y;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        /* 2. 群組框中心的十字準心 (黃色虛線) */
-        #group-bounding-box::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image:
-                linear-gradient(to right, rgba(255, 255, 0, 0.8) 50%, transparent 50%),
-                linear-gradient(to bottom, rgba(255, 255, 0, 0.8) 50%, transparent 50%);
-            background-position: center, center;
-            background-size: 8px 2px, 2px 8px;
-            background-repeat: repeat-x, repeat-y;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        /* 3. 已存檔群組框的樣式 */
-        .persistent-group-box {
-            position: absolute;
-            border: 2px dashed rgba(255, 165, 0, 0.8);
-            /* 橘色 */
-            pointer-events: none;
-            z-index: 199;
-            box-sizing: border-box;
-        }
-
-        /* 已存檔群組框中心的十字準心 */
-        .persistent-group-box::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image:
-                linear-gradient(to right, rgba(255, 165, 0, 0.8) 50%, transparent 50%),
-                linear-gradient(to bottom, rgba(255, 165, 0, 0.8) 50%, transparent 50%);
-            background-position: center, center;
-            background-size: 8px 2px, 2px 8px;
-            background-repeat: repeat-x, repeat-y;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        /* 3. 跑馬燈組別數字標籤 */
-        .marquee-group-label {
-            position: absolute;
-            top: -12px;
-            /* 與 Reset handle 高度類似 */
-            left: 50%;
-            transform: translateX(-50%);
-            /* 預設置中，縮放邏輯由 JS 控制 */
-            background-color: rgba(79, 70, 229, 0.8);
-            color: white;
-            font-size: 14px;
-            font-weight: bold;
-            padding: 2px 8px;
-            border-radius: 12px;
-            white-space: nowrap;
-            pointer-events: none;
-            /* 防止干擾拖曳 */
-            display: none;
-            /* 預設隱藏 */
-            z-index: 102;
-            box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
-        }
-
-        /* 僅在編輯模式顯示標籤 */
-        .widget-container.edit-mode .marquee-group-label {
-            display: block;
-        }
-
-        .control-handle {
-            position: absolute;
-            background-color: rgba(79, 70, 229, 0.8);
-            border-radius: 50%;
-            display: none;
-            z-index: 100;
-        }
-
-        .widget-container.edit-mode .control-handle {
-            display: block;
-        }
-
-        .move-handle {
-            display: none !important;
-        }
-
-        /* 拿掉移動圖示 */
-        .reset-handle {
-            position: absolute;
-            width: 24px;
-            height: 24px;
-            top: -12px;
-            right: -12px;
-            cursor: pointer;
-            padding: 2px;
-            border-radius: 50%;
-            background-color: rgba(239, 68, 68, 0.8);
-            z-index: 101;
-            transform-origin: center;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .widget-container.edit-mode .reset-handle {
-            display: flex;
-        }
-
-        .resize-handle-w {
-            width: 8px;
-            height: 50px;
-            top: 50%;
-            right: -4px;
-            transform: translateY(-50%);
-            border-radius: 4px;
-            cursor: ew-resize;
-        }
-
-        .resize-handle-h {
-            width: 50px;
-            height: 8px;
-            bottom: -4px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-radius: 4px;
-            cursor: ns-resize;
-        }
-
-        .rotate-handle {
-            width: 24px;
-            height: 24px;
-            position: absolute;
-            bottom: -12px;
-            right: -12px;
-            cursor: alias;
-            padding: 4px;
-            transform-origin: center;
-            display: none;
-        }
-
-        .scale-handle {
-            /* 新增縮放圖示 */
-            width: 24px;
-            height: 24px;
-            position: absolute;
-            bottom: -12px;
-            left: -12px;
-            cursor: se-resize;
-            padding: 4px;
-            transform-origin: center;
-            display: none;
-        }
-
-        .widget-container.edit-mode .rotate-handle,
-        .widget-container.edit-mode .scale-handle {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .group-select-handle {
-            position: absolute;
-            top: -12px;
-            left: -12px;
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
-            z-index: 101;
-            display: none;
-            background-color: rgba(0, 255, 255, 0.5);
-            border-radius: 50%;
-            padding: 2px;
-            transform-origin: center;
-        }
-
-        .widget-container.edit-mode .group-select-handle {
-            display: block;
-        }
-
-        .widget-container.selected-for-group {
-            box-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
-        }
-
-        #group-move-handle {
-            position: absolute;
-            width: 32px;
-            height: 32px;
-            z-index: 200;
-            cursor: move;
-            background-color: rgba(255, 255, 0, 0.8);
-            border-radius: 6px;
-            padding: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #group-rotate-handle {
-            position: absolute;
-            width: 28px;
-            height: 28px;
-            z-index: 200;
-            cursor: alias;
-            background-color: rgba(255, 255, 0, 0.8);
-            border-radius: 50%;
-            padding: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #group-scale-handle {
-            position: absolute;
-            width: 28px;
-            height: 28px;
-            z-index: 200;
-            cursor: se-resize;
-            background-color: rgba(255, 255, 0, 0.8);
-            border-radius: 50%;
-            padding: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #group-bounding-box {
-            position: absolute;
-            border: 2px dashed rgba(255, 255, 0, 0.8);
-            pointer-events: none;
-            z-index: 199;
-            display: none;
-            box-sizing: border-box;
-        }
-
-        /* --- Modal 彈出視窗樣式 --- */
-        .modal-backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.75);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1050;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-
-        .modal-backdrop.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .param-list {
-            list-style: none;
-            padding-left: 0;
-            margin-top: 1rem;
-            color: #d1d5db;
-        }
-
-        .param-item {
-            font-size: 0.875rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .param-item strong {
-            color: #f7fafc;
-            min-width: 120px;
-            display: inline-block;
-        }
-
-        .param-group-title {
-            font-weight: bold;
-            color: #a5b4fc;
-            margin-top: 1.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid #4b5563;
-        }
-
-        #month-year-picker {
-            max-width: 320px;
-        }
-
-        #month-year-picker .year-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #month-year-picker .month-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-        }
-
-        #month-year-picker .month-cell {
-            padding: 8px;
-            text-align: center;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 2px;
-        }
-
-        #month-year-picker .month-cell:hover {
-            background-color: var(--bg-hover);
-        }
-
-        #month-year-picker .month-cell.selected {
-            background-color: #4f46e5;
-            color: white;
-        }
-
-        #month-year-picker .month-cell.selected * {
-            color: white !important;
-            fill: white !important;
-        }
-
-        /* --- UI 按鈕與工具列 --- */
-        .action-buttons {
-            position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            display: flex;
-            gap: 0.5rem;
-            z-index: 1000;
-            opacity: 1;
-            transition: opacity 0.5s ease-in-out;
-        }
-
-        .action-buttons.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .action-button {
-            background-color: transparent;
-            border: 1px solid rgba(75, 85, 99, 0.8);
-            color: #d1d5db;
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-            box-shadow: none;
-        }
-
-        .action-button:hover {
-            background-color: rgba(75, 85, 99, 0.3);
-            color: white;
-            border-color: #9ca3af;
-        }
-
-        #edit-toolbar {
-            position: fixed;
-            bottom: -100px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(17, 24, 39, 0.9);
-            border: 1px solid #374151;
-            border-radius: 12px;
-            padding: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            z-index: 1001;
-            transition: bottom 0.3s ease-in-out;
-            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.3);
-            user-select: none;
-        }
-
-        #edit-toolbar.show {
-            bottom: 20px;
-        }
-
-        #toolbar-title {
-            cursor: move;
-            padding: 4px 8px;
-            color: #9ca3af;
-        }
-
-        .toolbar-btn {
-            background-color: transparent;
-            border: 1px solid #4b5563;
-            color: #d1d5db;
-            padding: 6px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            box-shadow: none;
-        }
-
-        .toolbar-btn:hover:not(:disabled) {
-            background-color: rgba(75, 85, 99, 0.3);
-            border-color: #9ca3af;
-        }
-
-        .toolbar-btn:disabled {
-            color: #6b7280;
-            cursor: not-allowed;
-            border-color: #374151;
-        }
-
-        select,
-        input[type="text"],
-        textarea,
-        input[type="range"] {
-            background-color: #374151;
-            border: 1px solid #4b5563;
-            border-radius: 6px;
-            color: #d1d5db;
-            padding: 4px;
-        }
-
-        input[type="range"] {
-            padding-left: 0;
-            padding-right: 0;
-        }
-
-        input[type="color"] {
-            padding: 2px;
-            width: 40px;
-            height: 30px;
-            border: none;
-            cursor: pointer;
-            background-color: transparent;
-            flex-shrink: 0;
-        }
-
-        .form-checkbox {
-            appearance: none;
-            background-color: #4b5563;
-            border: 1px solid #6b7280;
-            border-radius: 4px;
-            width: 1.25em;
-            height: 1.25em;
-            position: relative;
-            cursor: pointer;
-            vertical-align: middle;
-        }
-
-        .form-checkbox:checked {
-            background-color: #4f46e5;
-            border-color: #4f46e5;
-        }
-
-        .form-checkbox:checked::after {
-            content: '✓';
-            color: white;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 0.9em;
-        }
-
-        .form-checkbox:disabled {
-            cursor: not-allowed;
-            background-color: #374151;
-            opacity: 0.6;
-        }
-
-        /* --- 編輯模式網格 --- */
-        #edit-mode-grid {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                repeating-linear-gradient(rgba(0, 255, 255, 0.1) 0 1px, transparent 1px 50px),
-                repeating-linear-gradient(90deg, rgba(0, 255, 255, 0.1) 0 1px, transparent 1px 50px);
-            background-size: 50px 50px;
-            background-position: center center;
-            z-index: 9;
-            pointer-events: none;
-        }
-
-        #edit-mode-grid::before,
-        #edit-mode-grid::after {
-            content: '';
-            position: absolute;
-            background-color: rgba(255, 0, 255, 0.5);
-            z-index: 9;
-        }
-
-        #edit-mode-grid::before {
-            top: 0;
-            left: 50%;
-            width: 1px;
-            height: 100%;
-            transform: translateX(-50%);
-        }
-
-        #edit-mode-grid::after {
-            top: 50%;
-            left: 0;
-            width: 100%;
-            height: 1px;
-            transform: translateY(-50%);
-        }
-
-        body.edit-mode #edit-mode-grid {
-            display: block;
-        }
-
-        /* --- 由 Tailwind 轉換的語意化 CSS (部分保留) --- */
-        .display-flex {
-            display: flex;
-        }
-
-        .align-items-center {
-            align-items: center;
-        }
-
-        .justify-content-space-between {
-            justify-content: space-between;
-        }
-
-        .justify-content-center {
-            justify-content: center;
-        }
-
-        .justify-content-flex-end {
-            justify-content: flex-end;
-        }
-
-        .justify-content-start {
-            justify-content: flex-start;
-        }
-
-        .align-items-flex-start {
-            align-items: flex-start;
-        }
-
-        .flex-direction-column {
-            flex-direction: column;
-        }
-
-        .flex-wrap {
-            flex-wrap: wrap;
-        }
-
-        .flex-shrink-0 {
-            flex-shrink: 0;
-        }
-
-        .flex-grow-1 {
-            flex-grow: 1;
-        }
-
-        .display-grid {
-            display: grid;
-        }
-
-        .grid-columns-1 {
-            grid-template-columns: repeat(1, minmax(0, 1fr));
-        }
-
-        .grid-columns-2 {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .grid-column-span-2 {
-            grid-column: span 2 / span 2;
-        }
-
-        .p0 {
-            padding: 0;
-            margin: 0;
-        }
-
-        .padding-1 {
-            padding: 0.25rem;
-        }
-
-        .padding-2 {
-            padding: 0.5rem;
-        }
-
-        .padding-1_5 {
-            padding: 0.375rem;
-        }
-
-        .padding-3 {
-            padding: 0.75rem;
-        }
-
-        .padding-5 {
-            padding: 1.25rem;
-        }
-
-        .padding-6 {
-            padding: 1.5rem;
-        }
-
-        .padding-top-1 {
-            padding-top: 0.25rem;
-        }
-
-        .padding-bottom-2 {
-            padding-bottom: 0.5rem;
-        }
-
-        .padding-bottom-4 {
-            padding-bottom: 1rem;
-        }
-
-        .padding-right-2 {
-            padding-right: 0.25rem;
-        }
-
-        .padding-horizontal-3 {
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-        }
-
-        .padding-vertical-1 {
-            padding-top: 0.25rem;
-            padding-bottom: 0.25rem;
-        }
-
-        .padding-vertical-2 {
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
-        }
-
-        .margin-bottom-2 {
-            margin-bottom: 0.5rem;
-        }
-
-        .margin-bottom-3 {
-            margin-bottom: 0.75rem;
-        }
-
-        .margin-bottom-4 {
-            margin-bottom: 1rem;
-        }
-
-        .margin-bottom-6 {
-            margin-bottom: 1.5rem;
-        }
-
-        .margin-left-2 {
-            margin-left: 0.5rem;
-        }
-
-        .margin-top-1 {
-            margin-top: 0.25rem;
-        }
-
-        .margin-top-2 {
-            margin-top: 0.5rem;
-        }
-
-        .margin-top-4 {
-            margin-top: 1rem;
-        }
-
-        .margin-top-6 {
-            margin-top: 1.5rem;
-        }
-
-        .gap-2 {
-            gap: 0.5rem;
-        }
-
-        .gap-3 {
-            gap: 0.75rem;
-        }
-
-        .gap-4 {
-            gap: 1rem;
-        }
-
-        .column-gap-6 {
-            column-gap: 1.5rem;
-        }
-
-        .column-gap-8 {
-            column-gap: 2rem;
-        }
-
-        .row-gap-3 {
-            row-gap: 0.75rem;
-        }
-
-        .row-gap-6 {
-            row-gap: 1.5rem;
-        }
-
-        .space-y-2> :not([hidden])~ :not([hidden]) {
-            margin-top: 0.5rem;
-        }
-
-        .space-y-3> :not([hidden])~ :not([hidden]) {
-            margin-top: 0.75rem;
-        }
-
-        .space-x-2> :not([hidden])~ :not([hidden]) {
-            margin-left: 0.5rem;
-        }
-
-        .width-5 {
-            width: 1.25rem;
-        }
-
-        .height-5 {
-            height: 1.25rem;
-        }
-
-        .width-6 {
-            width: 1.5rem;
-        }
-
-        .height-6 {
-            height: 1.5rem;
-        }
-
-        .width-16 {
-            width: 4rem;
-        }
-
-        .height-16 {
-            height: 4rem;
-        }
-
-        .width-40 {
-            width: 10rem;
-        }
-
-        .width-full {
-            width: 100%;
-        }
-
-        .height-full {
-            height: 100%;
-        }
-
-        .width-auto {
-            width: auto;
-        }
-
-        .min-width-200px {
-            min-width: 200px;
-        }
-
-        .max-width-sm {
-            max-width: 24rem;
-        }
-
-        .max-width-md {
-            max-width: 28rem;
-        }
-
-        .max-width-5xl {
-            max-width: 64rem;
-        }
-
-        .max-height-80 {
-            max-height: 20rem;
-        }
-
-        .max-height-90vh {
-            max-height: 90vh;
-        }
-
-        .font-weight-bold {
-            font-weight: 700;
-        }
-
-        .font-weight-semibold {
-            font-weight: 600;
-        }
-
-        .font-size-sm {
-            font-size: 0.875rem;
-            line-height: 1.25rem;
-        }
-
-        .font-size-md {
-            font-size: 1rem;
-            line-height: 1.5rem;
-        }
-
-        .font-size-lg {
-            font-size: 1.125rem;
-            line-height: 1.75rem;
-        }
-
-        .font-size-xl {
-            font-size: 1.25rem;
-            line-height: 1.75rem;
-        }
-
-        .font-size-3xl {
-            font-size: 1.875rem;
-            line-height: 2.25rem;
-        }
-
-        .line-height-none {
-            line-height: 1;
-        }
-
-        .line-height-relaxed {
-            line-height: 1.625;
-        }
-
-        .text-align-center {
-            text-align: center;
-        }
-
-        .color-white {
-            color: #ffffff;
-        }
-
-        .color-gray-300 {
-            color: #d1d5db;
-        }
-
-        .color-gray-400 {
-            color: #9ca3af;
-        }
-
-        .color-indigo-300 {
-            color: #a5b4fc;
-        }
-
-        .bg-gray-800 {
-            background-color: #1f2937;
-        }
-
-        .border-top-1px {
-            border-top-width: 1px;
-        }
-
-        .border-bottom-1px {
-            border-bottom-width: 1px;
-        }
-
-        .border-color-gray-600 {
-            border-color: #4b5563;
-        }
-
-        .border-color-gray-700 {
-            border-color: #374151;
-        }
-
-        .border-radius-lg {
-            border-radius: 0.5rem;
-        }
-
-        .cursor-pointer {
-            cursor: pointer;
-        }
-
-        .cursor-help {
-            cursor: help;
-        }
-
-        .hover-color-white:hover {
-            color: #ffffff;
-        }
-
-        .display-none {
-            display: none !important;
-        }
-
-        .overflow-hidden {
-            overflow: hidden;
-        }
-
-        .overflow-y-auto {
-            overflow-y: auto;
-        }
-
-        .position-relative {
-            position: relative;
-        }
-
-        /* --- 全域按鈕樣式重置 --- */
-        #calendar-container button,
-        #moon-phase-container button,
-        .action-button,
-        .toolbar-btn,
-        [data-close-modal],
-        #useCurrentLocationBtn,
-        #marquee-params-btn,
-        #default-settings-btn,
-        #random-colors-btn,
-        #picker-prev-year,
-        #picker-next-year,
-        #prompt-cancel-btn,
-        #prompt-ok-btn {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            color: #d1d5db;
-            transition: color 0.2s, background-color 0.2s;
-        }
-
-        #calendar-container button:hover,
-        #moon-phase-container button:hover,
-        .toolbar-btn:hover:not(:disabled),
-        [data-close-modal]:hover,
-        #useCurrentLocationBtn:hover,
-        #marquee-params-btn:hover,
-        #default-settings-btn:hover,
-        #random-colors-btn:hover,
-        #picker-prev-year:hover,
-        #picker-next-year:hover,
-        #prompt-cancel-btn:hover,
-        #prompt-ok-btn:hover,
-        .action-button:hover {
-            color: #ffffff !important;
-        }
-
-        /* 為圓形或有圓角的按鈕提供懸停時的背景回饋 */
-        .action-button:hover,
-        #useCurrentLocationBtn:hover,
-        #marquee-params-btn:hover,
-        #picker-prev-year:hover,
-        #picker-next-year:hover,
-        .calendar-widget .calendar-nav-arrow:hover {
-            background-color: rgba(75, 85, 99, 0.3) !important;
-        }
-
-        .action-button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            margin: 0;
-        }
-
-        /* 視覺對齊修正 */
-        #modal-backdrop-settings .space-y-3>div,
-        #modal-backdrop-settings .p0>.display-flex.justify-content-space-between {
-            align-items: center;
-        }
-
-        #modal-backdrop-settings .display-flex.align-items-center.gap-3>.display-flex.align-items-center.gap-2 {
-            align-items: center;
-        }
-
-        #modal-backdrop-settings label[for="marquee-vertical-toggle"],
-        #modal-backdrop-settings label[for="marquee-use-led-font-toggle"] {
-            display: flex;
-            align-items: center;
-        }
-
-        @media (min-width: 768px) {
-            .md-grid-columns-2 {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .md-grid-columns-4 {
-                grid-template-columns: repeat(4, minmax(0, 1fr));
-            }
-
-            .md-grid-column-span-2 {
-                grid-column: span 2 / span 2;
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .lg-grid-columns-4 {
-                grid-template-columns: repeat(4, minmax(0, 1fr));
-            }
-        }
-
-        /* --- 跑馬燈模組庫樣式 --- */
-        .marquee-module-library {
-            margin-top: 0.75rem;
-            padding: 0.75rem;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 0.75rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            width: 100%;
-        }
-
-        .module-group {
-            margin-bottom: 0.75rem;
-        }
-
-        .module-group:last-child {
-            margin-bottom: 0;
-        }
-
-        .module-group-title {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-muted, #6B7280);
-            margin-bottom: 0.5rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .module-pills-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-
-        .module-pill {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.25rem 0.625rem;
-            background: rgba(79, 70, 229, 0.2);
-            border: 1px solid rgba(79, 70, 229, 0.4);
-            border-radius: 9999px;
-            color: #E0E7FF;
-            font-size: 0.75rem;
-            font-weight: 500;
-            cursor: grab;
-            user-select: none;
-            transition: all 0.2s ease;
-        }
-
-        .module-pill:hover {
-            background: rgba(79, 70, 229, 0.4);
-            border-color: rgba(79, 70, 229, 0.6);
-            transform: translateY(-1px);
-        }
-
-        .module-pill:active {
-            cursor: grabbing;
-        }
-
-        .module-pill.dragging {
-            opacity: 0.5;
-            transform: scale(0.95);
-        }
-
-        /* --- 塊狀編輯器樣式 --- */
-        .marquee-block-editor {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 4px;
-            padding: 8px;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 0.5rem;
-            min-height: 80px;
-            width: 100%;
-            cursor: text;
-        }
-
-        .marquee-block-editor:focus-within {
-            border-color: var(--primary-color, #4f46e5);
-            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
-        }
-
-        .editor-block {
-            display: inline-flex;
-            align-items: center;
-            position: relative;
-        }
-
-        .editor-text-block {
-            background: transparent;
-            border: none;
-            color: #f3f4f6;
-            font-size: 0.875rem;
-            min-width: 8px;
-            padding: 2px 4px;
-            outline: none;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-
-        .editor-text-block:empty::before {
-            content: ' ';
-            display: inline-block;
-            width: 8px;
-        }
-
-        .editor-module-block {
-            background: rgba(79, 70, 229, 0.8);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            user-select: none;
-            cursor: grab;
-        }
-
-        .editor-module-block.dragging {
-            opacity: 0.5;
-        }
-
-        .editor-module-block .remove-btn {
-            cursor: pointer;
-            opacity: 0.6;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            transition: all 0.2s;
-        }
-
-        .editor-module-block .remove-btn:hover {
-            opacity: 1;
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .editor-block-drop-indicator {
-            width: 2px;
-            height: 20px;
-            background: var(--primary-color, #4f46e5);
-            margin: 0 -1px;
-            display: none;
-        }
-
-        .editor-module-block svg {
-            width: 1.2em;
-            height: 1.2em;
-            vertical-align: middle;
-            display: inline-block;
-        }
+body {
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+}
+
+body {
+    font-family: 'Noto Sans TC', 'Inter', sans-serif;
+    font-weight: bold;
+    background-color: var(--bg-primary, #000000);
+    color: var(--text-primary, #F3F4F6);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- 通用 Widget 容器樣式 --- */
+.widget-container {
+    position: absolute;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-touch-callout: none;
+    /* iOS 拖曳優化: 防止長按觸發選單 */
+    display: flex;
+    flex-direction: column;
+    background-color: transparent;
+    z-index: 10;
+    padding: 0;
+    transform-origin: center center;
+}
+
+.widget-container.edit-mode:not(:has(.control-handle:hover)) {
+    cursor: move;
+}
+
+/* --- CSS 編輯模式邊框 --- */
+.widget-container.edit-mode::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 2px dashed rgba(0, 255, 255, 0.5);
+    pointer-events: none;
+    transition: border-color 0.3s;
+    box-sizing: border-box;
+    border-radius: inherit;
+    /* 繼承容器的圓角設定 */
+}
+
+.widget-content-wrapper {
+    width: 100%;
+    height: 100%;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    position: relative;
+}
+
+.widget-content-wrapper>main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* --- 月曆共用樣式 (Refactored) --- */
+.calendar-widget main {
+    overflow: hidden;
+}
+
+.calendar-widget .calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0;
+    margin: 0;
+    position: relative;
+    z-index: 2;
+}
+
+.calendar-widget .calendar-title {
+    font-weight: 700;
+    letter-spacing: 0.025em;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    color: var(--year-color);
+    transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 30px;
+}
+
+.calendar-widget .calendar-title:hover {
+    color: #a5b4fc;
+}
+
+.calendar-widget .calendar-nav {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.calendar-widget .calendar-nav-arrow,
+.calendar-widget .calendar-nav-today {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.5rem;
+    padding: 0 0.25rem;
+    margin: 0;
+    transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.calendar-widget .calendar-nav-today {
+    font-weight: 700;
+}
+
+.calendar-widget .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0;
+}
+
+.calendar-widget .calendar-day {
+    padding: 0.25rem;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    font-size: 0.9em;
+    border: 1px solid #555;
+    cursor: pointer;
+    transition: background-color 0.3s, opacity 0.3s;
+    background-color: transparent;
+    z-index: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.calendar-widget .calendar-day:not(.edit-mode-active):hover {
+    background-color: var(--bg-hover);
+    cursor: pointer;
+}
+
+.calendar-widget .day-header {
+    border: 1px solid #555;
+    background-color: var(--bg-secondary);
+    color: var(--week-color);
+    font-size: 1.2em;
+    padding: 0;
+    text-align: center;
+    font-weight: 600;
+}
+
+.calendar-widget .today {
+    background-color: #ff000080;
+    color: white;
+    box-shadow: 0 0 10px 1px #FF0000;
+    border-radius: 0.5em;
+}
+
+.calendar-widget .other-month {
+    color: var(--text-muted);
+    opacity: 0.4;
+}
+
+.calendar-widget .background-month {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: 900;
+    color: var(--month-color);
+    z-index: 1;
+    user-select: none;
+    opacity: 0.6;
+    line-height: 0.6;
+    pointer-events: none;
+}
+
+#calendar-body,
+#moon-calendar-body {
+    flex-grow: 1;
+    display: grid;
+    min-height: 0;
+}
+
+/* --- 標準月曆 spezifische樣式 --- */
+.calendar-day.with-moon-icon {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.day-text-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.day-moon-container {
+    flex-shrink: 0;
+    margin-left: 0.25rem;
+}
+
+.day-number-wrapper {
+    margin-bottom: 2px;
+}
+
+.lunar-date {
+    font-size: 1.2em;
+    color: var(--lunar-color);
+    line-height: 1;
+}
+
+.holiday-text,
+.solarterm-text {
+    font-size: 1.2em;
+    font-weight: 500;
+    cursor: help;
+    line-height: 1;
+}
+
+.holiday-text {
+    color: var(--holiday-color);
+}
+
+.solarterm-text {
+    color: var(--solarterm-color);
+}
+
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.space-y-px> :not([hidden])~ :not([hidden]) {
+    margin-top: 1px;
+}
+
+.today .lunar-date,
+.today .holiday-text,
+.today .solarterm-text {
+    color: #C7D2FE;
+}
+
+/* --- 月相曆 spezifische樣式 --- */
+#moon-phase-container .calendar-day.selected {
+    border-color: var(--moon-highlight-color);
+    box-shadow: 0 0 5px var(--moon-highlight-color);
+    border-radius: 0.375rem;
+}
+
+.moon-icon-small svg {
+    width: 100%;
+    height: auto;
+    max-width: 28px;
+    margin: 0 auto;
+}
+
+/* --- Modal 內部元素樣式 --- */
+.led-text-unit {
+    font-family: 'Noto Sans TC', 'Inter', sans-serif;
+    font-weight: bold;
+    display: inline-block;
+    vertical-align: baseline;
+    padding: 0 4px;
+    line-height: 1;
+    font-size: 22px;
+    color: white;
+}
+
+#modal-gregorian-date {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 2px;
+}
+
+#modal-lunar-date {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.countdown-text-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.countdown-text-container svg {
+    vertical-align: middle;
+}
+
+#moon-detail-icon svg {
+    width: 120px;
+    height: 120px;
+}
+
+/* --- LED 時鐘 spezifische樣式 --- */
+#led-clock-container .resize-handle-w,
+#led-clock-container .resize-handle-h {
+    display: none !important;
+}
+
+#led-clock-container svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+#led-clock-container .segment {
+    transition: opacity 0.2s ease-in-out;
+}
+
+#led-clock-container .segment-h {
+    fill: var(--led-hour-color);
+}
+
+#led-clock-container .segment-m {
+    fill: var(--led-minute-color);
+}
+
+#led-clock-container .segment-s {
+    fill: var(--led-second-color);
+}
+
+#led-clock-container .colon {
+    fill: var(--led-colon-color);
+}
+
+#led-clock-container .period-text {
+    fill: var(--led-period-color);
+    font-size: 50px;
+}
+
+.period-text {
+    position: absolute;
+    top: 0;
+    right: -10vw;
+}
+
+/* --- 指針時鐘 spezifische樣式 --- */
+#analog-clock-container {
+    border-radius: 50%;
+}
+
+#analog-clock-container .resize-handle-w,
+#analog-clock-container .resize-handle-h {
+    display: none !important;
+}
+
+#analog-clock-container main {
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    background-color: var(--analog-face-color);
+    clip-path: circle(50%);
+    overflow: hidden;
+}
+
+.analog-clock-face {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.analog-hand {
+    position: absolute;
+    bottom: 50%;
+    left: 50%;
+    transform-origin: bottom;
+    background-color: var(--analog-hand-color);
+    border-radius: 50% 50% 0 0;
+}
+
+.hour-hand {
+    width: 1.5%;
+    height: 25%;
+    z-index: 5;
+}
+
+.minute-hand {
+    width: 1%;
+    height: 40%;
+    z-index: 6;
+}
+
+.second-hand {
+    width: 0.5%;
+    height: 45%;
+    background-color: var(--analog-second-hand-color);
+    z-index: 7;
+}
+
+.analog-pivot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 3%;
+    height: 3%;
+    background-color: var(--analog-second-hand-color);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 8;
+}
+
+.ticks-container {
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+}
+
+.tick-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.tick {
+    position: absolute;
+    background-color: var(--analog-tick-color);
+}
+
+.tick-minute {
+    top: 1%;
+    left: 49.75%;
+    width: 0.5%;
+    height: 2%;
+    border-radius: 1px;
+}
+
+.tick-hour {
+    top: 1%;
+    left: 49.5%;
+    width: 1%;
+    height: 4%;
+    border-radius: 1px;
+}
+
+.number {
+    position: absolute;
+    top: 6%;
+    left: 0;
+    width: 100%;
+    height: 10%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.number>div {
+    transform: rotate(calc(-1 * var(--rotation)));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- 跑馬燈 spezifische樣式 --- */
+.marquee-widget main {
+    vertical-align: middle;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
+.marquee-inner {
+    vertical-align: middle;
+    display: flex;
+    width: fit-content;
+    height: fit-content;
+    will-change: transform;
+    transform: translateZ(0);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    perspective: 1000px;
+    margin-right: auto;
+}
+
+.marquee-text-instance {
+    vertical-align: middle;
+    white-space: nowrap;
+    flex-shrink: 0;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+}
+
+.blinking-text {
+    animation-name: blink-animation;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+}
+
+@keyframes blink-animation {
+    50% {
+        opacity: 0.2;
+    }
+}
+
+/* --- 控制點樣式 --- */
+/* 1. 物件中心的十字準心 (使用 linear-gradient 製作虛線) */
+.widget-container.edit-mode::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        linear-gradient(to right, rgba(0, 255, 255, 0.5) 50%, transparent 50%),
+        linear-gradient(to bottom, rgba(0, 255, 255, 0.5) 50%, transparent 50%);
+    background-position: center, center;
+    background-size: 8px 2px, 2px 8px;
+    /* 模擬虛線效果：8px長度中，4px有色，4px透明 */
+    background-repeat: repeat-x, repeat-y;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* 2. 群組框中心的十字準心 (黃色虛線) */
+#group-bounding-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        linear-gradient(to right, rgba(255, 255, 0, 0.8) 50%, transparent 50%),
+        linear-gradient(to bottom, rgba(255, 255, 0, 0.8) 50%, transparent 50%);
+    background-position: center, center;
+    background-size: 8px 2px, 2px 8px;
+    background-repeat: repeat-x, repeat-y;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* 3. 已存檔群組框的樣式 */
+.persistent-group-box {
+    position: absolute;
+    border: 2px dashed rgba(255, 165, 0, 0.8);
+    /* 橘色 */
+    pointer-events: none;
+    z-index: 199;
+    box-sizing: border-box;
+}
+
+/* 已存檔群組框中心的十字準心 */
+.persistent-group-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        linear-gradient(to right, rgba(255, 165, 0, 0.8) 50%, transparent 50%),
+        linear-gradient(to bottom, rgba(255, 165, 0, 0.8) 50%, transparent 50%);
+    background-position: center, center;
+    background-size: 8px 2px, 2px 8px;
+    background-repeat: repeat-x, repeat-y;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* 3. 跑馬燈組別數字標籤 */
+.marquee-group-label {
+    position: absolute;
+    top: -12px;
+    /* 與 Reset handle 高度類似 */
+    left: 50%;
+    transform: translateX(-50%);
+    /* 預設置中，縮放邏輯由 JS 控制 */
+    background-color: rgba(79, 70, 229, 0.8);
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+    pointer-events: none;
+    /* 防止干擾拖曳 */
+    display: none;
+    /* 預設隱藏 */
+    z-index: 102;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+/* 僅在編輯模式顯示標籤 */
+.widget-container.edit-mode .marquee-group-label {
+    display: block;
+}
+
+.control-handle {
+    position: absolute;
+    background-color: rgba(79, 70, 229, 0.8);
+    border-radius: 50%;
+    display: none;
+    z-index: 100;
+}
+
+.widget-container.edit-mode .control-handle {
+    display: block;
+}
+
+.move-handle {
+    display: none !important;
+}
+
+/* 拿掉移動圖示 */
+.reset-handle {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    top: -12px;
+    right: -12px;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 50%;
+    background-color: rgba(239, 68, 68, 0.8);
+    z-index: 101;
+    transform-origin: center;
+    align-items: center;
+    justify-content: center;
+}
+
+.widget-container.edit-mode .reset-handle {
+    display: flex;
+}
+
+.resize-handle-w {
+    width: 8px;
+    height: 50px;
+    top: 50%;
+    right: -4px;
+    transform: translateY(-50%);
+    border-radius: 4px;
+    cursor: ew-resize;
+}
+
+.resize-handle-h {
+    width: 50px;
+    height: 8px;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 4px;
+    cursor: ns-resize;
+}
+
+.rotate-handle {
+    width: 24px;
+    height: 24px;
+    position: absolute;
+    bottom: -12px;
+    right: -12px;
+    cursor: alias;
+    padding: 4px;
+    transform-origin: center;
+    display: none;
+}
+
+.scale-handle {
+    /* 新增縮放圖示 */
+    width: 24px;
+    height: 24px;
+    position: absolute;
+    bottom: -12px;
+    left: -12px;
+    cursor: se-resize;
+    padding: 4px;
+    transform-origin: center;
+    display: none;
+}
+
+.widget-container.edit-mode .rotate-handle,
+.widget-container.edit-mode .scale-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.group-select-handle {
+    position: absolute;
+    top: -12px;
+    left: -12px;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    z-index: 101;
+    display: none;
+    background-color: rgba(0, 255, 255, 0.5);
+    border-radius: 50%;
+    padding: 2px;
+    transform-origin: center;
+}
+
+.widget-container.edit-mode .group-select-handle {
+    display: block;
+}
+
+.widget-container.selected-for-group {
+    box-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+}
+
+#group-move-handle {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    z-index: 200;
+    cursor: move;
+    background-color: rgba(255, 255, 0, 0.8);
+    border-radius: 6px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#group-rotate-handle {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    z-index: 200;
+    cursor: alias;
+    background-color: rgba(255, 255, 0, 0.8);
+    border-radius: 50%;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#group-scale-handle {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    z-index: 200;
+    cursor: se-resize;
+    background-color: rgba(255, 255, 0, 0.8);
+    border-radius: 50%;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#group-bounding-box {
+    position: absolute;
+    border: 2px dashed rgba(255, 255, 0, 0.8);
+    pointer-events: none;
+    z-index: 199;
+    display: none;
+    box-sizing: border-box;
+}
+
+/* --- Modal 彈出視窗樣式 --- */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.param-list {
+    list-style: none;
+    padding-left: 0;
+    margin-top: 1rem;
+    color: #d1d5db;
+}
+
+.param-item {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.param-item strong {
+    color: #f7fafc;
+    min-width: 120px;
+    display: inline-block;
+}
+
+.param-group-title {
+    font-weight: bold;
+    color: #a5b4fc;
+    margin-top: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #4b5563;
+}
+
+#month-year-picker {
+    max-width: 320px;
+}
+
+#month-year-picker .year-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#month-year-picker .month-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+#month-year-picker .month-cell {
+    padding: 8px;
+    text-align: center;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+}
+
+#month-year-picker .month-cell:hover {
+    background-color: var(--bg-hover);
+}
+
+#month-year-picker .month-cell.selected {
+    background-color: #4f46e5;
+    color: white;
+}
+
+#month-year-picker .month-cell.selected * {
+    color: white !important;
+    fill: white !important;
+}
+
+/* --- UI 按鈕與工具列 --- */
+.action-buttons {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.action-buttons.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.action-button {
+    background-color: transparent;
+    border: 1px solid rgba(75, 85, 99, 0.8);
+    color: #d1d5db;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    box-shadow: none;
+}
+
+.action-button:hover {
+    background-color: rgba(75, 85, 99, 0.3);
+    color: white;
+    border-color: #9ca3af;
+}
+
+#edit-toolbar {
+    position: fixed;
+    bottom: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(17, 24, 39, 0.9);
+    border: 1px solid #374151;
+    border-radius: 12px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 1001;
+    transition: bottom 0.3s ease-in-out;
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.3);
+    user-select: none;
+}
+
+#edit-toolbar.show {
+    bottom: 20px;
+}
+
+#toolbar-title {
+    cursor: move;
+    padding: 4px 8px;
+    color: #9ca3af;
+}
+
+.toolbar-btn {
+    background-color: transparent;
+    border: 1px solid #4b5563;
+    color: #d1d5db;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    box-shadow: none;
+}
+
+.toolbar-btn:hover:not(:disabled) {
+    background-color: rgba(75, 85, 99, 0.3);
+    border-color: #9ca3af;
+}
+
+.toolbar-btn:disabled {
+    color: #6b7280;
+    cursor: not-allowed;
+    border-color: #374151;
+}
+
+select,
+input[type="text"],
+textarea,
+input[type="range"] {
+    background-color: #374151;
+    border: 1px solid #4b5563;
+    border-radius: 6px;
+    color: #d1d5db;
+    padding: 4px;
+}
+
+input[type="range"] {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+input[type="color"] {
+    padding: 2px;
+    width: 40px;
+    height: 30px;
+    border: none;
+    cursor: pointer;
+    background-color: transparent;
+    flex-shrink: 0;
+}
+
+.form-checkbox {
+    appearance: none;
+    background-color: #4b5563;
+    border: 1px solid #6b7280;
+    border-radius: 4px;
+    width: 1.25em;
+    height: 1.25em;
+    position: relative;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.form-checkbox:checked {
+    background-color: #4f46e5;
+    border-color: #4f46e5;
+}
+
+.form-checkbox:checked::after {
+    content: '✓';
+    color: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.9em;
+}
+
+.form-checkbox:disabled {
+    cursor: not-allowed;
+    background-color: #374151;
+    opacity: 0.6;
+}
+
+/* --- 編輯模式網格 --- */
+#edit-mode-grid {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        repeating-linear-gradient(rgba(0, 255, 255, 0.1) 0 1px, transparent 1px 50px),
+        repeating-linear-gradient(90deg, rgba(0, 255, 255, 0.1) 0 1px, transparent 1px 50px);
+    background-size: 50px 50px;
+    background-position: center center;
+    z-index: 9;
+    pointer-events: none;
+}
+
+#edit-mode-grid::before,
+#edit-mode-grid::after {
+    content: '';
+    position: absolute;
+    background-color: rgba(255, 0, 255, 0.5);
+    z-index: 9;
+}
+
+#edit-mode-grid::before {
+    top: 0;
+    left: 50%;
+    width: 1px;
+    height: 100%;
+    transform: translateX(-50%);
+}
+
+#edit-mode-grid::after {
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    transform: translateY(-50%);
+}
+
+body.edit-mode #edit-mode-grid {
+    display: block;
+}
+
+/* --- 由 Tailwind 轉換的語意化 CSS (部分保留) --- */
+.display-flex {
+    display: flex;
+}
+
+.align-items-center {
+    align-items: center;
+}
+
+.justify-content-space-between {
+    justify-content: space-between;
+}
+
+.justify-content-center {
+    justify-content: center;
+}
+
+.justify-content-flex-end {
+    justify-content: flex-end;
+}
+
+.justify-content-start {
+    justify-content: flex-start;
+}
+
+.align-items-flex-start {
+    align-items: flex-start;
+}
+
+.flex-direction-column {
+    flex-direction: column;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+.flex-shrink-0 {
+    flex-shrink: 0;
+}
+
+.flex-grow-1 {
+    flex-grow: 1;
+}
+
+.display-grid {
+    display: grid;
+}
+
+.grid-columns-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.grid-columns-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-column-span-2 {
+    grid-column: span 2 / span 2;
+}
+
+.p0 {
+    padding: 0;
+    margin: 0;
+}
+
+.padding-1 {
+    padding: 0.25rem;
+}
+
+.padding-2 {
+    padding: 0.5rem;
+}
+
+.padding-1_5 {
+    padding: 0.375rem;
+}
+
+.padding-3 {
+    padding: 0.75rem;
+}
+
+.padding-5 {
+    padding: 1.25rem;
+}
+
+.padding-6 {
+    padding: 1.5rem;
+}
+
+.padding-top-1 {
+    padding-top: 0.25rem;
+}
+
+.padding-bottom-2 {
+    padding-bottom: 0.5rem;
+}
+
+.padding-bottom-4 {
+    padding-bottom: 1rem;
+}
+
+.padding-right-2 {
+    padding-right: 0.25rem;
+}
+
+.padding-horizontal-3 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.padding-vertical-1 {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+.padding-vertical-2 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+.margin-bottom-2 {
+    margin-bottom: 0.5rem;
+}
+
+.margin-bottom-3 {
+    margin-bottom: 0.75rem;
+}
+
+.margin-bottom-4 {
+    margin-bottom: 1rem;
+}
+
+.margin-bottom-6 {
+    margin-bottom: 1.5rem;
+}
+
+.margin-left-2 {
+    margin-left: 0.5rem;
+}
+
+.margin-top-1 {
+    margin-top: 0.25rem;
+}
+
+.margin-top-2 {
+    margin-top: 0.5rem;
+}
+
+.margin-top-4 {
+    margin-top: 1rem;
+}
+
+.margin-top-6 {
+    margin-top: 1.5rem;
+}
+
+.gap-2 {
+    gap: 0.5rem;
+}
+
+.gap-3 {
+    gap: 0.75rem;
+}
+
+.gap-4 {
+    gap: 1rem;
+}
+
+.column-gap-6 {
+    column-gap: 1.5rem;
+}
+
+.column-gap-8 {
+    column-gap: 2rem;
+}
+
+.row-gap-3 {
+    row-gap: 0.75rem;
+}
+
+.row-gap-6 {
+    row-gap: 1.5rem;
+}
+
+.space-y-2> :not([hidden])~ :not([hidden]) {
+    margin-top: 0.5rem;
+}
+
+.space-y-3> :not([hidden])~ :not([hidden]) {
+    margin-top: 0.75rem;
+}
+
+.space-x-2> :not([hidden])~ :not([hidden]) {
+    margin-left: 0.5rem;
+}
+
+.width-5 {
+    width: 1.25rem;
+}
+
+.height-5 {
+    height: 1.25rem;
+}
+
+.width-6 {
+    width: 1.5rem;
+}
+
+.height-6 {
+    height: 1.5rem;
+}
+
+.width-16 {
+    width: 4rem;
+}
+
+.height-16 {
+    height: 4rem;
+}
+
+.width-40 {
+    width: 10rem;
+}
+
+.width-full {
+    width: 100%;
+}
+
+.height-full {
+    height: 100%;
+}
+
+.width-auto {
+    width: auto;
+}
+
+.min-width-200px {
+    min-width: 200px;
+}
+
+.max-width-sm {
+    max-width: 24rem;
+}
+
+.max-width-md {
+    max-width: 28rem;
+}
+
+.max-width-5xl {
+    max-width: 64rem;
+}
+
+.max-height-80 {
+    max-height: 20rem;
+}
+
+.max-height-90vh {
+    max-height: 90vh;
+}
+
+.font-weight-bold {
+    font-weight: 700;
+}
+
+.font-weight-semibold {
+    font-weight: 600;
+}
+
+.font-size-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+}
+
+.font-size-md {
+    font-size: 1rem;
+    line-height: 1.5rem;
+}
+
+.font-size-lg {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+}
+
+.font-size-xl {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+}
+
+.font-size-3xl {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+}
+
+.line-height-none {
+    line-height: 1;
+}
+
+.line-height-relaxed {
+    line-height: 1.625;
+}
+
+.text-align-center {
+    text-align: center;
+}
+
+.color-white {
+    color: #ffffff;
+}
+
+.color-gray-300 {
+    color: #d1d5db;
+}
+
+.color-gray-400 {
+    color: #9ca3af;
+}
+
+.color-indigo-300 {
+    color: #a5b4fc;
+}
+
+.bg-gray-800 {
+    background-color: #1f2937;
+}
+
+.border-top-1px {
+    border-top-width: 1px;
+}
+
+.border-bottom-1px {
+    border-bottom-width: 1px;
+}
+
+.border-color-gray-600 {
+    border-color: #4b5563;
+}
+
+.border-color-gray-700 {
+    border-color: #374151;
+}
+
+.border-radius-lg {
+    border-radius: 0.5rem;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.cursor-help {
+    cursor: help;
+}
+
+.hover-color-white:hover {
+    color: #ffffff;
+}
+
+.display-none {
+    display: none !important;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+}
+
+.overflow-y-auto {
+    overflow-y: auto;
+}
+
+.position-relative {
+    position: relative;
+}
+
+/* --- 全域按鈕樣式重置 --- */
+#calendar-container button,
+#moon-phase-container button,
+.action-button,
+.toolbar-btn,
+[data-close-modal],
+#useCurrentLocationBtn,
+#marquee-params-btn,
+#default-settings-btn,
+#random-colors-btn,
+#picker-prev-year,
+#picker-next-year,
+#prompt-cancel-btn,
+#prompt-ok-btn {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #d1d5db;
+    transition: color 0.2s, background-color 0.2s;
+}
+
+#calendar-container button:hover,
+#moon-phase-container button:hover,
+.toolbar-btn:hover:not(:disabled),
+[data-close-modal]:hover,
+#useCurrentLocationBtn:hover,
+#marquee-params-btn:hover,
+#default-settings-btn:hover,
+#random-colors-btn:hover,
+#picker-prev-year:hover,
+#picker-next-year:hover,
+#prompt-cancel-btn:hover,
+#prompt-ok-btn:hover,
+.action-button:hover {
+    color: #ffffff !important;
+}
+
+/* 為圓形或有圓角的按鈕提供懸停時的背景回饋 */
+.action-button:hover,
+#useCurrentLocationBtn:hover,
+#marquee-params-btn:hover,
+#picker-prev-year:hover,
+#picker-next-year:hover,
+.calendar-widget .calendar-nav-arrow:hover {
+    background-color: rgba(75, 85, 99, 0.3) !important;
+}
+
+.action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+}
+
+/* 視覺對齊修正 */
+#modal-backdrop-settings .space-y-3>div,
+#modal-backdrop-settings .p0>.display-flex.justify-content-space-between {
+    align-items: center;
+}
+
+#modal-backdrop-settings .display-flex.align-items-center.gap-3>.display-flex.align-items-center.gap-2 {
+    align-items: center;
+}
+
+#modal-backdrop-settings label[for="marquee-vertical-toggle"],
+#modal-backdrop-settings label[for="marquee-use-led-font-toggle"] {
+    display: flex;
+    align-items: center;
+}
+
+@media (min-width: 768px) {
+    .md-grid-columns-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .md-grid-columns-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .md-grid-column-span-2 {
+        grid-column: span 2 / span 2;
+    }
+}
+
+@media (min-width: 1024px) {
+    .lg-grid-columns-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+/* --- 跑馬燈模組庫樣式 --- */
+.marquee-module-library {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 99%;
+}
+
+.module-group {
+    margin-bottom: 0.75rem;
+}
+
+.module-group:last-child {
+    margin-bottom: 0;
+}
+
+.module-group-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted, #6B7280);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.module-pills-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.module-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    background: rgba(79, 70, 229, 0.2);
+    border: 1px solid rgba(79, 70, 229, 0.4);
+    border-radius: 9999px;
+    color: #E0E7FF;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: grab;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.module-pill:hover {
+    background: rgba(79, 70, 229, 0.4);
+    border-color: rgba(79, 70, 229, 0.6);
+    transform: translateY(-1px);
+}
+
+.module-pill:active {
+    cursor: grabbing;
+}
+
+.module-pill.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+}
+
+/* --- 塊狀編輯器樣式 --- */
+.marquee-block-editor {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    min-height: 80px;
+    width: 100%;
+    cursor: text;
+}
+
+.marquee-block-editor:focus-within {
+    border-color: var(--primary-color, #4f46e5);
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.editor-block {
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+}
+
+.editor-text-block {
+    background: transparent;
+    border: none;
+    color: #f3f4f6;
+    font-size: 0.875rem;
+    min-width: 8px;
+    padding: 2px 4px;
+    outline: none;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.editor-text-block:empty::before {
+    content: ' ';
+    display: inline-block;
+    width: 8px;
+}
+
+.editor-module-block {
+    background: rgba(79, 70, 229, 0.8);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    user-select: none;
+    cursor: grab;
+}
+
+.editor-module-block.dragging {
+    opacity: 0.5;
+}
+
+.editor-module-block .remove-btn {
+    cursor: pointer;
+    opacity: 0.6;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.editor-module-block .remove-btn:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.editor-block-drop-indicator {
+    width: 2px;
+    height: 20px;
+    background: var(--primary-color, #4f46e5);
+    margin: 0 -1px;
+    display: none;
+}
+
+.editor-module-block svg {
+    width: 1.2em;
+    height: 1.2em;
+    vertical-align: middle;
+    display: inline-block;
+}
