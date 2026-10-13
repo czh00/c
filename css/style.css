@@ -1590,6 +1590,9 @@ body.edit-mode #edit-mode-grid {
     font-weight: 500;
     cursor: grab;
     user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
     transition: all 0.2s ease;
 }
 
@@ -1663,11 +1666,14 @@ body.edit-mode #edit-mode-grid {
     align-items: center;
     gap: 4px;
     user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
     cursor: grab;
 }
 
 .editor-module-block.dragging {
-    opacity: 0.5;
+    opacity: 0.4;
 }
 
 .editor-module-block .remove-btn {
@@ -1681,6 +1687,7 @@ body.edit-mode #edit-mode-grid {
     height: 16px;
     border-radius: 50%;
     transition: all 0.2s;
+    touch-action: manipulation;
 }
 
 .editor-module-block .remove-btn:hover {
@@ -1689,11 +1696,14 @@ body.edit-mode #edit-mode-grid {
 }
 
 .editor-block-drop-indicator {
-    width: 2px;
-    height: 20px;
+    width: 3px;
+    height: 22px;
     background: var(--primary-color, #4f46e5);
+    box-shadow: 0 0 6px var(--primary-color, #4f46e5);
     margin: 0 -1px;
     display: none;
+    border-radius: 2px;
+    pointer-events: none;
 }
 
 .editor-module-block svg {
@@ -1701,4 +1711,21 @@ body.edit-mode #edit-mode-grid {
     height: 1.2em;
     vertical-align: middle;
     display: inline-block;
+}
+
+.touch-drag-ghost {
+    position: fixed !important;
+    pointer-events: none !important;
+    z-index: 10000 !important;
+    transform: translate(-50%, -50%) scale(1.08) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 10px rgba(79, 70, 229, 0.5) !important;
+    opacity: 0.95 !important;
+    transition: none !important;
+}
+
+#tool-custom-text-drag {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }

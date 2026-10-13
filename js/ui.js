@@ -303,6 +303,8 @@ const MarqueeEditor = {
     paramLabelMap: {},
     lastSelection: null, // { blockIndex, offset }
     dropIndicator: null,
+    touchDragState: null,
+    lastTouchDragEndTime: 0,
 
     init() {
         this.container = document.getElementById('marquee-editor-blocks');
@@ -314,6 +316,7 @@ const MarqueeEditor = {
         this.buildParamMap();
         this.bindModuleLibrary();
         this.bindContainerEvents();
+        this.bindTouchEvents();
         this.initDropIndicator();
         
         const self = this;
@@ -342,12 +345,31 @@ const MarqueeEditor = {
         this.library.querySelectorAll('.module-pill:not(.tool-pill)').forEach(pill => {
             const code = pill.dataset.code;
             pill.addEventListener('dragstart', (e) => {
+                pill.classList.add('dragging');
                 e.dataTransfer.setData('application/marquee-module', JSON.stringify({
                     code: code,
                     label: this.paramLabelMap[code]
                 }));
             });
-            pill.addEventListener('click', () => this.addModuleBlock(code, this.paramLabelMap[code]));
+            pill.addEventListener('dragend', () => this.cleanupTouchDrag());
+            pill.addEventListener('touchstart', (e) => {
+                this.cleanupTouchDrag();
+                const touch = e.touches[0];
+                this.touchDragState = {
+                    type: 'library',
+                    code: code,
+                    label: this.paramLabelMap[code],
+                    pill: pill,
+                    startX: touch.clientX,
+                    startY: touch.clientY,
+                    isDragging: false,
+                    ghost: null
+                };
+            }, { passive: true });
+            pill.addEventListener('click', (e) => {
+                if (this.lastTouchDragEndTime && Date.now() - this.lastTouchDragEndTime < 350) return;
+                this.addModuleBlock(code, this.paramLabelMap[code]);
+            });
         });
 
         const customDragBtn = document.getElementById('tool-custom-text-drag');
@@ -365,11 +387,29 @@ const MarqueeEditor = {
             };
 
             customDragBtn.addEventListener('dragstart', (e) => {
+                customDragBtn.classList.add('dragging');
                 const data = getCustomData();
                 e.dataTransfer.setData('application/marquee-module', JSON.stringify(data));
             });
+            customDragBtn.addEventListener('dragend', () => this.cleanupTouchDrag());
+            customDragBtn.addEventListener('touchstart', (e) => {
+                this.cleanupTouchDrag();
+                const touch = e.touches[0];
+                const data = getCustomData();
+                this.touchDragState = {
+                    type: 'library',
+                    code: data.code,
+                    label: data.label,
+                    pill: customDragBtn,
+                    startX: touch.clientX,
+                    startY: touch.clientY,
+                    isDragging: false,
+                    ghost: null
+                };
+            }, { passive: true });
 
-            customDragBtn.addEventListener('click', () => {
+            customDragBtn.addEventListener('click', (e) => {
+                if (this.lastTouchDragEndTime && Date.now() - this.lastTouchDragEndTime < 350) return;
                 const data = getCustomData();
                 this.addModuleBlock(data.code, data.label);
             });
@@ -435,6 +475,7 @@ const MarqueeEditor = {
 
         this.container.addEventListener('drop', (e) => {
             e.preventDefault();
+            this.cleanupTouchDrag();
             this.container.classList.remove('drag-over');
             this.hideDropIndicator();
             
@@ -456,6 +497,115 @@ const MarqueeEditor = {
                 if (lastText) lastText.focus();
             }
         });
+    },
+
+    bindTouchEvents() {
+        window.addEventListener('touchmove', (e) => {
+            if (!this.touchDragState) return;
+            const touch = e.touches[0];
+            const dx = touch.clientX - this.touchDragState.startX;
+            const dy = touch.clientY - this.touchDragState.startY;
+
+            if (!this.touchDragState.isDragging) {
+                if (Math.hypot(dx, dy) > 8) {
+                    this.touchDragState.isDragging = true;
+                    this.touchDragState.pill.classList.add('dragging');
+                    const ghost = this.createDragGhost(this.touchDragState.pill);
+                    this.touchDragState.ghost = ghost;
+                    document.body.appendChild(ghost);
+                }
+            }
+
+            if (this.touchDragState.isDragging) {
+                if (e.cancelable) e.preventDefault();
+                
+                if (this.touchDragState.ghost) {
+                    this.touchDragState.ghost.style.left = `${touch.clientX}px`;
+                    this.touchDragState.ghost.style.top = `${touch.clientY}px`;
+                }
+
+                const containerRect = this.container.getBoundingClientRect();
+                const isOverContainer = (
+                    touch.clientX >= containerRect.left - 20 &&
+                    touch.clientX <= containerRect.right + 20 &&
+                    touch.clientY >= containerRect.top - 20 &&
+                    touch.clientY <= containerRect.bottom + 20
+                );
+
+                if (isOverContainer) {
+                    this.container.classList.add('drag-over');
+                    const targetIndex = this.getInsertIndexFromPoint(touch.clientX, touch.clientY);
+                    this.showDropIndicator(targetIndex);
+                    this.touchDragState.targetIndex = targetIndex;
+                } else {
+                    this.container.classList.remove('drag-over');
+                    this.hideDropIndicator();
+                    this.touchDragState.targetIndex = null;
+                }
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            if (!this.touchDragState) return;
+            const state = this.touchDragState;
+            const wasDragging = state.isDragging;
+            this.cleanupTouchDrag();
+
+            if (wasDragging) {
+                this.lastTouchDragEndTime = Date.now();
+                if (state.type === 'reorder' && typeof state.targetIndex === 'number') {
+                    this.moveBlock(state.fromIndex, state.targetIndex);
+                } else if (state.type === 'library' && typeof state.targetIndex === 'number') {
+                    if (state.code) {
+                        this.insertModuleAt(state.code, state.targetIndex, state.label);
+                    }
+                }
+            }
+        });
+
+        window.addEventListener('touchcancel', () => {
+            this.cleanupTouchDrag();
+        });
+
+        document.addEventListener('dragend', () => {
+            this.cleanupTouchDrag();
+        });
+
+        window.addEventListener('click', (e) => {
+            if (this.lastTouchDragEndTime && Date.now() - this.lastTouchDragEndTime < 350) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }, true);
+    },
+
+    cleanupTouchDrag() {
+        if (this.touchDragState && this.touchDragState.ghost) {
+            this.touchDragState.ghost.remove();
+        }
+        document.querySelectorAll('.editor-module-block.dragging, .module-pill.dragging').forEach(el => {
+            el.classList.remove('dragging');
+        });
+        if (this.container) {
+            this.container.classList.remove('drag-over');
+        }
+        this.hideDropIndicator();
+        this.touchDragState = null;
+    },
+
+    createDragGhost(pill) {
+        const ghost = pill.cloneNode(true);
+        ghost.classList.remove('dragging');
+        ghost.classList.add('touch-drag-ghost');
+        const rect = pill.getBoundingClientRect();
+        ghost.style.position = 'fixed';
+        ghost.style.left = `${rect.left + rect.width / 2}px`;
+        ghost.style.top = `${rect.top + rect.height / 2}px`;
+        ghost.style.width = `${rect.width}px`;
+        ghost.style.height = `${rect.height}px`;
+        ghost.style.pointerEvents = 'none';
+        ghost.style.zIndex = '10000';
+        return ghost;
     },
 
     showDropIndicator(index) {
@@ -501,6 +651,7 @@ const MarqueeEditor = {
     },
 
     loadTemplate(template) {
+        this.cleanupTouchDrag();
         this.blocks = [];
         const regex = /(%[^%]+%)/g;
         const parts = template.split(regex);
@@ -612,8 +763,34 @@ const MarqueeEditor = {
                     pill.classList.add('dragging');
                     e.dataTransfer.setData('application/marquee-internal-index', index);
                 });
-                pill.addEventListener('dragend', () => pill.classList.remove('dragging'));
-                pill.querySelector('.remove-btn').addEventListener('click', () => this.removeBlock(index));
+                pill.addEventListener('dragend', () => this.cleanupTouchDrag());
+
+                pill.addEventListener('touchstart', (e) => {
+                    if (e.target.closest('.remove-btn')) return;
+                    this.cleanupTouchDrag();
+                    const touch = e.touches[0];
+                    this.touchDragState = {
+                        type: 'reorder',
+                        fromIndex: index,
+                        pill: pill,
+                        startX: touch.clientX,
+                        startY: touch.clientY,
+                        isDragging: false,
+                        ghost: null
+                    };
+                }, { passive: true });
+
+                const removeBtn = pill.querySelector('.remove-btn');
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.removeBlock(index);
+                });
+                removeBtn.addEventListener('touchend', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    this.removeBlock(index);
+                });
+
                 blockEl.appendChild(pill);
             }
             this.container.appendChild(blockEl);
