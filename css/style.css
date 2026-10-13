@@ -779,6 +779,23 @@ body {
     box-sizing: border-box;
 }
 
+/* 觸控手勢優化：防止瀏覽器滾動或縮放手勢干擾控制點拖曳 */
+.control-handle,
+.group-select-handle,
+#group-move-handle,
+#group-rotate-handle,
+#group-scale-handle,
+#group-add-handle,
+.persistent-group-rotate,
+.persistent-group-scale,
+.persistent-group-delete,
+[data-persistent-group-rotate],
+[data-persistent-group-scale] {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
 /* --- Modal 彈出視窗樣式 --- */
 .modal-backdrop {
     position: fixed;

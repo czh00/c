@@ -255,7 +255,7 @@
             const handleToolbarDragEnd = () => { if (toolbarMoving) { toolbarMoving = false; editToolbar.style.transition = 'bottom 0.3s ease-in-out'; } };
             toolbarTitle.addEventListener('mousedown', handleToolbarDragStart); toolbarTitle.addEventListener('touchstart', handleToolbarDragStart, { passive: false });
             document.addEventListener('mousemove', handleToolbarDragMove); document.addEventListener('touchmove', handleToolbarDragMove, { passive: false });
-            document.addEventListener('mouseup', handleToolbarDragEnd); document.addEventListener('touchend', handleToolbarDragEnd);
+            document.addEventListener('mouseup', handleToolbarDragEnd); document.addEventListener('touchend', handleToolbarDragEnd); document.addEventListener('touchcancel', handleToolbarDragEnd);
             const layoutSelector = document.getElementById('layout-selector');
             function updateLayoutSelector() {
                 const currentVal = layoutSelector.value;
@@ -618,6 +618,7 @@
                 window.addEventListener('touchmove', onDragMove, { passive: false });
                 window.addEventListener('mouseup', onDragEnd);
                 window.addEventListener('touchend', onDragEnd);
+                window.addEventListener('touchcancel', onDragEnd);
             };
 
             const onDragMove = (e) => {
@@ -633,7 +634,7 @@
                     e.stopPropagation();
                 }
 
-                const currentX = (e.touches ? e.touches[0] : e).clientX, currentY = (e.touches ? e.touches[0] : e).clientY;
+                const currentX = (e.touches && e.touches[0] ? e.touches[0] : e).clientX, currentY = (e.touches && e.touches[0] ? e.touches[0] : e).clientY;
                 const dx = currentX - startX, dy = currentY - startY;
 
                 if (activeHandle === 'persistent-group-move') {
@@ -824,6 +825,7 @@
                                 state.scale = Math.max(0.2, Math.min(newScale, 5));
                                 applyTransform(widgetEl, state);
                             });
+                            renderAllPersistentGroupsUI();
                         } else {
                             let newScale = initialTransformState.scale * scaleFactor;
                             activeWidget.state.scale = Math.max(0.2, Math.min(newScale, 5));
@@ -844,6 +846,7 @@
                                 state.rotation = (initialState.rotation || 0) + rotationDelta;
                                 applyTransform(widgetEl, state);
                             });
+                            renderAllPersistentGroupsUI();
                         } else {
                             const rotationDelta = angle - initialTransformState.startAngle;
                             activeWidget.state.rotation = (initialTransformState.rotation || 0) + rotationDelta;
@@ -876,6 +879,7 @@
                 document.body.style.cursor = 'default'; document.body.style.userSelect = 'auto'; activeHandle = null; activeWidget = null;
                 window.removeEventListener('mousemove', onDragMove); window.removeEventListener('touchmove', onDragMove);
                 window.removeEventListener('mouseup', onDragEnd); window.removeEventListener('touchend', onDragEnd);
+                window.removeEventListener('touchcancel', onDragEnd);
                 saveCurrentSettings();
             };
             document.body.addEventListener('mousedown', onDragStart); document.body.addEventListener('touchstart', onDragStart, { passive: false });

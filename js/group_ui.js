@@ -5,12 +5,30 @@
             groupsUiLayer.id = 'groups-ui-layer';
             document.body.appendChild(groupsUiLayer);
 
+            groupsUiLayer.addEventListener('click', (e) => {
+                const deleteBtn = e.target.closest('[data-group-delete]');
+                if (deleteBtn) {
+                    e.stopPropagation();
+                    const index = parseInt(deleteBtn.dataset.groupDelete, 10);
+                    disbandGroup(index);
+                }
+            });
+
             function renderAllPersistentGroupsUI() {
-                groupsUiLayer.innerHTML = '';
-                if (!isEditMode) return;
+                if (!isEditMode) {
+                    groupsUiLayer.innerHTML = '';
+                    return;
+                }
                 groups = groups.filter(g => g.size > 0);
                 groups.forEach((groupSet, index) => {
                     renderSinglePersistentGroupUI(groupSet, index);
+                });
+                const allContainers = groupsUiLayer.querySelectorAll('.persistent-group-container');
+                allContainers.forEach(c => {
+                    const idx = parseInt(c.dataset.groupIndex, 10);
+                    if (idx >= groups.length) {
+                        c.remove();
+                    }
                 });
             }
 
@@ -48,45 +66,78 @@
                     });
                 });
 
-                if (!isFinite(minX)) return;
+                let container = groupsUiLayer.querySelector(`.persistent-group-container[data-group-index="${index}"]`);
 
-                const box = document.createElement('div');
-                box.className = 'persistent-group-box';
+                if (!isFinite(minX)) {
+                    if (container) container.style.display = 'none';
+                    return;
+                }
+
+                if (!container) {
+                    container = document.createElement('div');
+                    container.className = 'persistent-group-container';
+                    container.dataset.groupIndex = index;
+                    container.style.pointerEvents = 'none';
+
+                    const box = document.createElement('div');
+                    box.className = 'persistent-group-box';
+
+                    const idDisplay = document.createElement('div');
+                    idDisplay.className = 'persistent-group-id';
+                    idDisplay.style.cssText = `position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(255, 165, 0, 0.8); font-size: 48px; font-weight: bold; pointer-events: none; z-index: 200; text-shadow: 0 0 5px black;`;
+
+                    const deleteButton = document.createElement('div');
+                    deleteButton.className = 'persistent-group-delete';
+                    deleteButton.innerHTML = '&times;';
+                    deleteButton.style.cssText = `position: absolute; width: 28px; height: 28px; background-color: rgba(239, 68, 68, 0.8); border-radius: 50%; cursor: pointer; z-index: 201; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold; pointer-events: all; touch-action: none;`;
+
+                    const rotateHandle = document.createElement('div');
+                    rotateHandle.className = 'persistent-group-rotate control-handle';
+                    rotateHandle.innerHTML = `<svg style="width:100%; height:100%;"><use href="#icon-rotate" stroke="black" stroke-width="1.5"></use></svg>`;
+                    rotateHandle.style.cssText = `position: absolute; width: 28px; height: 28px; background-color: rgba(255, 165, 0, 0.8); border-radius: 50%; cursor: alias; z-index: 201; display: flex; align-items: center; justify-content: center; pointer-events: all; padding: 4px; touch-action: none;`;
+
+                    const scaleHandle = document.createElement('div');
+                    scaleHandle.className = 'persistent-group-scale control-handle';
+                    scaleHandle.innerHTML = `<svg style="width:100%; height:100%;"><use href="#icon-scale" stroke="black" stroke-width="1.5"></use></svg>`;
+                    scaleHandle.style.cssText = `position: absolute; width: 28px; height: 28px; background-color: rgba(255, 165, 0, 0.8); border-radius: 50%; cursor: se-resize; z-index: 201; display: flex; align-items: center; justify-content: center; pointer-events: all; padding: 4px; touch-action: none;`;
+
+                    box.appendChild(idDisplay);
+                    container.appendChild(box);
+                    container.appendChild(deleteButton);
+                    container.appendChild(rotateHandle);
+                    container.appendChild(scaleHandle);
+                    groupsUiLayer.appendChild(container);
+                }
+
+                container.style.display = '';
+
+                const box = container.querySelector('.persistent-group-box');
+                const idDisplay = container.querySelector('.persistent-group-id');
+                const deleteButton = container.querySelector('.persistent-group-delete');
+                const rotateHandle = container.querySelector('.persistent-group-rotate');
+                const scaleHandle = container.querySelector('.persistent-group-scale');
+
                 box.style.left = `${minX}px`;
                 box.style.top = `${minY}px`;
                 box.style.width = `${maxX - minX}px`;
                 box.style.height = `${maxY - minY}px`;
 
-                const idDisplay = document.createElement('div');
                 idDisplay.textContent = index + 1;
-                idDisplay.style.cssText = `position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(255, 165, 0, 0.8); font-size: 48px; font-weight: bold; pointer-events: none; z-index: 200; text-shadow: 0 0 5px black;`;
 
-                const deleteButton = document.createElement('div');
-                deleteButton.innerHTML = '&times;';
+                deleteButton.dataset.groupDelete = index;
                 deleteButton.title = `解散群組 ${index + 1}`;
-                deleteButton.style.cssText = `position: absolute; top: ${minY - 14}px; left: ${minX - 14}px; width: 28px; height: 28px; background-color: rgba(239, 68, 68, 0.8); border-radius: 50%; cursor: pointer; z-index: 201; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: bold; pointer-events: all;`;
-                deleteButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    disbandGroup(index);
-                });
+                deleteButton.style.top = `${minY - 14}px`;
+                deleteButton.style.left = `${minX - 14}px`;
 
-                const rotateHandle = document.createElement('div');
                 rotateHandle.dataset.persistentGroupRotate = index;
                 rotateHandle.title = `旋轉群組 ${index + 1}`;
-                rotateHandle.innerHTML = `<svg style="width:100%; height:100%;"><use href="#icon-rotate" stroke="black" stroke-width="1.5"></use></svg>`;
-                rotateHandle.style.cssText = `position: absolute; top: ${maxY - 14}px; left: ${maxX - 14}px; width: 28px; height: 28px; background-color: rgba(255, 165, 0, 0.8); border-radius: 50%; cursor: alias; z-index: 201; display: flex; align-items: center; justify-content: center; pointer-events: all; padding: 4px;`;
+                rotateHandle.style.top = `${maxY - 14}px`;
+                rotateHandle.style.left = `${maxX - 14}px`;
 
-                const scaleHandle = document.createElement('div');
                 scaleHandle.dataset.persistentGroupScale = index;
                 scaleHandle.title = `縮放群組 ${index + 1}`;
-                scaleHandle.innerHTML = `<svg style="width:100%; height:100%;"><use href="#icon-scale" stroke="black" stroke-width="1.5"></use></svg>`;
-                scaleHandle.style.cssText = `position: absolute; top: ${maxY - 14}px; left: ${minX - 14}px; width: 28px; height: 28px; background-color: rgba(255, 165, 0, 0.8); border-radius: 50%; cursor: se-resize; z-index: 201; display: flex; align-items: center; justify-content: center; pointer-events: all; padding: 4px;`;
-
-                box.appendChild(idDisplay);
-                groupsUiLayer.appendChild(box);
-                groupsUiLayer.appendChild(deleteButton);
-                groupsUiLayer.appendChild(rotateHandle);
-                groupsUiLayer.appendChild(scaleHandle);
+                scaleHandle.style.top = `${maxY - 14}px`;
+                scaleHandle.style.left = `${minX - 14}px`;
             }
 
             function findGroupForWidget(widgetId) {
@@ -153,6 +204,7 @@
                 if (!groupRotateHandle) {
                     groupRotateHandle = document.createElement('div');
                     groupRotateHandle.id = 'group-rotate-handle';
+                    groupRotateHandle.style.touchAction = 'none';
                     groupRotateHandle.innerHTML = `<svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-rotate" stroke="black" stroke-width="1.5"></use></svg>`;
                     document.body.appendChild(groupRotateHandle);
                 }
@@ -160,6 +212,7 @@
                 if (!groupScaleHandle) {
                     groupScaleHandle = document.createElement('div');
                     groupScaleHandle.id = 'group-scale-handle';
+                    groupScaleHandle.style.touchAction = 'none';
                     groupScaleHandle.innerHTML = `<svg class="width-full height-full" viewBox="0 0 24 24"><use href="#icon-scale" stroke="black" stroke-width="1.5"></use></svg>`;
                     document.body.appendChild(groupScaleHandle);
                 }
@@ -167,7 +220,7 @@
                 if (!groupAddHandle) {
                     groupAddHandle = document.createElement('div');
                     groupAddHandle.id = 'group-add-handle';
-                    groupAddHandle.style.cssText = `position: absolute; width: 28px; height: 28px; z-index: 201; cursor: pointer; background-color: rgba(0, 255, 0, 0.8); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; font-size: 24px; font-weight: bold;`;
+                    groupAddHandle.style.cssText = `position: absolute; width: 28px; height: 28px; z-index: 201; cursor: pointer; background-color: rgba(0, 255, 0, 0.8); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: black; font-size: 24px; font-weight: bold; touch-action: none;`;
                     groupAddHandle.textContent = '+';
                     groupAddHandle.title = '將選取項目建立為新群組';
                     groupAddHandle.addEventListener('click', createGroupFromSelection);
