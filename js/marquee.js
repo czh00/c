@@ -42,7 +42,8 @@ class MarqueeInstance {
                 if (/^\d+[\d:.]*$/.test(part) && part.trim() !== '') {
                     const widgetState = transformStates[this.container.id];
                     const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
-                    processedHTML += generateLedSvg(part, { height: svgHeight, color: defaultColor, applyYOffset: true });
+                    const fontType = settingsState.marqueeGlobal?.ledFontType || '7segment';
+                    processedHTML += generateLedSvg(part, { height: svgHeight, color: defaultColor, applyYOffset: true, fontType: fontType });
                 } else if (part) {
                     processedHTML += `<span class="marquee-plain-text" style="color:${defaultColor}">${part.replace(/ /g, '\u00A0')}</span>`;
                 }
@@ -109,7 +110,8 @@ class MarqueeInstance {
                         spanStyle += ` animation-duration: ${blinkDuration / 1000}s;`;
                     }
 
-                    resultHTML += `<span class="${finalClass}" style="${spanStyle}">${generateLedSvg(colorText, { height: svgHeight, color: svgColor })}</span>`;
+                    const fontType = settingsState.marqueeGlobal?.ledFontType || '7segment';
+                    resultHTML += `<span class="${finalClass}" style="${spanStyle}">${generateLedSvg(colorText, { height: svgHeight, color: svgColor, fontType: fontType })}</span>`;
                 } else {
                     resultHTML += `<span class="${finalClass}" style="${finalStyle}">${colorText.replace(/ /g, '\u00A0')}</span>`;
                 }
@@ -122,7 +124,8 @@ class MarqueeInstance {
                 if (useLedGlobal && ledParams.includes(param) && /^[\d:]+$/.test(replacementContent)) {
                     const widgetState = transformStates[this.container.id];
                     const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
-                    resultHTML += `<span data-time-key="${param}">${generateLedSvg(replacementContent, { height: svgHeight, color: color })}</span>`;
+                    const fontType = settingsState.marqueeGlobal?.ledFontType || '7segment';
+                    resultHTML += `<span data-time-key="${param}">${generateLedSvg(replacementContent, { height: svgHeight, color: color, fontType: fontType })}</span>`;
                 } else if (param === '%MOON_ICON%') {
                     resultHTML += `<span data-time-key="${param}">${replacementContent}</span>`;
                 } else {
@@ -148,7 +151,8 @@ class MarqueeInstance {
                     const widgetState = transformStates[this.container.id];
                     const svgHeight = widgetState ? widgetState.height * 0.70 : 28;
                     const color = svgEl ? svgEl.getAttribute('fill') : (marqueeParamColorMap[key] ? getComputedStyle(document.documentElement).getPropertyValue(marqueeParamColorMap[key]).trim() : '#FFFFFF');
-                    span.innerHTML = generateLedSvg(newText, { height: svgHeight, color: color });
+                    const fontType = settingsState.marqueeGlobal?.ledFontType || '7segment';
+                    span.innerHTML = generateLedSvg(newText, { height: svgHeight, color: color, fontType: fontType });
                 }
             } else if (key === '%MOON_ICON%') {
                 if (span.innerHTML !== newText) span.innerHTML = newText;
@@ -403,14 +407,14 @@ const userDefaultLayout = {
     },
     "settings": {
         // ... (settings 部分保持不變，不用替換)
-        "calendar": { "visible": true, "showMoonIcon": true, "useLedFont": true, "monthInBackground": true, "colors": { "--bg-primary": "#000000", "--year-color": "#FF7000", "--month-color": "#3070a0", "--week-color": "#8830d0", "--day-color": "#ffffff", "--lunar-color": "#FFFF00", "--bg-secondary": "transparent", "--bg-hover": "rgba(55, 65, 81, 0.5)", "--border-color": "#374151", "--text-primary": "#F3F4F6", "--text-secondary": "#9CA3AF", "--text-muted": "#6B7280", "--holiday-color": "#6ee7b7", "--solarterm-color": "#fcd34d", "--yi-color": "#34D399", "--ji-color": "#F87171" } },
-        "ledClock": { "visible": true, "colonBlink": true, "colors": { "--led-hour-color": "#00ff00", "--led-minute-color": "#00ff00", "--led-second-color": "#00ff00", "--led-colon-color": "#00ff00", "--led-period-color": "#00ff00" } },
-        "analogClock": { "visible": true, "useLedFont": true, "smoothSeconds": false, "colors": { "--analog-face-color": "transparent", "--analog-hand-color": "#ffffff", "--analog-second-hand-color": "#ff3333", "--analog-tick-color": "#cccccc", "--analog-number-color": "#ffffff" } },
-        "moonPhase": { "visible": false, "useLedFont": true, "monthInBackground": true, "colors": { "--moon-light-color": "#f0e68c", "--moon-dark-color": "#222222", "--moon-header-color": "#a78bfa", "--moon-desc-color": "#d1d5db", "--moon-highlight-color": "#fcd34d" } },
+        "calendar": { "visible": true, "showMoonIcon": true, "useLedFont": true, "ledFontType": "7segment", "monthInBackground": true, "colors": { "--bg-primary": "#000000", "--year-color": "#FF7000", "--month-color": "#3070a0", "--week-color": "#8830d0", "--day-color": "#ffffff", "--lunar-color": "#FFFF00", "--bg-secondary": "transparent", "--bg-hover": "rgba(55, 65, 81, 0.5)", "--border-color": "#374151", "--text-primary": "#F3F4F6", "--text-secondary": "#9CA3AF", "--text-muted": "#6B7280", "--holiday-color": "#6ee7b7", "--solarterm-color": "#fcd34d", "--yi-color": "#34D399", "--ji-color": "#F87171" } },
+        "ledClock": { "visible": true, "colonBlink": true, "ledFontType": "7segment", "colors": { "--led-hour-color": "#00ff00", "--led-minute-color": "#00ff00", "--led-second-color": "#00ff00", "--led-colon-color": "#00ff00", "--led-period-color": "#00ff00" } },
+        "analogClock": { "visible": true, "useLedFont": true, "ledFontType": "7segment", "smoothSeconds": false, "colors": { "--analog-face-color": "transparent", "--analog-hand-color": "#ffffff", "--analog-second-hand-color": "#ff3333", "--analog-tick-color": "#cccccc", "--analog-number-color": "#ffffff" } },
+        "moonPhase": { "visible": false, "useLedFont": true, "ledFontType": "7segment", "monthInBackground": true, "colors": { "--moon-light-color": "#f0e68c", "--moon-dark-color": "#222222", "--moon-header-color": "#a78bfa", "--moon-desc-color": "#d1d5db", "--moon-highlight-color": "#fcd34d" } },
         "marquees": [
             { "text": "%YYYY%%C(#ee6900, /)%%ROC_YY%%C(#ff7000, 年)%%MM%%C(#3070a0, 月)%%DD%%C(#ffffff, 日)%%W_SHORT%%ap_c%%hh%%C(#00FF00, :)%%mm%%br%%C(#FFFF00, 農曆)%%LM_C%%LD_C%%br%%SHICHEN_NAME%%L_GZ%%L_SX%%CONSTELLATION%%br%%WEATHER_LOC%%WEATHER_DESC%%TEMP%%C(#5ec69d, °C)%%br%%C(#fbd24d, 🌞)%%SUNRISE%%br%%MOON_ICON%%SUNSET%", "speed": 80, "vertical": false, "direction": "left", "colors": { "default": "#FFFFFF" } }
         ],
-        "marqueeGlobal": { "useLedFont": true },
+        "marqueeGlobal": { "useLedFont": true, "ledFontType": "7segment" },
         "location": "taiwan",
         "timedEffect": { "enabled": true, "intervalSeconds": 10, "type": "slide", "isRandom": false, "transitionEnabled": false }
     }

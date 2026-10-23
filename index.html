@@ -269,10 +269,15 @@
                                 <input type="checkbox" data-widget-toggle="calendar-container" class="form-checkbox">
                                 <span class="font-size-lg font-weight-semibold">月曆</span>
                             </h4>
-                            <div class="p0">
+                            <div class="display-flex align-items-center gap-2 flex-wrap">
                                 <input type="checkbox" id="calendar-use-led-font-toggle" class="form-checkbox"
                                     data-setting-type="toggle" data-widget="calendar" data-key="useLedFont">
                                 <label for="calendar-use-led-font-toggle" class="cursor-pointer">LED 字型</label>
+                                <select id="calendar-led-font-select" class="led-font-select"
+                                    data-setting-type="select" data-widget="calendar" data-key="ledFontType">
+                                    <option value="7segment">八段 LED</option>
+                                    <option value="8x5">8X5 LED</option>
+                                </select>
                                 <input type="checkbox" id="calendar-show-moon-icon-toggle" class="form-checkbox"
                                     data-setting-type="toggle" data-widget="calendar" data-key="showMoonIcon">
                                 <label for="calendar-show-moon-icon-toggle" class="cursor-pointer">顯示月相</label>
@@ -315,9 +320,16 @@
                                 <span class="font-size-lg font-weight-semibold">月相月曆</span>
                             </h4>
                             <div class="space-y-3">
-                                <input type="checkbox" id="moon-phase-use-led-font-toggle" class="form-checkbox"
-                                    data-setting-type="toggle" data-widget="moonPhase" data-key="useLedFont">
-                                <label for="moon-phase-use-led-font-toggle" class="cursor-pointer">LED 字型</label>
+                                <div class="display-flex align-items-center gap-2">
+                                    <input type="checkbox" id="moon-phase-use-led-font-toggle" class="form-checkbox"
+                                        data-setting-type="toggle" data-widget="moonPhase" data-key="useLedFont">
+                                    <label for="moon-phase-use-led-font-toggle" class="cursor-pointer">LED 字型</label>
+                                    <select id="moon-phase-led-font-select" class="led-font-select"
+                                        data-setting-type="select" data-widget="moonPhase" data-key="ledFontType">
+                                        <option value="7segment">八段 LED</option>
+                                        <option value="8x5">8X5 LED</option>
+                                    </select>
+                                </div>
                                 <div class="display-flex justify-content-space-between align-items-center">
                                     <label>亮部</label><input type="color" class="color-picker" data-setting-type="color"
                                         data-widget="moonPhase" data-var="--moon-light-color"></div>
@@ -350,6 +362,14 @@
                                 <span class="font-size-lg font-weight-semibold">LED 時鐘</span>
                             </h4>
                             <div class="space-y-3">
+                                <div class="display-flex justify-content-space-between align-items-center">
+                                    <label>字型</label>
+                                    <select id="led-clock-font-select" class="led-font-select"
+                                        data-setting-type="select" data-widget="ledClock" data-key="ledFontType">
+                                        <option value="7segment">八段 LED</option>
+                                        <option value="8x5">8X5 LED</option>
+                                    </select>
+                                </div>
                                 <div class="display-flex justify-content-space-between align-items-center">
                                     <label>時</label><input type="color" class="color-picker" data-setting-type="color"
                                         data-widget="ledClock" data-var="--led-hour-color"></div>
@@ -393,9 +413,16 @@
                                 <span class="font-size-lg font-weight-semibold">指針時鐘</span>
                             </h4>
                             <div class="space-y-3">
-                                <input type="checkbox" id="analog-clock-use-led-font-toggle" class="form-checkbox"
-                                    data-setting-type="toggle" data-widget="analogClock" data-key="useLedFont">
-                                <label for="analog-clock-use-led-font-toggle" class="cursor-pointer">LED 字型</label>
+                                <div class="display-flex align-items-center gap-2">
+                                    <input type="checkbox" id="analog-clock-use-led-font-toggle" class="form-checkbox"
+                                        data-setting-type="toggle" data-widget="analogClock" data-key="useLedFont">
+                                    <label for="analog-clock-use-led-font-toggle" class="cursor-pointer">LED 字型</label>
+                                    <select id="analog-clock-led-font-select" class="led-font-select"
+                                        data-setting-type="select" data-widget="analogClock" data-key="ledFontType">
+                                        <option value="7segment">八段 LED</option>
+                                        <option value="8x5">8X5 LED</option>
+                                    </select>
+                                </div>
                                 <div class="display-flex justify-content-space-between align-items-center">
                                     <label>指針</label><input type="color" class="color-picker" data-setting-type="color"
                                         data-widget="analogClock" data-var="--analog-hand-color"></div>
@@ -495,6 +522,11 @@
                                             data-setting-type="toggle" data-widget="marqueeGlobal"
                                             data-key="useLedFont">
                                         <label for="marquee-use-led-font-toggle" class="cursor-pointer">LED 字型</label>
+                                        <select id="marquee-led-font-select" class="led-font-select"
+                                            data-setting-type="select" data-widget="marqueeGlobal" data-key="ledFontType">
+                                            <option value="7segment">八段 LED</option>
+                                            <option value="8x5">8X5 LED</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>

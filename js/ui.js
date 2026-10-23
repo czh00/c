@@ -58,15 +58,16 @@ function showDayDetailModal(dateString) {
     const solarTerm = getSolarTerm(date.getFullYear(), date.getMonth() + 1, date.getDate());
     const constellationInfo = getConstellation(date);
     const useLed = settingsState.calendar?.useLedFont ?? true;
+    const fontType = settingsState.calendar?.ledFontType || '7segment';
     
     const rocYear = date.getFullYear() - 1911;
-    const rocYearHTML = useLed ? generateLedSvg(String(rocYear), { height: 20, color: '#a5b4fc' }) : rocYear;
+    const rocYearHTML = useLed ? generateLedSvg(String(rocYear), { height: 20, color: '#a5b4fc', fontType }) : rocYear;
     
     const modalGregDate = document.getElementById('modal-gregorian-date');
     if (useLed) {
-        const yearSVG = generateLedSvg(String(date.getFullYear()), { height: 22, color: 'white' });
-        const monthSVG = generateLedSvg(String(date.getMonth() + 1), { height: 22, color: 'white' });
-        const daySVG = generateLedSvg(String(date.getDate()), { height: 22, color: 'white' });
+        const yearSVG = generateLedSvg(String(date.getFullYear()), { height: 22, color: 'white', fontType });
+        const monthSVG = generateLedSvg(String(date.getMonth() + 1), { height: 22, color: 'white', fontType });
+        const daySVG = generateLedSvg(String(date.getDate()), { height: 22, color: 'white', fontType });
         modalGregDate.innerHTML = `${yearSVG}<span class="led-text-unit">年</span>${monthSVG}<span class="led-text-unit">月</span>${daySVG}<span class="led-text-unit">日 星期${"日一二三四五六"[date.getDay()]}</span>`;
     } else {
         modalGregDate.innerHTML = `<span style="font-size: 1.5em; line-height:1.2;">${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 星期${"日一二三四五六"[date.getDay()]}</span>`;
@@ -79,7 +80,7 @@ function showDayDetailModal(dateString) {
         const text = `星座 ${constellationInfo.sign} (${constellationInfo.range})`;
         const fontSize = parseFloat(getComputedStyle(modalConstellationEl).fontSize) || 16;
         const color = getComputedStyle(modalConstellationEl).color || 'white';
-        modalConstellationEl.innerHTML = getLedHTML(text, useLed, { fontSize, color, defaultSpan: false });
+        modalConstellationEl.innerHTML = getLedHTML(text, useLed, { fontSize, color, defaultSpan: false, fontType });
         modalConstellationEl.style.display = 'block';
     } else { modalConstellationEl.style.display = 'none'; }
     
@@ -96,7 +97,7 @@ function showDayDetailModal(dateString) {
     const sunsetTime = Weather.data?.daily?.sunset?.[0] ? formatTime(Weather.data.daily.sunset[0]) : '讀取中...';
     
     const isTimeFormat = (str) => /^[\d:]+$/.test(str);
-    const formatTimeForDisplay = (timeStr) => useLed && isTimeFormat(timeStr) ? generateLedSvg(timeStr, { height: 26, color: 'white' }) : timeStr;
+    const formatTimeForDisplay = (timeStr) => useLed && isTimeFormat(timeStr) ? generateLedSvg(timeStr, { height: 26, color: 'white', fontType }) : timeStr;
     
     document.getElementById('modal-sunrise-time').innerHTML = formatTimeForDisplay(sunriseTime);
     document.getElementById('modal-sunset-time').innerHTML = formatTimeForDisplay(sunsetTime);
@@ -159,16 +160,17 @@ function getAllHolidaysForYear(year) {
 function updateCountdowns(currentDate) {
     const today = new Date(currentDate); today.setHours(0, 0, 0, 0);
     const useLed = settingsState.calendar?.useLedFont ?? true;
+    const fontType = settingsState.calendar?.ledFontType || '7segment';
     const formatCountdownText = (items, type) => {
         const futureEvents = items.filter(item => item.date >= today);
         if (futureEvents.length === 0) return `找不到${today.getFullYear() + 1}年的${type}資料`;
         const firstEvent = futureEvents[0];
         const diffDays = Math.ceil((firstEvent.date.getTime() - today.getTime()) / 86400000);
-        const daysHTML = useLed ? generateLedSvg(String(diffDays), { height: 20, color: 'white' }) : `<span style="font-size: 1.2em;">${diffDays}</span>`;
+        const daysHTML = useLed ? generateLedSvg(String(diffDays), { height: 20, color: 'white', fontType: fontType }) : `<span style="font-size: 1.2em;">${diffDays}</span>`;
         if (diffDays === 0) {
             if (futureEvents[1]) {
                 const nextDiffDays = Math.ceil((futureEvents[1].date - today) / 86400000);
-                const nextDaysHTML = useLed ? generateLedSvg(String(nextDiffDays), { height: 20, color: 'white' }) : `<span style="font-size: 1.2em;">${nextDiffDays}</span>`;
+                const nextDaysHTML = useLed ? generateLedSvg(String(nextDiffDays), { height: 20, color: 'white', fontType: fontType }) : `<span style="font-size: 1.2em;">${nextDiffDays}</span>`;
                 return `<div class="countdown-text-container">今天是 ${firstEvent.name}，距離下個${type} [${futureEvents[1].name}] 還有 ${nextDaysHTML} 天</div>`;
             }
             return `今天是 ${firstEvent.name}！`;

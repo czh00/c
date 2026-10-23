@@ -345,6 +345,26 @@ body {
     fill: var(--led-colon-color);
 }
 
+#led-clock-container .colon-bg {
+    fill: var(--led-colon-color);
+}
+
+.led-font-select {
+    background-color: #374151;
+    border: 1px solid #4b5563;
+    border-radius: 6px;
+    color: #e5e7eb;
+    padding: 2px 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.led-font-select:hover {
+    border-color: #6366f1;
+}
+
 #led-clock-container .period-text {
     fill: var(--led-period-color);
     font-size: 50px;

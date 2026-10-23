@@ -11,6 +11,7 @@
                 Calendar.render();
                 MoonPhaseWidget.render();
                 AnalogClock.init();
+                LedClock.init();
                 MarqueeManager.rebuildAllAnimations();
             }
             function saveCurrentSettings(isProgrammaticChange = false) {
@@ -33,6 +34,14 @@
                 document.querySelectorAll('#modal-backdrop-settings input[data-setting-type="toggle"]').forEach(toggle => {
                     const widget = toggle.dataset.widget, key = toggle.dataset.key;
                     if (settingsState[widget] && typeof settingsState[widget][key] !== 'undefined') toggle.checked = settingsState[widget][key];
+                });
+                document.querySelectorAll('#modal-backdrop-settings select[data-setting-type="select"]').forEach(select => {
+                    const widget = select.dataset.widget, key = select.dataset.key;
+                    if (settingsState[widget] && typeof settingsState[widget][key] !== 'undefined') {
+                        select.value = settingsState[widget][key];
+                    } else {
+                        select.value = '7segment';
+                    }
                 });
                 updateLocationSelectors();
                 updateMarqueeSelectorUI();
@@ -132,6 +141,18 @@
                     const widget = settingToggle.dataset.widget, key = settingToggle.dataset.key;
                     if (settingsState[widget]) {
                         settingsState[widget][key] = settingToggle.checked; saveCurrentSettings();
+                        if (widget === 'calendar') Calendar.render();
+                        if (widget === 'analogClock') AnalogClock.init();
+                        if (widget === 'ledClock') LedClock.init();
+                        if (widget === 'moonPhase') MoonPhaseWidget.render();
+                        if (widget === 'marqueeGlobal') MarqueeManager.rebuildAllAnimations();
+                    }
+                }
+                const settingSelect = e.target.closest('select[data-setting-type="select"]');
+                if (settingSelect) {
+                    const widget = settingSelect.dataset.widget, key = settingSelect.dataset.key;
+                    if (settingsState[widget]) {
+                        settingsState[widget][key] = settingSelect.value; saveCurrentSettings();
                         if (widget === 'calendar') Calendar.render();
                         if (widget === 'analogClock') AnalogClock.init();
                         if (widget === 'ledClock') LedClock.init();

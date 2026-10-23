@@ -4,13 +4,73 @@
             const LedClock = {
                 svg: document.getElementById('led-clock-svg'), digits: {}, colons: {}, periodTextElement: null,
                 lastTime: { h: -1, m: -1, s: -1 },
+                fontType: '7segment',
                 segmentMap: [[1, 1, 1, 1, 1, 1, 0], [0, 1, 1, 0, 0, 0, 0], [1, 1, 0, 1, 1, 0, 1], [1, 1, 1, 1, 0, 0, 1], [0, 1, 1, 0, 0, 1, 1], [1, 0, 1, 1, 0, 1, 1], [1, 0, 1, 1, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 0, 1, 1]],
                 segmentTransforms: ['translate(0, 0)', 'translate(132, 20) rotate(90)', 'translate(132, 140) rotate(90)', 'translate(0, 240)', 'translate(12, 140) rotate(90)', 'translate(12, 20) rotate(90)', 'translate(0, 120)'],
                 baseViewBoxWidth: 0, aspectRatio: 0, timer: null,
-                createDigit(id, x, parentGroup, segmentClass) { const group = document.createElementNS('http://www.w3.org/2000/svg', 'g'); group.setAttribute('id', id); group.setAttribute('transform', `translate(${x}, 0)`); for (let i = 0; i < 7; i++) { const use = document.createElementNS('http://www.w3.org/2000/svg', 'use'); use.setAttribute('href', '#segment-shape'); use.setAttribute('class', `segment ${segmentClass}`); use.setAttribute('data-segment', String.fromCharCode(97 + i)); use.setAttribute('transform', this.segmentTransforms[i]); group.appendChild(use); } parentGroup.appendChild(group); return group; },
-                createColon(id, x, parentGroup) { const group = document.createElementNS('http://www.w3.org/2000/svg', 'g'); group.setAttribute('id', id); group.setAttribute('transform', `translate(${x}, 0)`);['translate(0, 60)', 'translate(0, 180)'].forEach(transform => { const dot = document.createElementNS('http://www.w3.org/2000/svg', 'use'); dot.setAttribute('href', '#colon-dot-shape'); dot.setAttribute('class', 'colon'); dot.setAttribute('transform', transform); group.appendChild(dot); }); parentGroup.appendChild(group); return group; },
+                createDigit(id, x, parentGroup, segmentClass) {
+                    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    group.setAttribute('id', id);
+                    group.setAttribute('transform', `translate(${x}, 0)`);
+                    if (this.fontType === '8x5') {
+                        for (let i = 0; i < 40; i++) {
+                            const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                            use.setAttribute('href', '#dot-shape');
+                            use.setAttribute('class', `segment ${segmentClass}`);
+                            use.setAttribute('data-dot', i);
+                            const r = Math.floor(i / 5), c = i % 5;
+                            use.setAttribute('transform', `translate(${16 + c * 32}, ${17 + r * 34})`);
+                            group.appendChild(use);
+                        }
+                    } else {
+                        for (let i = 0; i < 7; i++) {
+                            const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                            use.setAttribute('href', '#segment-shape');
+                            use.setAttribute('class', `segment ${segmentClass}`);
+                            use.setAttribute('data-segment', String.fromCharCode(97 + i));
+                            use.setAttribute('transform', this.segmentTransforms[i]);
+                            group.appendChild(use);
+                        }
+                    }
+                    parentGroup.appendChild(group);
+                    return group;
+                },
+                createColon(id, x, parentGroup) {
+                    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    group.setAttribute('id', id);
+                    group.setAttribute('transform', `translate(${x}, 0)`);
+                    if (this.fontType === '8x5') {
+                        const colonWidth = 48;
+                        for (let r = 0; r < 8; r++) {
+                            const dot = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                            dot.setAttribute('href', '#dot-shape');
+                            if (r === 2 || r === 5) {
+                                dot.setAttribute('class', 'colon');
+                            } else {
+                                dot.setAttribute('class', 'colon-bg');
+                                dot.style.opacity = '0.1';
+                            }
+                            dot.setAttribute('transform', `translate(${colonWidth / 2}, ${17 + r * 34})`);
+                            group.appendChild(dot);
+                        }
+                    } else {
+                        ['translate(0, 60)', 'translate(0, 180)'].forEach(transform => {
+                            const dot = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                            dot.setAttribute('href', '#colon-dot-shape');
+                            dot.setAttribute('class', 'colon');
+                            dot.setAttribute('transform', transform);
+                            group.appendChild(dot);
+                        });
+                    }
+                    parentGroup.appendChild(group);
+                    return group;
+                },
                 init() {
-                    this.svg.innerHTML = ''; const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs'); defs.innerHTML = `<polygon id="segment-shape" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="colon-dot-shape" x="-16" y="0" width="32" height="32" rx="5" ry="5" />`; this.svg.appendChild(defs);
+                    this.fontType = settingsState.ledClock?.ledFontType || '7segment';
+                    this.svg.innerHTML = '';
+                    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                    defs.innerHTML = `<polygon id="segment-shape" points="16 0, 96 0, 112 16, 96 32, 16 32, 0 16" /><rect id="colon-dot-shape" x="-16" y="0" width="32" height="32" rx="5" ry="5" /><circle id="dot-shape" cx="0" cy="0" r="11" />`;
+                    this.svg.appendChild(defs);
 
                     const showSeconds = settingsState.ledClock?.showSeconds ?? true;
                     const showPeriod = settingsState.ledClock?.showPeriod ?? true;
@@ -65,7 +125,14 @@
                     this.update();
                     if (!this.timer) this.timer = setInterval(() => this.update(), 1000);
                 },
-                updateDigit(digitElement, number) { if (!digitElement) return; const pattern = this.segmentMap[number]; digitElement.querySelectorAll('.segment').forEach((segment, i) => { segment.style.opacity = pattern[i] ? '1' : '0.1'; }); },
+                updateDigit(digitElement, number) {
+                    if (!digitElement) return;
+                    const is8x5 = this.fontType === '8x5';
+                    const pattern = (is8x5 && typeof dotMatrix8x5 !== 'undefined') ? dotMatrix8x5[number] : this.segmentMap[number];
+                    digitElement.querySelectorAll('.segment').forEach((segment, i) => {
+                        segment.style.opacity = pattern[i] ? '1' : '0.1';
+                    });
+                },
                 update() {
                     const now = new Date();
                     const s = now.getSeconds();
@@ -176,6 +243,7 @@
                 init() {
                     this.ticksContainer.innerHTML = '';
                     const useLed = settingsState.analogClock?.useLedFont ?? true;
+                    const fontType = settingsState.analogClock?.ledFontType || '7segment';
                     for (let i = 1; i <= 60; i++) {
                         const isHour = i % 5 === 0, rotation = i * 6;
                         const wrapper = document.createElement('div');
@@ -191,7 +259,7 @@
                             if (useLed) {
                                 const clockState = transformStates['analog-clock-container'];
                                 const svgHeight = clockState ? clockState.width * 0.08 : 16;
-                                numDiv.innerHTML = `<div>${generateLedSvg(numberText, { height: svgHeight, color: numberColor })}</div>`;
+                                numDiv.innerHTML = `<div>${generateLedSvg(numberText, { height: svgHeight, color: numberColor, fontType: fontType })}</div>`;
                             } else {
                                 numDiv.innerHTML = `<div style="transform: rotate(calc(-1 * var(--rotation))); color: ${numberColor}; font-size: 1.2em; font-weight: bold;">${numberText}</div>`;
                             }

@@ -18,6 +18,7 @@
                         const year = this.currentDate.getFullYear(), month = this.currentDate.getMonth();
                         const widgetSettings = getSetting() || {};
                         const useLedHeader = widgetSettings.useLedFont ?? true;
+                        const fontType = widgetSettings.ledFontType || '7segment';
 
                         // 讀取背景顯示設定，預設為 true
                         const monthInBackground = widgetSettings.monthInBackground ?? true;
@@ -33,12 +34,12 @@
 
                         if (monthInBackground) {
                             // 背景顯示模式：標題只顯示年份，使用年份顏色
-                            renderCalendarTitle(yearHeader, String(year), useLedHeader, 26, headerColor, '26px', headerColor);
+                            renderCalendarTitle(yearHeader, String(year), useLedHeader, 26, headerColor, '26px', headerColor, fontType);
                         } else {
                             // 非背景顯示模式：標題顯示「年份 月份」，年份用年份顏色，月份用月份顏色
                             if (useLedHeader) {
-                                const yearSvg = generateLedSvg(String(year), { height: 26, color: headerColor });
-                                const monthSvg = generateLedSvg(String(month + 1), { height: 26, color: monthColor });
+                                const yearSvg = generateLedSvg(String(year), { height: 26, color: headerColor, fontType: fontType });
+                                const monthSvg = generateLedSvg(String(month + 1), { height: 26, color: monthColor, fontType: fontType });
                                 yearHeader.innerHTML = yearSvg + monthSvg; // Flex gap 會處理間距
                             } else {
                                 const yearSpan = `<span style="font-size: 26px; color: ${headerColor}; line-height: 1; font-weight: 700;">${year}</span>`;
@@ -54,7 +55,7 @@
                         if (monthInBackground) {
                             backgroundMonth.style.display = 'block';
                             if (useLedHeader && widgetState) {
-                                backgroundMonth.innerHTML = generateLedSvg(String(month + 1), { height: widgetState.height * 0.7, color: monthColor });
+                                backgroundMonth.innerHTML = generateLedSvg(String(month + 1), { height: widgetState.height * 0.7, color: monthColor, fontType: fontType });
                             } else {
                                 backgroundMonth.textContent = month + 1;
                             }
@@ -81,12 +82,12 @@
             }
             const calendarCellRenderer = (cell, date, settings) => {
                 const day = date.getDate(), lunar = getLunarDate(date), solarTerm = getSolarTerm(date.getFullYear(), date.getMonth() + 1, day), holiday = getHoliday(date);
-                const showMoonIcon = settings.showMoonIcon ?? true, useLed = settings.useLedFont ?? true;
+                const showMoonIcon = settings.showMoonIcon ?? true, useLed = settings.useLedFont ?? true, fontType = settings.ledFontType || '7segment';
                 const textDetailsHTML = `<div class="lunar-date">${lunar.day === 1 ? lunar.toString.substring(0, lunar.isLeap ? 3 : 2) : lunar.dayString}</div>
                     ${solarTerm ? `<div class="solarterm-text truncate" data-key="${solarTerm}">${solarTerm}</div>` : ''}
                     ${holiday ? `<div class="holiday-text truncate" data-key="${holiday}">${holiday}</div>` : ''}`;
                 const dayColor = getComputedStyle(document.documentElement).getPropertyValue('--day-color').trim();
-                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvg(String(day), { height: 20, color: dayColor })}</div>` : `<div class="day-number-wrapper" style="font-size: 1.5em; line-height: 1.2; color: ${dayColor}; display: flex; align-items: center; justify-content: center; height: 20px; font-weight: 700;">${day}</div>`;
+                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvg(String(day), { height: 20, color: dayColor, fontType: fontType })}</div>` : `<div class="day-number-wrapper" style="font-size: 1.5em; line-height: 1.2; color: ${dayColor}; display: flex; align-items: center; justify-content: center; height: 20px; font-weight: 700;">${day}</div>`;
                 if (showMoonIcon) {
                     cell.classList.add('with-moon-icon');
                     cell.innerHTML = `<div class="day-text-content">${dayNumberHTML}<div class="space-y-px">${textDetailsHTML}</div></div><div class="day-moon-container">${MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '28px', `main-cal-${Math.random()}`)}</div>`;
@@ -98,8 +99,8 @@
                 if (isEditMode) cell.classList.add('edit-mode-active');
             };
             const moonPhaseCellRenderer = (cell, date, settings) => {
-                const lunar = getLunarDate(date), useLed = settings.useLedFont ?? true, dayColor = getComputedStyle(document.documentElement).getPropertyValue('--day-color').trim() || '#ffffff', day = date.getDate();
-                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvg(String(day), { height: 20, color: dayColor })}</div>` : `<div class="day-number-wrapper" style="font-size: 1.2em; line-height: 1; color: ${dayColor}; font-weight: bold;">${day}</div>`;
+                const lunar = getLunarDate(date), useLed = settings.useLedFont ?? true, fontType = settings.ledFontType || '7segment', dayColor = getComputedStyle(document.documentElement).getPropertyValue('--day-color').trim() || '#ffffff', day = date.getDate();
+                const dayNumberHTML = useLed ? `<div class="day-number-wrapper">${generateLedSvg(String(day), { height: 20, color: dayColor, fontType: fontType })}</div>` : `<div class="day-number-wrapper" style="font-size: 1.2em; line-height: 1; color: ${dayColor}; font-weight: bold;">${day}</div>`;
                 const lunarDateText = lunar.day === 1 ? lunar.toString.substring(0, lunar.isLeap ? 3 : 2) : lunar.dayString;
                 cell.innerHTML = `${dayNumberHTML}<div class="moon-icon-small">${MoonPhaseWidget.getMoonPhaseSVG(lunar.day, '100%', `grid-${Math.random()}`)}</div><div class="lunar-date">${lunarDateText}</div>`;
                 cell.addEventListener('click', () => { if (!isEditMode) showDayDetailModal(date.toISOString()); });

@@ -6,8 +6,119 @@
 // LED 數字 SVG 產生器
 // ===================================================================
 function generateLedSvg(text, config = {}) {
-    const { height = 24, color = '#FFFFFF', letterSpacing = 0, isStandalone = false, applyYOffset = false, extraStyle = '' } = config;
+    const {
+        height = 24,
+        color = '#FFFFFF',
+        letterSpacing = 0,
+        isStandalone = false,
+        applyYOffset = false,
+        extraStyle = '',
+        fontType = (typeof settingsState !== 'undefined' && settingsState.marqueeGlobal?.ledFontType) || '7segment'
+    } = config;
     const id_suffix = Math.random().toString(36).substring(2, 9);
+
+    if (fontType === '8x5') {
+        const dotId = `led-dot-${id_suffix}`;
+        const digitBaseWidth = 160, digitBaseHeight = 272, colonBaseWidth = 48;
+        const internalSpacing = isStandalone ? letterSpacing : 0;
+
+        let totalWidth = 0;
+        const chars = String(text);
+        for (let i = 0; i < chars.length; i++) {
+            const char = chars[i];
+            if (/\d/.test(char)) {
+                totalWidth += digitBaseWidth;
+            } else if (char === ':') {
+                totalWidth += colonBaseWidth;
+            } else if (char === '.') {
+                totalWidth += 48;
+            } else if (char === '-' || char === '/') {
+                totalWidth += 80;
+            } else {
+                totalWidth += 60;
+            }
+            if (i < chars.length - 1) {
+                totalWidth += internalSpacing;
+            }
+        }
+        if (totalWidth === 0) return '';
+
+        let svgContent = '', currentX = 0;
+        for (const char of chars) {
+            if (/\d/.test(char)) {
+                const digit = parseInt(char, 10);
+                if (digit >= 0 && digit <= 9 && typeof dotMatrix8x5 !== 'undefined') {
+                    const pattern = dotMatrix8x5[digit];
+                    let digitGroup = `<g transform="translate(${currentX}, 0)">`;
+                    for (let r = 0; r < 8; r++) {
+                        for (let c = 0; c < 5; c++) {
+                            const isLit = pattern[r * 5 + c];
+                            digitGroup += `<use href="#${dotId}" opacity="${isLit ? '1' : '0.1'}" transform="translate(${16 + c * 32}, ${17 + r * 34})" />`;
+                        }
+                    }
+                    digitGroup += `</g>`;
+                    svgContent += digitGroup;
+                }
+                currentX += digitBaseWidth + internalSpacing;
+            } else if (char === ':') {
+                let colonGroup = `<g transform="translate(${currentX}, 0)">`;
+                for (let r = 0; r < 8; r++) {
+                    const isLit = (r === 2 || r === 5);
+                    colonGroup += `<use href="#${dotId}" opacity="${isLit ? '1' : '0.1'}" transform="translate(${colonBaseWidth / 2}, ${17 + r * 34})" />`;
+                }
+                colonGroup += `</g>`;
+                svgContent += colonGroup;
+                currentX += colonBaseWidth + internalSpacing;
+            } else if (char === '.') {
+                let dotGroup = `<g transform="translate(${currentX}, 0)">`;
+                for (let r = 0; r < 8; r++) {
+                    const isLit = (r === 7);
+                    dotGroup += `<use href="#${dotId}" opacity="${isLit ? '1' : '0.1'}" transform="translate(24, ${17 + r * 34})" />`;
+                }
+                dotGroup += `</g>`;
+                svgContent += dotGroup;
+                currentX += 48 + internalSpacing;
+            } else if (char === '-') {
+                let dashGroup = `<g transform="translate(${currentX}, 0)">`;
+                for (let r = 0; r < 8; r++) {
+                    for (let c = 0; c < 2; c++) {
+                        const isLit = (r === 3 || r === 4);
+                        dashGroup += `<use href="#${dotId}" opacity="${isLit ? '1' : '0.1'}" transform="translate(${24 + c * 32}, ${17 + r * 34})" />`;
+                    }
+                }
+                dashGroup += `</g>`;
+                svgContent += dashGroup;
+                currentX += 80 + internalSpacing;
+            } else if (char === '/') {
+                let slashGroup = `<g transform="translate(${currentX}, 0)">`;
+                for (let r = 0; r < 8; r++) {
+                    const litCol = Math.round((7 - r) * 2 / 7);
+                    for (let c = 0; c < 3; c++) {
+                        const isLit = (c === litCol);
+                        slashGroup += `<use href="#${dotId}" opacity="${isLit ? '1' : '0.1'}" transform="translate(${16 + c * 24}, ${17 + r * 34})" />`;
+                    }
+                }
+                slashGroup += `</g>`;
+                svgContent += slashGroup;
+                currentX += 80 + internalSpacing;
+            } else {
+                const separatorWidth = 60;
+                svgContent += `<text x="${currentX + separatorWidth / 2}" y="${digitBaseHeight / 2}" text-anchor="middle" dominant-baseline="central" font-size="${digitBaseHeight * 0.9}" font-family="'Courier New', Courier, monospace" font-weight="bold">${char}</text>`;
+                currentX += separatorWidth + internalSpacing;
+            }
+        }
+
+        let yOffset = applyYOffset ? 60 : 0;
+        const viewBoxHeight = digitBaseHeight + yOffset;
+        const transformedContent = yOffset > 0 ? `<g transform="translate(0, ${yOffset})">${svgContent}</g>` : svgContent;
+
+        const scaleFactor = height / digitBaseHeight;
+        const finalHeight = viewBoxHeight * scaleFactor;
+        const finalWidth = totalWidth * scaleFactor;
+
+        return `<svg viewBox="0 0 ${totalWidth} ${viewBoxHeight}" data-text="${text}" height="${finalHeight}px" width="${finalWidth}px" fill="${color}" style="vertical-align: middle; ${extraStyle}"><defs><circle id="${dotId}" cx="0" cy="0" r="11" /></defs>${transformedContent}</svg>`.replace(/\n\s*/g, '');
+    }
+
     const segmentId = `led-segment-${id_suffix}`, colonId = `led-colon-${id_suffix}`;
     const segmentMap = [[1, 1, 1, 1, 1, 1, 0], [0, 1, 1, 0, 0, 0, 0], [1, 1, 0, 1, 1, 0, 1], [1, 1, 1, 1, 0, 0, 1], [0, 1, 1, 0, 0, 1, 1], [1, 0, 1, 1, 0, 1, 1], [1, 0, 1, 1, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 0, 1, 1]];
 
@@ -80,14 +191,14 @@ function generateLedSvg(text, config = {}) {
 }
 function getLedHTML(text, useLed, options = {}) {
     if (!useLed) return String(text).replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const { color = '#FFFFFF', fontSize = 16, heightMultiplier = 1.1, defaultSpan = true } = options;
+    const { color = '#FFFFFF', fontSize = 16, heightMultiplier = 1.1, defaultSpan = true, fontType } = options;
     let resultHTML = '';
     const parts = String(text).split(/(\d[\d:./-]*|\D+)/);
 
     parts.forEach(part => {
         if (!part) return;
         if (/^\d/.test(part)) {
-            resultHTML += generateLedSvg(part, { height: fontSize * heightMultiplier, color: color, isStandalone: true, letterSpacing: 8, applyYOffset: false, extraStyle: 'position: relative; top: -0.12em;' });
+            resultHTML += generateLedSvg(part, { height: fontSize * heightMultiplier, color: color, isStandalone: true, letterSpacing: 8, applyYOffset: false, extraStyle: 'position: relative; top: -0.12em;', fontType: fontType });
         } else {
             const escapedPart = part.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             resultHTML += `<span style="color:${color}; display: inline-flex; align-items: center; height: ${fontSize * heightMultiplier}px;">${escapedPart}</span>`;
@@ -134,9 +245,9 @@ function applyLedToStaticContent(containerElement) {
 // ===================================================================
 // 統一的日曆標題渲染函數
 // ===================================================================
-function renderCalendarTitle(element, text, useLed, ledHeight, ledColor, defaultFontSize, defaultColor) {
+function renderCalendarTitle(element, text, useLed, ledHeight, ledColor, defaultFontSize, defaultColor, fontType = '7segment') {
     element.innerHTML = useLed
-        ? generateLedSvg(String(text), { height: ledHeight, color: ledColor })
+        ? generateLedSvg(String(text), { height: ledHeight, color: ledColor, fontType: fontType })
         : `<span style="font-size: ${defaultFontSize}; color: ${defaultColor}; line-height: 1; font-weight: 700;">${text}</span>`;
 }
 
